@@ -1,16 +1,16 @@
 <?xml version="1.0" encoding="utf-8" standalone="no" ?>
 <modDesc descVersion="105">
     <author>Transbordo Inteligente</author>
-    <version>0.2.0.0</version>
+    <version>0.3.0.0</version>
     <title>
         <en>Smart Auger Wagon - Test Version</en>
         <pt>Transbordo Inteligente - Versão de Teste</pt>
         <br>Transbordo Inteligente - Versão de Teste</br>
     </title>
     <description>
-        <en>Single-player test version. Ctrl+Alt+T toggles the attached auger wagon controller. Responds to combines at 60 percent, follows their pipe and unloads a full wagon into a compatible parked trailer near the field edge. Direct navigation in open terrain; no obstacle pathfinding. Requires validation in FS25.</en>
-        <pt>Versão de teste single-player. Ctrl+Alt+T liga/desliga o controle da bazuca acoplada. Atende colheitadeiras a partir de 60%, acompanha o cano e leva a bazuca cheia até uma carreta compatível estacionada na borda do talhão. Navegação direta em terreno livre, sem desvio automático de obstáculos. Requer validação no FS25.</pt>
-        <br>Versão de teste single-player. Ctrl+Alt+T liga/desliga o controle da bazuca acoplada. Atende colheitadeiras a partir de 60%, acompanha o cano e leva a bazuca cheia até uma carreta compatível estacionada na borda do talhão. Navegação direta em terreno livre, sem desvio automático de obstáculos. Requer validação no FS25.</br>
+        <en>Single-player test version. Ctrl+Alt+T toggles the attached auger wagon controller. Responds to combines at 60 percent, follows their pipe and unloads a full wagon into a compatible parked trailer near the field edge. Plans forward routes around standing crops, poles and collidable trees/objects, follows the open pipe side and brakes when blocked. Direct native steering. Ctrl+Alt+T is listed in Controls. Requires validation in FS25.</en>
+        <pt>Versão de teste single-player. Ctrl+Alt+T liga/desliga o controle da bazuca acoplada. Atende colheitadeiras a partir de 60%, acompanha o cano e leva a bazuca cheia até uma carreta compatível estacionada na borda do talhão. Planeja desvios de cultura em pé, postes e árvores/objetos com colisão, usa o lado do cano aberto e freia quando bloqueado. Direção nativa direta. Ctrl+Alt+T aparece em Controles. Requer validação no FS25.</pt>
+        <br>Versão de teste single-player. Ctrl+Alt+T liga/desliga o controle da bazuca acoplada. Atende colheitadeiras a partir de 60%, acompanha o cano e leva a bazuca cheia até uma carreta compatível estacionada na borda do talhão. Planeja desvios de cultura em pé, postes e árvores/objetos com colisão, usa o lado do cano aberto e freia quando bloqueado. Direção nativa direta. Ctrl+Alt+T aparece em Controles. Requer validação no FS25.</br>
     </description>
     <iconFilename>icon.dds</iconFilename>
     <multiplayer supported="false" />
@@ -18,18 +18,19 @@
         <specialization name="transbordoInteligente" className="TransbordoInteligente" filename="scripts/TransbordoInteligente.lua" />
     </specializations>
     <extraSourceFiles>
+        <sourceFile filename="scripts/TINavegacao.lua" />
         <sourceFile filename="scripts/Bootstrap.lua" />
     </extraSourceFiles>
     <actions>
-        <action name="TOGGLE_TRANSBORDO" category="VEHICLE" axisType="HALF" ignoreComboMask="false" />
+        <action name="TI_TOGGLE_TRANSBORDO" category="VEHICLE" axisType="HALF" ignoreComboMask="false" />
     </actions>
     <inputBinding>
-        <actionBinding action="TOGGLE_TRANSBORDO">
+        <actionBinding action="TI_TOGGLE_TRANSBORDO">
             <binding device="KB_MOUSE_DEFAULT" input="KEY_lctrl KEY_lalt KEY_t" />
         </actionBinding>
     </inputBinding>
     <l10n>
-        <text name="input_TOGGLE_TRANSBORDO">
+        <text name="input_TI_TOGGLE_TRANSBORDO">
             <en>Toggle Smart Auger Wagon</en>
             <pt>Ligar/desligar Transbordo Inteligente</pt>
             <br>Ligar/desligar Transbordo Inteligente</br>

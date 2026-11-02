@@ -50,6 +50,7 @@ def main():
         'modDesc.xml': (ROOT / 'modDesc.xml').read_bytes(),
         'scripts/TransbordoInteligente.lua': (ROOT / 'TransbordoInteligente.lua').read_bytes(),
         'scripts/Bootstrap.lua': (ROOT / 'Bootstrap.lua').read_bytes(),
+        'scripts/TINavegacao.lua': (ROOT / 'TINavegacao.lua').read_bytes(),
         'LEIA-ME.md': (ROOT / 'LEIA-ME.md').read_bytes(),
         'icon.dds': icon_dds(),
     }
@@ -58,7 +59,7 @@ def main():
         assert entry.attrib['filename'] in members, entry.attrib['filename']
     assert desc.findtext('iconFilename') in members
     action = desc.find('./actions/action').attrib['name']
-    assert desc.find('./inputBinding/actionBinding').attrib['action'] == action == 'TOGGLE_TRANSBORDO'
+    assert desc.find('./inputBinding/actionBinding').attrib['action'] == action == 'TI_TOGGLE_TRANSBORDO'
     write_zip(ROOT / 'FS25_TransbordoInteligente.zip', members)
     sources = {p.relative_to(ROOT).as_posix(): p.read_bytes() for p in ROOT.rglob('*')
                if p.is_file() and '__pycache__' not in p.parts and p.suffix != '.zip'}

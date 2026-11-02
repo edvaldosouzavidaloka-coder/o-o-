@@ -1,6 +1,6 @@
--- Transbordo Inteligente - FS25, single-player, versao de teste 0.2.0.0.
+-- Transbordo Inteligente - FS25, single-player, versao de teste 0.3.0.0.
 -- A direcao usa AIVehicleUtil; transferencia de graos exclusivamente pela engine.
--- Nao contem pathfinding de obstaculos, suporte multiplayer ou salario de ajudante.
+-- Navegacao com sensores em TINavegacao.lua; sem multiplayer ou salario de ajudante.
 TransbordoInteligente = {}
 local TI = TransbordoInteligente
 
@@ -171,6 +171,7 @@ function TI.mudarEstado(trator, estado, mensagem)
     spec.ultimaCarga = nil
     spec.receptorPreparado = false
     spec.buscaEm = 0
+    if TransbordoNavegacao ~= nil then TransbordoNavegacao.reset(trator) end
 end
 
 -- Contorno original do mapa. Sem API de talhao, usa a posicao inicial + raios.
@@ -261,7 +262,14 @@ function TI.encontrarCaminhao(trator)
 end
 
 -- Conduz pelo controlador nativo; nao escreve rotatedTime nem finge um job GIANTS.
-function TI.dirigir(trator, dt, x, z, velocidadeAlvo)
+function TI.dirigir(trator, dt, x, z, velocidadeAlvo, modo, dx, dz)
+    if velocidadeAlvo > 0 then
+        if TransbordoNavegacao ~= nil then
+            return TransbordoNavegacao.dirigir(trator, dt, x, z, velocidadeAlvo, modo, dx, dz)
+        end
+        trator.spec_transbordoInteligente.mensagemNavegacao = "Navegacao nao carregada; movimento interrompido"
+        velocidadeAlvo = 0
+    end
     local steeringNode = trator.getAISteeringNode ~= nil and trator:getAISteeringNode() or direcao(trator)
     local y = select(2, getWorldTranslation(steeringNode))
     local lx, _, lz = worldToLocal(steeringNode, x, y, z)
@@ -292,6 +300,14 @@ function TI.alvoReceber(trator, colheitadeira)
     local px, _, pz = getWorldTranslation(grao.node.node)
     local dx, _, dz = localDirectionToWorld(direcao(colheitadeira), 0, 0, 1)
     local nx, _, nz = localDirectionToWorld(direcao(colheitadeira), 1, 0, 0)
+    local canoX = select(1, localToLocal(grao.node.node, direcao(colheitadeira), 0, 0, 0))
+    if math.abs(canoX) < 1 then return nil end
+    local lado = canoX > 0 and 1 or -1
+    -- Nao inventa um lado alternativo quando a geometria do cano nao alcanca.
+    local larguraCombine = (colheitadeira.size or {}).width or 4
+    local larguraTrator = (trator.size or {}).width or 4
+    if lado*(canoX-rx) < (larguraCombine+larguraTrator)/2+0.6 then return nil end
+    spec.ladoCano = lado
     return px - nx*rx - dx*rz, pz - nz*rx - dz*rz, dx, dz, receptor
 end
 
@@ -349,13 +365,17 @@ function TI.prerequisitesPresent(specializations)
 end
 
 function TI.registerEventListeners(vehicleType)
-    for _, nome in ipairs({"onLoad", "onRegisterActionEvents", "onUpdate", "onDraw", "onDelete"}) do
+    for _, nome in ipairs({"onLoad", "onLoadFinished", "onRegisterActionEvents", "onUpdate", "onDraw", "onDelete"}) do
         SpecializationUtil.registerEventListener(vehicleType, nome, TI)
     end
 end
 
 function TI.registerOverwrittenFunctions(vehicleType)
-    SpecializationUtil.registerOverwrittenFunction(vehicleType, "getIsActive", TI.getIsActive)
+    -- getIsActive pode ser herdada de Vehicle, fora de vehicleType.functions.
+    -- Tentar sobrescrever uma funcao nao registrada pode impedir todo o tipo de carregar.
+    if vehicleType.functions ~= nil and vehicleType.functions.getIsActive ~= nil then
+        SpecializationUtil.registerOverwrittenFunction(vehicleType, "getIsActive", TI.getIsActive)
+    end
 end
 
 function TI:getIsActive(superFunc, ...)
@@ -369,16 +389,40 @@ function TI:onLoad(savegame)
         tempoEstado=0, buscaEm=0, tempoSemFluxo=0}
 end
 
+function TI:onLoadFinished()
+    if not TI.carregamentoInformado and Logging ~= nil then
+        TI.carregamentoInformado = true
+        Logging.info("[Transbordo Inteligente] v0.3.0.0 carregada. Acao: TI_TOGGLE_TRANSBORDO; padrao Ctrl+Alt+T.")
+        if InputAction == nil or InputAction.TI_TOGGLE_TRANSBORDO == nil then
+            Logging.warning("[Transbordo Inteligente] Acao ausente. Confira modDesc.xml e remova copias antigas do mod.")
+        end
+    end
+end
+
 function TI:onRegisterActionEvents(isActiveForInput, isActiveForInputIgnoreSelection)
     local spec = self.spec_transbordoInteligente
     if not self.isClient or spec == nil then return end
     self:clearActionEventsTable(spec.actionEvents)
-    if not isActiveForInputIgnoreSelection or InputAction.TOGGLE_TRANSBORDO == nil then return end
-    local _, id = self:addActionEvent(spec.actionEvents, InputAction.TOGGLE_TRANSBORDO,
+    if not (isActiveForInput or isActiveForInputIgnoreSelection) then return end
+    local action = InputAction ~= nil and (InputAction.TI_TOGGLE_TRANSBORDO or InputAction.TOGGLE_TRANSBORDO) or nil
+    if action == nil then
+        if Logging ~= nil then Logging.warning("[Transbordo Inteligente] Nao foi possivel registrar o atalho: acao ausente.") end
+        return
+    end
+    local _, id = self:addActionEvent(spec.actionEvents, action,
         self, TI.actionEventToggleTransbordo, false, true, false, true)
     if id ~= nil then
         g_inputBinding:setActionEventTextVisibility(id, true)
         g_inputBinding:setActionEventText(id, "Ligar/desligar Transbordo Inteligente")
+        if GS_PRIO_HIGH ~= nil then g_inputBinding:setActionEventTextPriority(id, GS_PRIO_HIGH) end
+        if not TI.atalhoInformado and g_currentMission ~= nil and g_currentMission.addIngameNotification ~= nil
+            and FSBaseMission ~= nil then
+            TI.atalhoInformado = true
+            g_currentMission:addIngameNotification(FSBaseMission.INGAME_NOTIFICATION_INFO,
+                "Transbordo Inteligente 0.3 carregado. Atalho padrao: Ctrl+Alt+T. Confira Ligar/desligar Transbordo Inteligente em Controles.")
+        end
+    elseif Logging ~= nil then
+        Logging.warning("[Transbordo Inteligente] A engine recusou o evento de entrada no veiculo.")
     end
 end
 
@@ -500,22 +544,35 @@ function TI:onUpdate(dt)
         if not spec.receptorPreparado then
             prepararRecebimento(spec.bazuca, carga.index); spec.receptorPreparado = true
         end
-        if distancia(self.rootNode, combine.rootNode) <= 50 then abrirCano(combine) end
+        abrirCano(combine)
+        if combine.spec_pipe == nil or combine.spec_pipe.currentState ~= 2 then
+            spec.mensagemNavegacao = "Aguardando abertura do cano da colheitadeira"
+            parar(self, dt)
+            if spec.tempoEstado > TI.CONFIG.tempoManobra then pausar(self, "Cano da colheitadeira indisponivel.") end
+            return
+        end
         local x, z, dx, dz = TI.alvoReceber(self, combine)
         if x == nil then pausar(self, "Nao foi possivel localizar o cano ou o receptor da bazuca."); parar(self, dt); return end
         if estado == E.APROXIMANDO and not spec.aproximacaoConcluida then
             local ax, az = x-dx*TI.CONFIG.recuoAproximacao, z-dz*TI.CONFIG.recuoAproximacao
             local tx, _, tz = getWorldTranslation(direcao(self))
             if (tx-ax)^2+(tz-az)^2 < 16 then spec.aproximacaoConcluida = true
-            else TI.dirigir(self, dt, ax, az, TI.CONFIG.velocidadeViagem) end
+            else TI.dirigir(self, dt, ax, az, TI.CONFIG.velocidadeViagem, "viagem", dx, dz) end
         else
             local longitudinal, lateral, alinhamento = erroPosicao(self, x, z, dx, dz)
+            local posX, posY, posZ = getWorldTranslation(direcao(self))
+            local ladoAtual = select(1, worldToLocal(direcao(combine), posX, posY, posZ))
+            if spec.ladoCano*ladoAtual <= 0 or alinhamento < 0.5 then
+                TI.mudarEstado(self, E.APROXIMANDO)
+                parar(self, dt)
+                return
+            end
             local base = velocidade(combine)
             local alvo = math.max(0, math.min(TI.CONFIG.velocidadeViagem, base + longitudinal*0.8))
             if alinhamento < 0.7 then alvo = math.min(alvo, TI.CONFIG.velocidadeManobra) end
             if base < 0.5 and math.abs(longitudinal) < 0.7 and math.abs(lateral) < 0.7 then alvo = 0 end
             if longitudinal < -2 then alvo = math.max(0, base-3) end
-            TI.dirigir(self, dt, x+dx*6, z+dz*6, alvo)
+            TI.dirigir(self, dt, x+dx*6, z+dz*6, alvo, "seguir", dx, dz)
             if estado == E.APROXIMANDO and math.abs(longitudinal) < 2 and math.abs(lateral) < 1 and alinhamento > 0.85 then
                 TI.mudarEstado(self, E.ACOMPANHANDO)
             end
@@ -581,12 +638,12 @@ function TI:onUpdate(dt)
                 local ax, az = x-dx*TI.CONFIG.recuoAproximacao, z-dz*TI.CONFIG.recuoAproximacao
                 local tx, _, tz = getWorldTranslation(direcao(self))
                 if (tx-ax)^2+(tz-az)^2 < 16 then spec.aproximacaoConcluida = true
-                else TI.dirigir(self, dt, ax, az, TI.CONFIG.velocidadeViagem) end
+                else TI.dirigir(self, dt, ax, az, TI.CONFIG.velocidadeViagem, "viagem", dx, dz) end
             else
                 local longitudinal, lateral = erroPosicao(self, x, z, dx, dz)
                 local speed = math.min(TI.CONFIG.velocidadeManobra, math.max(0, longitudinal*0.7))
                 if math.abs(longitudinal) < 0.6 and math.abs(lateral) < 0.7 then speed = 0 end
-                TI.dirigir(self, dt, x+dx*5, z+dz*5, speed)
+                TI.dirigir(self, dt, x+dx*5, z+dz*5, speed, "seguir", dx, dz)
             end
             if spec.tempoEstado > TI.CONFIG.tempoManobra then
                 pausar(self, "Cano nao alcancou a carreta; confira altura, lado e obstaculos."); parar(self, dt)
@@ -631,7 +688,8 @@ function TI:onDraw()
     setTextAlignment(RenderText.ALIGN_CENTER)
     setTextBold(true)
     renderText(0.5, 0.85, 0.022, "TRANSBORDO: " .. (textos[spec.estadoAtual] or "Ativo"))
-    if spec.mensagem ~= nil then renderText(0.5, 0.82, 0.014, spec.mensagem) end
+    local mensagem = spec.mensagemNavegacao or spec.mensagem
+    if mensagem ~= nil then renderText(0.5, 0.82, 0.014, mensagem) end
     setTextColor(1, 1, 1, 1)
     setTextAlignment(RenderText.ALIGN_LEFT)
     setTextBold(false)

@@ -10,11 +10,16 @@ local function instalar(typeManager)
         Logging.error("[Transbordo Inteligente] Especializacao nao encontrada: %s", name)
         return
     end
+    local count=0
     for typeName, entry in pairs(typeManager.types) do
         if specialization.prerequisitesPresent(entry.specializations)
             and not SpecializationUtil.hasSpecialization(specialization, entry.specializations) then
             typeManager:addSpecialization(typeName, name)
+            count=count+1
         end
+    end
+    if Logging ~= nil then
+        Logging.info("[Transbordo Inteligente] Especializacao registrada em %d tipos de veiculo.",count)
     end
 end
 

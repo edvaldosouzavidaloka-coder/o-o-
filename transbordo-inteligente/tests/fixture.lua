@@ -108,6 +108,18 @@ tractor.attached={{object=wagon}}
 combine=makeCombine(0,100,6000)
 trailer=makeTrailer(40,0)
 g_currentMission={vehicleSystem={vehicles={tractor,combine,trailer}},missionDynamicInfo={isMultiplayer=false}}
+g_currentMission.terrainRootNode=node()
+g_currentMission.nodeToObject={}
+g_currentMission.fruits={}
+g_fruitTypeManager={fruitTypes={}}
+CollisionFlag={DEFAULT=1,TREE=2,DYNAMIC_OBJECT=4,VEHICLE=8,BUILDING=16,STATIC_OBJECT=32}
+DensityMapModifier={}
+DensityMapFilter={}
+DensityValueCompareType={BETWEEN=1,NOT_EQUAL=2}
+DensityCoordType={POINT_POINT_POINT=1}
+function getTerrainHeightAtWorldPos() return 0 end
+function getParent(n) return n.parent end
+function overlapBox() end
 g_farmlandManager=nil
 TI=TransbordoInteligente
 E=TI.ESTADOS

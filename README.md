@@ -1,14 +1,18 @@
 # Mods para Farming Simulator 25
 
-## Transbordo Inteligente — versão de teste 0.2.0.0
+## Transbordo Inteligente — versão de teste 0.3.0.0
 
 [Baixar FS25_TransbordoInteligente.zip](FS25_TransbordoInteligente.zip) · [Instruções de uso](transbordo-inteligente/LEIA-ME.md) · [Código Lua](transbordo-inteligente/TransbordoInteligente.lua)
 
 O controlador atende colheitadeiras com pelo menos 60% de grãos, com funcionário nativo ou jogador, e identifica a bazuca acoplada ao trator. Ao encher, procura uma carreta compatível estacionada na borda do talhão. Só aciona a descarga quando o jogo confirma o veículo receptor e seu compartimento. Depois de esvaziar, reinicia a busca.
 
+A versão 0.3 planeja desvios de cultura em pé, postes, veículos e árvores com colisão. Considera o trator e a bazuca, acompanha o lado do cano aberto e usa direção nativa direta. Se não encontrar passagem ou se os sensores falharem, permanece parada. Vegetação decorativa sem colisão não é reconhecida como mata.
+
 Copie o ZIP, sem descompactar, para a pasta `mods` do FS25 e ative na partida. No trator com a bazuca, **Ctrl+Alt+T** liga/desliga o controlador. Os veículos precisam pertencer à mesma fazenda.
 
-**Versão experimental, single-player.** Passou em 30 testes com contratos simulados da engine em Lua 5.1, mas ainda não foi executada no FS25. Usa navegação direta em terreno livre; não calcula desvios de obstáculos, rotas por estradas ou manobras de ré. Física, frenagem, curvas e alcance dos canos precisam ser validados no jogo. Consulte os limites e o roteiro de teste no manual antes de usar.
+**Atalho corrigido:** a ação agora é `TI_TOGGLE_TRANSBORDO`. Substitua a versão antiga com o jogo fechado e confira **Ligar/desligar Transbordo Inteligente** em **Opções > Controles** e na ajuda **F1**. Se estiver sem tecla, atribua a combinação nessa linha. O mod informa o carregamento e registra diagnósticos no `log.txt`. Veja o [passo a passo do atalho](transbordo-inteligente/LEIA-ME.md#atalho-que-não-aparece-ou-não-responde).
+
+**Versão experimental, single-player.** Validada por testes com contratos simulados da engine em Lua 5.1, incluindo navegação e atalho, mas ainda não executada no FS25. Não planeja marcha à ré nem interpreta ruas. Física, frenagem, desempenho dos sensores, carregamento real do atalho, curvas e alcance dos canos precisam ser validados no jogo. Consulte os limites e o roteiro de teste no manual.
 
 ### Desenvolvimento
 
