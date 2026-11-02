@@ -121,31 +121,70 @@ function N.sensor(model)
         if type(CollisionFlag[flag])~="number" then return nil,"Mascara de colisao incompleta" end
         s.mask=s.mask+CollisionFlag[flag]
     end
-    if DensityMapModifier==nil or DensityMapFilter==nil or DensityValueCompareType==nil
-        or DensityCoordType==nil or g_fruitTypeManager==nil or g_currentMission.fruits==nil then
-        return nil,"Leitura de cultura indisponivel"
+    if DensityMapModifier==nil or DensityMapModifier.new==nil then return nil,"API DensityMapModifier indisponivel" end
+    if DensityMapFilter==nil or DensityMapFilter.new==nil then return nil,"API DensityMapFilter indisponivel" end
+    if DensityValueCompareType==nil or DensityValueCompareType.BETWEEN==nil then return nil,"Comparacao de estados de cultura indisponivel" end
+    if DensityCoordType==nil or DensityCoordType.POINT_POINT_POINT==nil then return nil,"Coordenadas de cultura indisponiveis" end
+    if g_fruitTypeManager==nil or type(g_fruitTypeManager.fruitTypes)~="table" then
+        return nil,"Cadastro de tipos de cultura indisponivel"
     end
     for _,fruit in pairs(g_fruitTypeManager.fruitTypes or {}) do
         local name=string.upper(fruit.name or "")
-        local data=g_currentMission.fruits[fruit.index]
         -- Capim/prado do mapa nao sao floresta. Todas as culturas restantes sao protegidas.
-        if name~="GRASS" and name~="MEADOW" and data~=nil and data.id~=nil and data.id~=0 then
-            if fruit.startStateChannel==nil or fruit.numStateChannels==nil or fruit.numGrowthStates==nil then
-                return nil,"Estados da cultura nao informados pelo mapa"
+        if name~="GRASS" and name~="MEADOW" then
+            local id,first,channels
+            local legacy=false
+            if type(fruit.getDataPlaneInfo)=="function" then
+                -- FS25: nao existe dependencia de g_currentMission.fruits.
+                local ok
+                ok,id,first,channels=pcall(fruit.getDataPlaneInfo,fruit)
+                if not ok then return nil,"Falha em getDataPlaneInfo: "..name end
+            elseif fruit.terrainDataPlaneId~=nil then
+                id,first,channels=fruit.terrainDataPlaneId,fruit.startStateChannel,fruit.numStateChannels
+            elseif g_currentMission.fruits~=nil and g_currentMission.fruits[fruit.index]~=nil then
+                -- Compatibilidade com descritores antigos de mods; nunca e requisito.
+                id=g_currentMission.fruits[fruit.index].id
+                first,channels=fruit.startStateChannel,fruit.numStateChannels
+                legacy=true
+            else
+                return nil,"Dados da cultura ausentes: "..name.." (getDataPlaneInfo)"
             end
-            local ok,reader=pcall(function()
-                local modifier=DensityMapModifier.new(data.id,fruit.startStateChannel,fruit.numStateChannels,g_currentMission.terrainRootNode)
-                local filter=DensityMapFilter.new(modifier)
-                filter:setValueCompareParams(DensityValueCompareType.BETWEEN,1,fruit.numGrowthStates)
-                local cut
-                if type(fruit.cutState)=="number" then
-                    cut=DensityMapFilter.new(modifier)
-                    cut:setValueCompareParams(DensityValueCompareType.NOT_EQUAL,fruit.cutState+1)
+            -- Uma cultura registrada sem layer neste mapa nao precisa ser consultada.
+            if id~=nil and id~=0 then
+                local maximum=fruit.numGrowthStates
+                if type(id)~="number" or type(first)~="number" or type(channels)~="number"
+                    or type(maximum)~="number" or maximum<1 or maximum>1024
+                    or channels<1 or channels>16 or maximum>2^channels-1
+                    or maximum~=math.floor(maximum) then
+                    return nil,"Estados ou canais de cultura invalidos: "..name
                 end
-                return {modifier=modifier,filter=filter,cut=cut}
-            end)
-            if not ok then return nil,"Falha ao preparar leitura dos estados da cultura" end
-            s.readers[#s.readers+1]=reader
+                local ok,reader=pcall(function()
+                    -- Modificadores proprios: nao altera filtros compartilhados da engine.
+                    local modifier=DensityMapModifier.new(id,first,channels,g_currentMission.terrainRootNode)
+                    local filters={}
+                    local start
+                    for state=1,maximum+1 do
+                        local cut=false
+                        if state<=maximum then
+                            if type(fruit.getIsCut)=="function" then cut=fruit:getIsCut(state)==true
+                            elseif type(fruit.cutStates)=="table" then cut=fruit.cutStates[state]~=nil
+                            elseif legacy and type(fruit.cutState)=="number" then cut=state==fruit.cutState+1 end
+                        end
+                        local protected=state<=maximum and not cut
+                        if protected and start==nil then start=state end
+                        if not protected and start~=nil then
+                            local filter=DensityMapFilter.new(modifier)
+                            filter:setValueCompareParams(DensityValueCompareType.BETWEEN,start,state-1)
+                            filters[#filters+1]=filter
+                            start=nil
+                        end
+                    end
+                    if #filters==0 then error("Nenhum estado de crescimento protegido") end
+                    return {modifier=modifier,filters=filters}
+                end)
+                if not ok then return nil,"Falha ao preparar estados de cultura: "..name end
+                s.readers[#s.readers+1]=reader
+            end
         end
     end
     return s
@@ -170,10 +209,12 @@ function Sensor:consultar(body)
     local x3,z3=x1+dx*body.hl*2,z1+dz*body.hl*2
     for _,reader in ipairs(self.readers) do
         reader.modifier:setParallelogramWorldCoords(x1,z1,x2,z2,x3,z3,DensityCoordType.POINT_POINT_POINT)
-        local value,area=reader.modifier:executeGet(reader.filter,reader.cut)
-        local count=area~=nil and area or value
-        if type(count)~="number" or count~=count then return nil,"Resposta de cultura invalida" end
-        if count>0 then return false,"Cultura em pe" end
+        for _,filter in ipairs(reader.filters) do
+            local value,area=reader.modifier:executeGet(filter)
+            local count=area~=nil and area or value
+            if type(count)~="number" or count~=count then return nil,"Resposta de cultura invalida" end
+            if count>0 then return false,"Cultura em pe" end
+        end
     end
     return true
 end

@@ -1,8 +1,10 @@
 # Mods para Farming Simulator 25
 
-## Transbordo Inteligente — versão de teste 0.3.0.1
+## Transbordo Inteligente — versão de teste 0.3.0.2
 
 [Baixar FS25_TransbordoInteligente.zip](FS25_TransbordoInteligente.zip) · [Instruções de uso](transbordo-inteligente/LEIA-ME.md) · [Código Lua](transbordo-inteligente/TransbordoInteligente.lua)
+
+**Correção 0.3.0.2:** resolve o bloqueio `Leitura de cultura indisponivel` causado pela dependência da tabela antiga `g_currentMission.fruits`. A leitura usa `FruitTypeDesc:getDataPlaneInfo()` ou os dados do próprio descritor no FS25. Os estados colhidos são identificados por `getIsCut`/`cutStates`, sem deslocar sua numeração. A proteção continua ativa para cultura em crescimento e pronta para colher; dados ausentes ainda interrompem o movimento com diagnóstico específico.
 
 **Correção 0.3.0.1:** remove a verificação incorreta que emitia `Especializacao nao encontrada: FS25_TransbordoInteligente.transbordoInteligente` e impedia a instalação da especialização nos veículos. O carregador usa a classe Lua definida pelo `modDesc.xml`, sem tratar os dados do registro como a própria classe. Os testes cobrem o carregamento pelo manifesto, a instalação no veículo e o callback do atalho; a confirmação no jogo continua necessária.
 

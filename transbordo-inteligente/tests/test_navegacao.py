@@ -41,8 +41,11 @@ class NavegacaoTests(unittest.TestCase):
             error('Busca nao terminou no limite do teste')
         end
         function wheat(state)
-            g_fruitTypeManager.fruitTypes={{index=1,name='WHEAT',startStateChannel=0,numStateChannels=4,numGrowthStates=7,cutState=8}}
-            g_currentMission.fruits={[1]={id=100}}
+            g_fruitTypeManager.fruitTypes={{index=1,name='WHEAT',startStateChannel=0,numStateChannels=4,
+                numGrowthStates=7,terrainDataPlaneId=100,cutStates={[9]=true},
+                getDataPlaneInfo=function(self) return self.terrainDataPlaneId,self.startStateChannel,self.numStateChannels end,
+                getIsCut=function(self,state) return self.cutStates[state]~=nil end}}
+            g_currentMission.fruits=nil
             cropState=state
             DensityMapModifier.new=function(id,first,count,terrain)
                 assert(id==100 and first==0 and count==4 and terrain==g_currentMission.terrainRootNode)
@@ -117,6 +120,88 @@ class NavegacaoTests(unittest.TestCase):
                 local clear=assert(N.sensor(m)):livre(N.pose(m))
                 assert(clear == {str(not blocked).lower()})
                 ''')
+
+    def test_fs25_data_plane_accessor_works_without_mission_fruits(self):
+        self.check('''
+        wheat(5)
+        assert(g_currentMission.fruits==nil)
+        local fruit=g_fruitTypeManager.fruitTypes[1]
+        -- A fonte autoritativa e o accessor, mesmo sem campos publicos duplicados.
+        fruit.terrainDataPlaneId,fruit.startStateChannel,fruit.numStateChannels=nil,nil,nil
+        function fruit:getDataPlaneInfo() return 100,0,4 end
+        local m=model()
+        local sensor,reason=N.sensor(m)
+        assert(sensor,reason)
+        assert(#sensor.readers==1 and not sensor:livre(N.pose(m)))
+        cropState=0
+        assert(sensor:livre(N.pose(m)))
+        ''')
+
+    def test_fs25_public_descriptor_fields_work_without_accessor(self):
+        self.check('''
+        wheat(5)
+        g_fruitTypeManager.fruitTypes[1].getDataPlaneInfo=nil
+        local m=model()
+        local sensor,reason=N.sensor(m)
+        assert(sensor,reason)
+        assert(not sensor:livre(N.pose(m)))
+        ''')
+
+    def test_native_cut_states_use_raw_state_numbers_and_all_cut_states(self):
+        self.check('''
+        wheat(3)
+        local fruit=g_fruitTypeManager.fruitTypes[1]
+        fruit.cutStates={[3]=true,[5]=true}
+        local m=model()
+        local sensor=assert(N.sensor(m))
+        assert(sensor:livre(N.pose(m)))
+        cropState=5;assert(sensor:livre(N.pose(m)))
+        cropState=4;assert(not sensor:livre(N.pose(m)))
+        cropState=6;assert(not sensor:livre(N.pose(m)))
+        ''')
+
+    def test_optional_legacy_map_adapter_still_checks_crop(self):
+        self.check('''
+        wheat(5)
+        local fruit=g_fruitTypeManager.fruitTypes[1]
+        fruit.getDataPlaneInfo,fruit.terrainDataPlaneId=nil,nil
+        fruit.getIsCut,fruit.cutStates=nil,nil
+        fruit.cutState=8
+        g_currentMission.fruits={[1]={id=100}}
+        local m=model()
+        assert(not assert(N.sensor(m)):livre(N.pose(m)))
+        ''')
+
+    def test_fruit_not_loaded_in_this_map_does_not_need_a_reader(self):
+        self.check('''
+        wheat(5)
+        g_fruitTypeManager.fruitTypes[1].getDataPlaneInfo=function() return 0,0,4 end
+        local m=model()
+        local sensor=assert(N.sensor(m))
+        assert(#sensor.readers==0 and sensor:livre(N.pose(m)))
+        ''')
+
+    def test_accessor_failure_or_incomplete_crop_still_blocks_movement(self):
+        self.check('''
+        wheat(5)
+        local fruit=g_fruitTypeManager.fruitTypes[1]
+        fruit.getDataPlaneInfo=function() error('mapa nao carregado') end
+        TI.dirigir(tractor,100,0,40,10,'seguir')
+        assert(not tractor.command.allowed)
+        assert(tractor.spec_transbordoInteligente.mensagemNavegacao:find('getDataPlaneInfo'))
+        fruit.getDataPlaneInfo,fruit.terrainDataPlaneId=nil,nil
+        TI.dirigir(tractor,100,0,40,10,'seguir')
+        assert(not tractor.command.allowed)
+        ''')
+
+    def test_invalid_density_response_never_counts_as_free_ground(self):
+        self.check('''
+        wheat(0)
+        local m=model()
+        local sensor=assert(N.sensor(m))
+        sensor.readers[1].modifier.executeGet=function() return nil,nil end
+        assert(sensor:livre(N.pose(m))==nil)
+        ''')
 
     def test_route_uses_harvested_corridor_around_crop(self):
         self.check('''

@@ -1,6 +1,16 @@
-# Transbordo Inteligente — versão de teste 0.3.0.1
+# Transbordo Inteligente — versão de teste 0.3.0.2
 
 Adaptação do `TransbordoInteligente.lua` enviado pelo usuário para Farming Simulator 25, single-player. A lógica foi testada com contratos simulados da engine em Lua 5.1; ainda não foi executada no FS25. O pacote não depende do TG GPS nem do Courseplay.
+
+## Correção da leitura de cultura na 0.3.0.2
+
+O aviso `Leitura de cultura indisponivel` na 0.3.0.1 podia ser causado pelo próprio sensor: ele exigia `g_currentMission.fruits`, uma estrutura antiga que não é necessária para a leitura no FS25. O controlador freava por não conseguir verificar a plantação.
+
+O sensor agora consulta `FruitTypeDesc:getDataPlaneInfo()` (id do layer, primeiro canal e quantidade de canais), com suporte aos campos equivalentes do descritor do FS25. A tabela antiga fica apenas como compatibilidade opcional. Estados de área colhida são consultados por `getIsCut`/`cutStates`, usando a numeração do FS25. Estados iniciais e maduros continuam protegidos. Cada leitor usa modificadores próprios para não alterar filtros compartilhados do jogo.
+
+Foram incluídos testes sem `g_currentMission.fruits`, cobrindo accessor nativo, campos do descritor, múltiplos estados colhidos, cultura não carregada no mapa e falha de leitura. Se faltar uma API ou metadado, a mensagem passa a indicar o item/cultura que falhou; o mod não desativa a proteção para continuar andando. A confirmação em um mapa real do FS25 ainda é necessária.
+
+Referência da interface: [FruitTypeDesc — getDataPlaneInfo](https://github.com/umbraprior/FS25-Community-LUADOC/blob/main/docs/script/Fruits/FruitTypeDesc.md#getdataplaneinfo).
 
 ## Correção do carregamento na 0.3.0.1
 
@@ -12,11 +22,11 @@ Os testes foram corrigidos para não fabricar um campo `classObject` e incluem o
 
 Nesta versão a ação tem um nome próprio, `TI_TOGGLE_TRANSBORDO`, para evitar colisão com o script anterior. Também foi corrigida a condição que registra o comando no veículo selecionado. O registro da especialização deixa de tentar sobrescrever uma função herdada que pode não estar registrada no tipo do veículo.
 
-1. Feche o FS25, substitua `FS25_TransbordoInteligente.zip` pelo ZIP **0.3.0.1** e remova outra cópia antiga deste mesmo mod. Não basta substituir o ZIP com uma partida aberta: o script só é recarregado ao iniciar o jogo/partida.
+1. Feche o FS25, substitua `FS25_TransbordoInteligente.zip` pelo ZIP **0.3.0.2** e remova outra cópia antiga deste mesmo mod. Não basta substituir o ZIP com uma partida aberta: o script só é recarregado ao iniciar o jogo/partida.
 2. Ative o mod na seleção da partida e entre no **trator**, com a bazuca acoplada.
 3. Em **Opções > Controles**, procure **Ligar/desligar Transbordo Inteligente**. O padrão é **Ctrl esquerdo + Alt esquerdo + T**. Se aparecer sem tecla, ou se houver conflito, atribua a combinação nessa linha. Não é necessário apagar todas as configurações de controles.
 4. Ao entrar em um veículo elegível, o mod informa que carregou. No menu de ajuda **F1**, a ação deve mostrar a tecla efetivamente cadastrada. Use essa tecla para ligar/desligar.
-5. Se a ação nem aparecer em Controles/F1, o problema pode ser o carregamento do mod ou a compatibilidade do tipo de veículo. Confira `log.txt`: procure `[Transbordo Inteligente]`, a versão `0.3.0.1`, o registro nos tipos de veículos e eventuais erros. A versão do jogo e o modelo do trator precisam ser conferidos nesse caso; os testes locais não confirmam o carregamento no FS25.
+5. Se a ação nem aparecer em Controles/F1, o problema pode ser o carregamento do mod ou a compatibilidade do tipo de veículo. Confira `log.txt`: procure `[Transbordo Inteligente]`, a versão `0.3.0.2`, o registro nos tipos de veículos e eventuais erros. A versão do jogo e o modelo do trator precisam ser conferidos nesse caso; os testes locais não confirmam o carregamento no FS25.
 
 ## Instalar e usar
 
