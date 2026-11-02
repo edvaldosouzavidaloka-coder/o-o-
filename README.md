@@ -1,8 +1,10 @@
 # Mods para Farming Simulator 25
 
-## Transbordo Inteligente — versão de teste 0.3.0.0
+## Transbordo Inteligente — versão de teste 0.3.0.1
 
 [Baixar FS25_TransbordoInteligente.zip](FS25_TransbordoInteligente.zip) · [Instruções de uso](transbordo-inteligente/LEIA-ME.md) · [Código Lua](transbordo-inteligente/TransbordoInteligente.lua)
+
+**Correção 0.3.0.1:** remove a verificação incorreta que emitia `Especializacao nao encontrada: FS25_TransbordoInteligente.transbordoInteligente` e impedia a instalação da especialização nos veículos. O carregador usa a classe Lua definida pelo `modDesc.xml`, sem tratar os dados do registro como a própria classe. Os testes cobrem o carregamento pelo manifesto, a instalação no veículo e o callback do atalho; a confirmação no jogo continua necessária.
 
 O controlador atende colheitadeiras com pelo menos 60% de grãos, com funcionário nativo ou jogador, e identifica a bazuca acoplada ao trator. Ao encher, procura uma carreta compatível estacionada na borda do talhão. Só aciona a descarga quando o jogo confirma o veículo receptor e seu compartimento. Depois de esvaziar, reinicia a busca.
 

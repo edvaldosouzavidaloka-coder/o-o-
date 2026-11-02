@@ -1,16 +1,22 @@
-# Transbordo Inteligente — versão de teste 0.3.0.0
+# Transbordo Inteligente — versão de teste 0.3.0.1
 
 Adaptação do `TransbordoInteligente.lua` enviado pelo usuário para Farming Simulator 25, single-player. A lógica foi testada com contratos simulados da engine em Lua 5.1; ainda não foi executada no FS25. O pacote não depende do TG GPS nem do Courseplay.
+
+## Correção do carregamento na 0.3.0.1
+
+A versão anterior podia mostrar `Especializacao nao encontrada: FS25_TransbordoInteligente.transbordoInteligente` mesmo com a declaração presente no manifesto: o Bootstrap tentava acessar os requisitos da classe pelo retorno do registro de especializações. A correção usa diretamente `TransbordoInteligente`, carregada pelo `modDesc.xml`, e passa o nome registrado apenas para `typeManager:addSpecialization`. Isso remove o bloqueio antes de registrar o atalho nos veículos. Se o script da classe realmente faltar, o diagnóstico agora informa o arquivo a conferir.
+
+Os testes foram corrigidos para não fabricar um campo `classObject` e incluem o ciclo manifesto → classe → tipo de veículo → eventos → callback do atalho. São testes simulados, não uma confirmação de carregamento no FS25.
 
 ## Atalho que não aparece ou não responde
 
 Nesta versão a ação tem um nome próprio, `TI_TOGGLE_TRANSBORDO`, para evitar colisão com o script anterior. Também foi corrigida a condição que registra o comando no veículo selecionado. O registro da especialização deixa de tentar sobrescrever uma função herdada que pode não estar registrada no tipo do veículo.
 
-1. Feche o FS25, substitua `FS25_TransbordoInteligente.zip` pelo ZIP **0.3.0.0** e remova outra cópia antiga deste mesmo mod. Não basta substituir o ZIP com uma partida aberta: o script só é recarregado ao iniciar o jogo/partida.
+1. Feche o FS25, substitua `FS25_TransbordoInteligente.zip` pelo ZIP **0.3.0.1** e remova outra cópia antiga deste mesmo mod. Não basta substituir o ZIP com uma partida aberta: o script só é recarregado ao iniciar o jogo/partida.
 2. Ative o mod na seleção da partida e entre no **trator**, com a bazuca acoplada.
 3. Em **Opções > Controles**, procure **Ligar/desligar Transbordo Inteligente**. O padrão é **Ctrl esquerdo + Alt esquerdo + T**. Se aparecer sem tecla, ou se houver conflito, atribua a combinação nessa linha. Não é necessário apagar todas as configurações de controles.
 4. Ao entrar em um veículo elegível, o mod informa que carregou. No menu de ajuda **F1**, a ação deve mostrar a tecla efetivamente cadastrada. Use essa tecla para ligar/desligar.
-5. Se a ação nem aparecer em Controles/F1, o problema pode ser o carregamento do mod ou a compatibilidade do tipo de veículo. Confira `log.txt`: procure `[Transbordo Inteligente]`, a versão `0.3.0.0`, o registro nos tipos de veículos e eventuais erros. A versão do jogo e o modelo do trator precisam ser conferidos nesse caso; os testes locais não confirmam o carregamento no FS25.
+5. Se a ação nem aparecer em Controles/F1, o problema pode ser o carregamento do mod ou a compatibilidade do tipo de veículo. Confira `log.txt`: procure `[Transbordo Inteligente]`, a versão `0.3.0.1`, o registro nos tipos de veículos e eventuais erros. A versão do jogo e o modelo do trator precisam ser conferidos nesse caso; os testes locais não confirmam o carregamento no FS25.
 
 ## Instalar e usar
 

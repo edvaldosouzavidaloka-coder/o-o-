@@ -1,6 +1,7 @@
 """Regressoes Lua simuladas; executar com Python + lupa==2.6 (Lua 5.1)."""
 from pathlib import Path
 import unittest
+import xml.etree.ElementTree as ET
 from lupa.lua51 import LuaRuntime
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -344,11 +345,16 @@ class TransbordoTests(unittest.TestCase):
         self.check('''
         g_currentModName='FS25_TransbordoInteligente'
         g_modIsLoaded={[g_currentModName]=true}
+        Logging.error=function(message) bootstrapError=message end
         SpecializationUtil={hasSpecialization=function(s,list)
             for _,v in ipairs(list) do if v==s then return true end end
             return false
         end}
-        g_specializationManager={getSpecializationByName=function() return {classObject=TI} end}
+        -- O manager pode retornar dados do registro, nao a tabela da classe Lua.
+        g_specializationManager={getSpecializationByName=function()
+            return {name='FS25_TransbordoInteligente.transbordoInteligente',
+                className='TransbordoInteligente',filename='scripts/TransbordoInteligente.lua'}
+        end}
         TypeManager={finalizeTypes=function(self) self.finalized=true end}
         Utils={prependedFunction=function(original,extra)
             return function(...) extra(...); return original(...) end
@@ -366,6 +372,96 @@ class TransbordoTests(unittest.TestCase):
         assert(manager.finalized)
         assert(manager.added.tractor == 'FS25_TransbordoInteligente.transbordoInteligente')
         assert(manager.added.trailer == nil and manager.added.existing == nil)
+        assert(bootstrapError==nil)
+        ''')
+
+    def test_moddesc_load_register_vehicle_and_input_callback_lifecycle(self):
+        desc = ET.parse(ROOT / 'modDesc.xml').getroot()
+        specialization = desc.find('./specializations/specialization')
+        action = desc.find('./actions/action').attrib['name']
+        self.check('''
+        g_currentModName='FS25_TransbordoInteligente'
+        g_modIsLoaded={[g_currentModName]=true}
+        registeredType={specializations={Drivable,Motorized,Wheels},functions={},listeners={}}
+        registry={}
+        SpecializationUtil={
+            hasSpecialization=function(s,list)
+                for _,v in ipairs(list) do if v==s then return true end end
+                return false
+            end,
+            registerEventListener=function(v,event,class) v.listeners[event]=class[event] end,
+            registerOverwrittenFunction=function() error('Nao sobrescrever funcao herdada ausente') end
+        }
+        -- Registro contem nomes/arquivos. A classe vive no ambiente Lua do mod.
+        g_specializationManager={getSpecializationByName=function(_,name) return registry[name] end}
+        TypeManager={finalizeTypes=function(self) self.finalized=true end}
+        Utils={prependedFunction=function(original,extra)
+            return function(...) extra(...); return original(...) end
+        end}
+        manager={typeName='vehicle',types={tractor=registeredType},calls=0}
+        function manager:addSpecialization(name,specName)
+            assert(name=='tractor')
+            local record=assert(registry[specName])
+            local class=assert(_G[record.className])
+            table.insert(registeredType.specializations,class)
+            class.registerEventListeners(registeredType)
+            class.registerOverwrittenFunctions(registeredType)
+            self.calls=self.calls+1
+        end
+        ''')
+        # Segue os nomes/caminhos declarados no manifesto, sem fabricar classObject.
+        self.lua.execute((ROOT / Path(specialization.attrib['filename']).name).read_text())
+        self.lua.globals().class_name = specialization.attrib['className']
+        self.lua.globals().spec_name = specialization.attrib['name']
+        self.lua.globals().action_name = action
+        self.check('''
+        registry[g_currentModName..'.'..spec_name]={name=spec_name,className=class_name}
+        InputAction={[action_name]=123}
+        ''')
+        for entry in desc.findall('./extraSourceFiles/sourceFile'):
+            self.lua.execute((ROOT / Path(entry.attrib['filename']).name).read_text())
+        self.check('''
+        TypeManager.finalizeTypes(manager)
+        assert(manager.finalized and manager.calls==1)
+        -- Finalizar outra vez nao pode duplicar a especializacao.
+        TypeManager.finalizeTypes(manager)
+        assert(manager.calls==1)
+        local events=registeredType.listeners
+        assert(events.onLoad and events.onLoadFinished and events.onRegisterActionEvents and events.onUpdate)
+        events.onLoad(tractor)
+        events.onLoadFinished(tractor)
+        g_inputBinding={setActionEventText=function() end,setActionEventTextVisibility=function() end}
+        function tractor:clearActionEventsTable() end
+        function tractor:addActionEvent(events,id,target,callback)
+            assert(id==InputAction[action_name] and target==self)
+            self.testInput=callback
+            return true,42
+        end
+        events.onRegisterActionEvents(tractor,true,true)
+        assert(tractor.testInput)
+        tractor.testInput(tractor,action_name,1)
+        assert(tractor.spec_transbordoInteligente.isAtivo)
+        tractor.testInput(tractor,action_name,1)
+        assert(not tractor.spec_transbordoInteligente.isAtivo)
+        ''')
+
+    def test_bootstrap_reports_missing_script_class_without_breaking_finalization(self):
+        self.check('''
+        g_currentModName='FS25_TransbordoInteligente'
+        g_modIsLoaded={[g_currentModName]=true}
+        TransbordoInteligente=nil
+        Logging.error=function(message) capturedError=message end
+        TypeManager={finalizeTypes=function(self) self.finalized=true end}
+        Utils={prependedFunction=function(original,extra)
+            return function(...) extra(...); return original(...) end
+        end}
+        manager={typeName='vehicle',types={}}
+        ''')
+        self.lua.execute((ROOT / 'Bootstrap.lua').read_text())
+        self.check('''
+        TypeManager.finalizeTypes(manager)
+        assert(manager.finalized)
+        assert(capturedError and capturedError:find('Classe Lua nao carregada'))
         ''')
 
 

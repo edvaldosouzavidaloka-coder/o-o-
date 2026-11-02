@@ -4,10 +4,11 @@ local modName = g_currentModName
 local function instalar(typeManager)
     if typeManager.typeName ~= "vehicle" or not g_modIsLoaded[modName] then return end
     local name = modName .. ".transbordoInteligente"
-    local entry = g_specializationManager:getSpecializationByName(name)
-    local specialization = entry ~= nil and (entry.classObject or entry) or nil
-    if specialization == nil or specialization.prerequisitesPresent == nil then
-        Logging.error("[Transbordo Inteligente] Especializacao nao encontrada: %s", name)
+    -- O registro do manager nao e a classe Lua. O modDesc carrega a classe no
+    -- ambiente deste mod; use-a para testar requisitos, como os mods FS25 fazem.
+    local specialization = TransbordoInteligente
+    if type(specialization) ~= "table" or type(specialization.prerequisitesPresent) ~= "function" then
+        Logging.error("[Transbordo Inteligente] Classe Lua nao carregada para %s; confira scripts/TransbordoInteligente.lua no modDesc.xml.", name)
         return
     end
     local count=0

@@ -1,4 +1,4 @@
--- Transbordo Inteligente - FS25, single-player, versao de teste 0.3.0.0.
+-- Transbordo Inteligente - FS25, single-player, versao de teste 0.3.0.1.
 -- A direcao usa AIVehicleUtil; transferencia de graos exclusivamente pela engine.
 -- Navegacao com sensores em TINavegacao.lua; sem multiplayer ou salario de ajudante.
 TransbordoInteligente = {}
@@ -392,7 +392,7 @@ end
 function TI:onLoadFinished()
     if not TI.carregamentoInformado and Logging ~= nil then
         TI.carregamentoInformado = true
-        Logging.info("[Transbordo Inteligente] v0.3.0.0 carregada. Acao: TI_TOGGLE_TRANSBORDO; padrao Ctrl+Alt+T.")
+        Logging.info("[Transbordo Inteligente] v0.3.0.1 carregada. Acao: TI_TOGGLE_TRANSBORDO; padrao Ctrl+Alt+T.")
         if InputAction == nil or InputAction.TI_TOGGLE_TRANSBORDO == nil then
             Logging.warning("[Transbordo Inteligente] Acao ausente. Confira modDesc.xml e remova copias antigas do mod.")
         end
@@ -419,7 +419,7 @@ function TI:onRegisterActionEvents(isActiveForInput, isActiveForInputIgnoreSelec
             and FSBaseMission ~= nil then
             TI.atalhoInformado = true
             g_currentMission:addIngameNotification(FSBaseMission.INGAME_NOTIFICATION_INFO,
-                "Transbordo Inteligente 0.3 carregado. Atalho padrao: Ctrl+Alt+T. Confira Ligar/desligar Transbordo Inteligente em Controles.")
+                "Transbordo Inteligente 0.3.0.1 carregado. Atalho padrao: Ctrl+Alt+T. Confira Ligar/desligar Transbordo Inteligente em Controles.")
         end
     elseif Logging ~= nil then
         Logging.warning("[Transbordo Inteligente] A engine recusou o evento de entrada no veiculo.")
