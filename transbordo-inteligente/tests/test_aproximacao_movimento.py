@@ -58,6 +58,12 @@ class AproximacaoMovimentoTests(unittest.TestCase):
     def test_combine_from_opposite_side(self):
         self.simulate('combine', 20, 20, 0)
 
+    def test_combine_from_alongside_returns_around_outside_then_enters_rear(self):
+        self.simulate('combine', -6, 106, 0)
+
+    def test_combine_from_front_returns_to_rear(self):
+        self.simulate('combine', -6, 135, 0)
+
     def test_truck_after_arriving_from_combine(self):
         self.simulate('truck', -6, 120, 0)
 

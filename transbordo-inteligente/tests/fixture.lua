@@ -144,3 +144,10 @@ function makeField(x1,z1,x2,z2)
     local polygon={getVerticesList=function() return {x1,z1,x2,z1,x2,z2,x1,z2} end}
     return {getDensityMapPolygon=function() return polygon end}
 end
+-- Os testes de estados percorrem a zona traseira antes de posicionar sob o cano.
+function enterCombineRear()
+    local x,z=TI.alvoReceber(tractor,combine)
+    teleport(x,z-30);tick(100)
+    assert(tractor.spec_transbordoInteligente.entradaPelaTraseira)
+    return x,z
+end

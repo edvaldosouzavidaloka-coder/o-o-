@@ -46,6 +46,7 @@ class ReconhecimentoTests(unittest.TestCase):
         self.check('''
         activate();tick()
         local x,z=TI.alvoReceber(tractor,combine)
+        enterCombineRear()
         teleport(x,z-2)
         combine.raycastObject,combine.raycastIndex,combine.canDischarge=wagon,2,true
         local tx,tz=TI.alvoReceber(tractor,combine)
@@ -61,6 +62,7 @@ class ReconhecimentoTests(unittest.TestCase):
         self.check('''
         activate();tick()
         local x,z=TI.alvoReceber(tractor,combine)
+        enterCombineRear()
         teleport(x,z-1.2)
         for i=1,120 do
             tick(100)
@@ -74,21 +76,24 @@ class ReconhecimentoTests(unittest.TestCase):
         assert(not tractor.command.allowed and tractor.spec_transbordoInteligente.isAtivo)
         ''')
 
-    def test_stationary_combine_overshoot_uses_short_straight_reverse(self):
+    def test_stationary_combine_overshoot_reenters_from_rear_in_forward_gear(self):
         self.check('''
         activate();tick()
         local x,z=TI.alvoReceber(tractor,combine)
+        enterCombineRear()
         teleport(x,z+1)
         tick(100)
-        assert(tractor.command.allowed and not tractor.command.forwards)
-        assert(tractor.command.speed==TI.CONFIG.velocidadeRe)
-        assert(math.abs(tractor.command.x)<0.000001 and tractor.command.z<0)
+        assert(state()==E.APROXIMANDO and not tractor.spec_transbordoInteligente.entradaPelaTraseira)
+        tick(100)
+        assert(tractor.command.allowed and tractor.command.forwards)
+        assert(tractor.command.z>0 and math.abs(tractor.command.x)>1)
         ''')
 
     def test_lateral_error_alone_does_not_hold_stationary_combine_follower(self):
         self.check('''
         activate();tick()
         local x,z=TI.alvoReceber(tractor,combine)
+        enterCombineRear()
         teleport(x-0.5,z)
         tick(100)
         assert(tractor.command.allowed and tractor.command.x>0)
@@ -158,7 +163,7 @@ class ReconhecimentoTests(unittest.TestCase):
         assert(tractor.spec_transbordoInteligente.caminhaoAlvo==trailer)
         ''')
 
-    def test_search_falls_back_beyond_field_edge_filter_but_limits_range(self):
+    def test_search_falls_back_beyond_field_edge_filter_and_local_radius(self):
         self.check('''
         wagon.units[2].level,wagon.units[2].kind=20000,1
         local field=makeField(-30,-10,30,150)
@@ -169,7 +174,7 @@ class ReconhecimentoTests(unittest.TestCase):
         activate();tick(250)
         assert(tractor.spec_transbordoInteligente.caminhaoAlvo==trailer)
         teleport(1000,0,trailer)
-        assert(TI.encontrarCaminhao(tractor)==nil)
+        assert(TI.encontrarCaminhao(tractor)==trailer)
         ''')
 
     def test_search_reacts_to_new_trailer_in_quarter_second(self):
@@ -259,6 +264,7 @@ class ReconhecimentoTests(unittest.TestCase):
         for cycle=1,2 do
             tick();assert(state()==E.APROXIMANDO)
             local x,z=TI.alvoReceber(tractor,combine)
+            enterCombineRear()
             teleport(x,z);tick()
             wagon.units[2].level,wagon.units[2].kind=5000,1
             combine.units[2].level=0

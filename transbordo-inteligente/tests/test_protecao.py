@@ -136,27 +136,27 @@ class ProtecaoTests(unittest.TestCase):
         assert(not P.posicaoLivre(tractor,combine,x,108,0))
         ''')
 
-    def test_confirmed_receive_position_is_held_behind_platform(self):
+    def test_confirmed_receive_ray_keeps_center_target_and_cannot_override_header(self):
         self.check('''
         attachHeader(15)
         wagon.rootNode.z=-6
         wagon.size.length=10
         selectCombine()
+        enterCombineRear()
         teleport(-6,101.5)
         combine.raycastObject,combine.raycastIndex,combine.canDischarge=wagon,2,true
         local x,z=TI.alvoReceber(tractor,combine)
-        assert(math.abs(z-101.5)<0.000001)
+        assert(math.abs(z-106)<0.000001)
         assert(tractor.spec_transbordoInteligente.recebimentoConfirmado)
-        assert(P.posicaoLivre(tractor,combine,x,z,0))
-        combine.speed=5
-        tick(16)
-        assert(state()==E.ACOMPANHANDO)
-        assert(tractor.command.allowed and tractor.command.speed==5)
-        assert(math.abs(tractor.spec_transbordoInteligente.recebimentoZLocal-1.5)<0.000001)
-        -- Ajustes automaticos do cano nao devem puxar a frente para a plataforma.
+        assert(not P.posicaoLivre(tractor,combine,x,z,0,P.CONFIG.margemPrecisao))
+        assert(tractor.spec_transbordoInteligente.recebimentoZLocal==nil)
+        -- Uma mira confirmada nao pode autorizar invadir a plataforma.
+        teleport(x,z)
+        TI.dirigir(tractor,16,x,z+6,2)
+        assert(not tractor.command.allowed)
         combine.dischargeNode.node.z=2
-        local _,heldZ=TI.alvoReceber(tractor,combine)
-        assert(math.abs(heldZ-101.5)<0.000001)
+        local _,centerZ=TI.alvoReceber(tractor,combine)
+        assert(math.abs(centerZ-108)<0.000001)
         ''')
 
     def test_ray_target_for_other_wagon_cannot_latch_receive_offset(self):
@@ -309,6 +309,84 @@ class ProtecaoTests(unittest.TestCase):
         tick(100)
         assert(tractor.command.allowed and not tractor.command.forwards)
         assert(spec.larguraPlataforma==15 and spec.colheitadeiraAlvo==combine)
+        ''')
+
+    def test_precision_clearance_centers_under_9_5m_pipe_beside_14_6m_header(self):
+        self.check('''
+        attachHeader(14.6)
+        combine.dischargeNode.node.x=-9.5
+        tractor.size.width=3.5
+        selectCombine();enterCombineRear()
+        local x,z=TI.alvoReceber(tractor,combine)
+        assert(not P.posicaoLivre(tractor,combine,x,z,0))
+        assert(P.posicaoLivre(tractor,combine,x,z,0,P.CONFIG.margemPrecisao))
+        teleport(x,z-2)
+        for i=1,180 do
+            tick(100)
+            local c=tractor.command
+            if c.allowed then
+                assert(c.forwards and c.speed<=3)
+                tractor.rootNode.z=tractor.rootNode.z+c.speed/3.6*0.1
+            end
+            assert(P.posicaoLivre(tractor,combine,tractor.rootNode.x,tractor.rootNode.z,0,P.CONFIG.margemPrecisao))
+        end
+        assert(math.abs(tractor.rootNode.z-z)<TI.CONFIG.toleranciaLongitudinal)
+        assert(not tractor.command.allowed and tractor.spec_transbordoInteligente.isAtivo)
+        ''')
+
+    def test_precision_margin_is_not_used_at_high_speed_or_for_actual_overlap(self):
+        self.check('''
+        attachHeader(14.6)
+        combine.dischargeNode.node.x=-9.5
+        tractor.size.width=3.5
+        selectCombine()
+        local s=tractor.spec_transbordoInteligente
+        s.centralizando=true
+        teleport(-9.5,108)
+        tractor.speed=15
+        TI.dirigir(tractor,100,-9.5,120,2)
+        assert(not tractor.command.allowed)
+        tractor.speed=0
+        teleport(-8.5,108)
+        TI.dirigir(tractor,100,-8.5,120,2)
+        assert(not tractor.command.allowed)
+        ''')
+
+    def test_precision_lane_can_follow_working_combine_at_matched_speed(self):
+        self.check('''
+        attachHeader(14.6)
+        combine.dischargeNode.node.x=-9.5
+        tractor.size.width=3.5
+        selectCombine();enterCombineRear()
+        local x,z=TI.alvoReceber(tractor,combine)
+        teleport(x,z)
+        combine.speed,tractor.speed=8,8
+        tick(100)
+        assert(tractor.command.allowed and tractor.command.speed==8)
+        tick(100)
+        assert(tractor.command.allowed and tractor.command.speed==8)
+        assert(state()==E.ACOMPANHANDO)
+        -- Para alcancar o centro, limita a diferenca em vez de cair para 5 km/h
+        -- e perder uma colheitadeira que continua trabalhando a 8 km/h.
+        teleport(x,z-5)
+        tractor.speed=8
+        tick(100)
+        assert(tractor.command.allowed and tractor.command.speed>8 and tractor.command.speed<=11)
+        ''')
+
+    def test_blocked_near_center_recovers_even_after_follow_state_started(self):
+        self.check('''
+        attachHeader(14.6)
+        combine.dischargeNode.node.x,combine.dischargeNode.node.z=-9.5,-4
+        tractor.size.width=4.5
+        selectCombine();enterCombineRear()
+        teleport(-9.5,103)
+        TI.mudarEstado(tractor,E.ACOMPANHANDO)
+        tick(100)
+        assert(not tractor.command.allowed)
+        tick(TI.CONFIG.tempoManobra+1)
+        assert(state()==E.RETOMANDO and tractor.spec_transbordoInteligente.isAtivo)
+        assert(not tractor.spec_transbordoInteligente.entradaPelaTraseira)
         ''')
 
 

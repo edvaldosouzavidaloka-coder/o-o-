@@ -146,7 +146,7 @@ class TransbordoTests(unittest.TestCase):
         activate(); tick()
         local x,z=TI.alvoReceber(tractor,combine)
         assert(x == -6 and z == 108)
-        teleport(x,z-18); tick()
+        enterCombineRear(); tick()
         teleport(x,z); combine.speed=8; tick()
         assert(state() == E.ACOMPANHANDO)
         tick()
@@ -172,6 +172,7 @@ class TransbordoTests(unittest.TestCase):
         self.check('''
         activate(); tick()
         local x,z=TI.alvoReceber(tractor,combine)
+        enterCombineRear()
         teleport(x,z);tick()
         wagon.units[2].level=5000; wagon.units[2].kind=1
         combine.units[2].level=0
@@ -301,7 +302,7 @@ class TransbordoTests(unittest.TestCase):
 
     def test_approach_timeout_brakes_then_retries_without_deactivation(self):
         self.check('''
-        activate(); tick(); tick(TI.CONFIG.tempoManobra+1)
+        activate(); tick();tick();tick(TI.CONFIG.tempoManobra+1)
         assert(state() == E.RETOMANDO)
         assert(not tractor.command.allowed)
         assert(tractor.spec_transbordoInteligente.isAtivo)
@@ -341,7 +342,7 @@ class TransbordoTests(unittest.TestCase):
         self.check('''
         activate(); tick()
         local x,z=TI.alvoReceber(tractor,combine)
-        teleport(x,z-18); tick(); teleport(x,z); tick()
+        enterCombineRear(); tick(); teleport(x,z); tick()
         assert(state() == E.ACOMPANHANDO)
         tick(); tick(TI.CONFIG.tempoSemDescarga+1)
         assert(state() == E.RETOMANDO and not tractor.command.allowed)

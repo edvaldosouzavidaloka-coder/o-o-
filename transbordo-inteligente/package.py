@@ -1,6 +1,7 @@
 """Empacotamento reproduzivel do mod de teste; nao modifica o Lua enviado."""
 from pathlib import Path
 import struct
+import re
 import xml.etree.ElementTree as ET
 import zipfile
 
@@ -58,8 +59,13 @@ def main():
     for entry in desc.findall('./extraSourceFiles/sourceFile') + desc.findall('./specializations/specialization'):
         assert entry.attrib['filename'] in members, entry.attrib['filename']
     assert desc.findtext('iconFilename') in members
-    action = desc.find('./actions/action').attrib['name']
-    assert desc.find('./inputBinding/actionBinding').attrib['action'] == action == 'TI_TOGGLE_TRANSBORDO'
+    actions = {entry.attrib['name'] for entry in desc.findall('./actions/action')}
+    bindings = {entry.attrib['action'] for entry in desc.findall('./inputBinding/actionBinding')}
+    assert actions == bindings == {'TI_TOGGLE_TRANSBORDO', 'TI_FORCE_UNLOAD'}
+    for action in actions:
+        assert desc.find(f'./l10n/text[@name="input_{action}"]') is not None
+    lua_version = re.search(r'TI\.VERSAO="([\d.]+)"', members['scripts/TransbordoInteligente.lua'].decode()).group(1)
+    assert desc.findtext('version') == lua_version
     write_zip(ROOT / 'FS25_TransbordoInteligente.zip', members)
     sources = {p.relative_to(ROOT).as_posix(): p.read_bytes() for p in ROOT.rglob('*')
                if p.is_file() and '__pycache__' not in p.parts and p.suffix != '.zip'}

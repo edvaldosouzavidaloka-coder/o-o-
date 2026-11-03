@@ -2,7 +2,7 @@
 -- Usa dimensoes, workAreas e marcadores atuais. Nao le cultura nem usa coroutine.
 TIProtecao = {}
 local P=TIProtecao
-P.CONFIG={margem=0.75,reacao=0.7,desaceleracao=2,amostra=0.5,
+P.CONFIG={margem=0.75,margemPrecisao=0.2,velocidadeRelativaPrecisao=3,reacao=0.7,desaceleracao=2,amostra=0.5,
     raioGiro=10,velocidadePerto=5,velocidadePrecisao=2,
     larguraPadrao=4,comprimentoPadrao=8,larguraPlataformaPadrao=12,
     comprimentoPlataformaPadrao=3}
@@ -162,16 +162,16 @@ function P.geometria(trator,target)
     local drawbar=8
     for _,part in ipairs(own) do if part.tow then drawbar=part.drawbar end end
     return {own=own,others=others,pose={x=x,z=z,a=heading,t=yaw(spec.bazuca.rootNode)},
-        vx=tx*targetSpeed*sign,vz=tz*targetSpeed*sign,drawbar=drawbar,
+        vx=tx*targetSpeed*sign,vz=tz*targetSpeed*sign,velocidadeAlvo=targetSpeed*3.6,drawbar=drawbar,
         larguraPlataforma=headerWidth,larguraEstimada=estimated}
 end
 
-local function livre(g,p,time)
+local function livre(g,p,time,margin)
     for _,part in ipairs(g.own) do
         local body=corpo(part,p)
         for _,other in ipairs(g.others) do
             local future={x=other.x+g.vx*time,z=other.z+g.vz*time,a=other.a,hw=other.hw,hl=other.hl}
-            if P.sobrepoe(body,future,P.CONFIG.margem) then
+            if P.sobrepoe(body,future,margin or P.CONFIG.margem) then
                 return false,other.plataforma and "plataforma" or "veiculo"
             end
         end
@@ -179,26 +179,26 @@ local function livre(g,p,time)
     return true
 end
 
-function P.posicaoLivre(trator,target,x,z,a)
+function P.posicaoLivre(trator,target,x,z,a,margin)
     local g=P.geometria(trator,target)
-    return livre(g,{x=x,z=z,a=a or g.pose.a,t=a or g.pose.t},0)
+    return livre(g,{x=x,z=z,a=a or g.pose.a,t=a or g.pose.t},0,margin)
 end
 
-local function prever(g,x,z,requested,current,dt,moveForwards)
+local function prever(g,x,z,requested,current,dt,moveForwards,margin)
     local p=g.pose
     local dx,dz=x-p.x,z-p.z
     local lateral=dx*math.cos(p.a)-dz*math.sin(p.a)
     local curvature=clamp(2*lateral/math.max(1,dx*dx+dz*dz),-1/P.CONFIG.raioGiro,1/P.CONFIG.raioGiro)
     local v=math.max(current,requested)/3.6
     local horizon=v*(P.CONFIG.reacao+math.min(0.25,dt/1000))+v*v/(2*P.CONFIG.desaceleracao)
-    local safe,reason=livre(g,p,0)
+    local safe,reason=livre(g,p,0,margin)
     if not safe then return false,reason end
     local steps=math.max(1,math.ceil(horizon/P.CONFIG.amostra))
     local step=horizon/steps
     local ds=moveForwards==false and -step or step
     for i=1,steps do
         p=avancar(p,curvature,ds,g.drawbar)
-        safe,reason=livre(g,p,v>0 and i*step/v or 0)
+        safe,reason=livre(g,p,v>0 and i*step/v or 0,margin)
         if not safe then return false,reason end
     end
     return true
@@ -223,10 +223,21 @@ function P.limitar(trator,dt,x,z,requested,moveForwards)
     if #geometries==0 then return requested end
     local current=speed(trator)
     local reason
-    for _,limit in ipairs({requested,math.min(requested,P.CONFIG.velocidadePerto),math.min(requested,P.CONFIG.velocidadePrecisao)}) do
+    local matching=spec.centralizando and spec.colheitadeiraAlvo~=nil and speed(root(spec.colheitadeiraAlvo)) or 0
+    local relativeLimit=math.min(requested,matching+P.CONFIG.velocidadeRelativaPrecisao)
+    local limits={requested,math.min(requested,P.CONFIG.velocidadePerto),math.min(requested,P.CONFIG.velocidadePrecisao)}
+    if spec.centralizando then table.insert(limits,2,relativeLimit) end
+    for _,limit in ipairs(limits) do
         local safe,why=true,nil
         for _,g in ipairs(geometries) do
-            safe,why=prever(g,x,z,limit,current,dt,moveForwards)
+            -- Na faixa paralela, o que importa e a velocidade de aproximacao.
+            -- Uma colheitadeira a 8 km/h pode ser acompanhada a 8 km/h; aproximar
+            -- a 15 km/h de uma maquina parada conserva a margem de viagem.
+            local margin=P.CONFIG.margem
+            if spec.centralizando and moveForwards~=false
+                and math.abs(current-g.velocidadeAlvo)<=P.CONFIG.velocidadeRelativaPrecisao
+                and math.abs(limit-g.velocidadeAlvo)<=P.CONFIG.velocidadeRelativaPrecisao then margin=P.CONFIG.margemPrecisao end
+            safe,why=prever(g,x,z,limit,current,dt,moveForwards,margin)
             if not safe then break end
         end
         if safe then
