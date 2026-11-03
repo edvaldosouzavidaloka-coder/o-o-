@@ -79,8 +79,8 @@ class TransbordoTests(unittest.TestCase):
 
     def test_field_lock_excludes_more_full_combine_on_other_field(self):
         self.check('''
-        local fieldA=makeField(-30,-10,30,150)
-        local fieldB=makeField(100,-10,150,150)
+        local fieldA=makeField(-30,-30,30,150)
+        local fieldB=makeField(100,-30,150,150)
         g_farmlandManager={getFarmlandAtWorldPosition=function(_,x,z)
             local f=x<70 and fieldA or fieldB
             return {getField=function() return f end}

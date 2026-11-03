@@ -1,12 +1,16 @@
 # Mods para Farming Simulator 25
 
-## Transbordo Inteligente — versão de teste 0.8.0.0
+## Transbordo Inteligente — versão de teste 0.9.0.0
 
 [Baixar FS25_TransbordoInteligente.zip](FS25_TransbordoInteligente.zip) · [Instruções](transbordo-inteligente/LEIA-ME.md) · [Código Lua](transbordo-inteligente/TransbordoInteligente.lua)
 
 Atende colheitadeiras com pelo menos 60% de grãos, com jogador ou funcionário nativo. Identifica a bazuca acoplada e usa a posição real do cano aberto e do receptor para alinhar o conjunto. Ao encher, procura a carreta ou caminhão com caçamba compatível mais próximo da borda do talhão, descarrega quando a engine confirmar o receptor e reinicia o ciclo.
 
-**A versão 0.8 restringe o automático ao talhão atual.** Ative com trator e bazuca dentro do campo: o contorno fica fixo até desligar. A previsão verifica o conjunto inteiro, inclusive a traseira da bazuca em ré, antecipa giros para dentro e solicita frenagem antes da borda. Sem um contorno válido, aguarda parado. Não usa mais uma busca em outros campos para levar a bazuca até caminhões distantes.
+**A versão 0.9 mantém o limite do talhão e melhora a captura e a entrada nas máquinas.** Ative com trator e bazuca dentro do campo: o contorno fica fixo até desligar. A previsão verifica o conjunto inteiro, inclusive a traseira da bazuca em ré, antecipa giros para dentro e solicita frenagem antes da borda. Sem um contorno válido, aguarda parado. Se detectar o conjunto já fora, interrompe a condução e informa para reposicioná-lo dentro; não muda de campo nem tenta voltar pela rodovia.
+
+A captura percorre veículos e implementos sem duplicá-los, ignora leituras inválidas e procura outro receptor de enchimento quando a mira está ausente ou removida. Com o cano aberto, prioriza colheitadeiras com posição de atendimento e entrada traseira utilizáveis, mantendo a preferência pela mais cheia entre candidatas equivalentes. Uma falha breve de leitura da colheitadeira preserva a reserva por até 2 s.
+
+Durante uma curva da colheitadeira, aguarda a direção estabilizar em vez de perseguir o cano em movimento. Chegar ao ponto traseiro atravessado não conclui mais a entrada: alinha a direção antes de avançar. O cálculo usa deslocamentos horizontais medidos do cano e da caçamba, com direção normalizada, e o painel identifica **o veículo selecionado e o campo fixado**.
 
 **Ctrl+Alt+D solicita levar a carga atual para a carreta**, mesmo parcialmente cheia. A busca se repete a cada 250 ms e só aceita receptores no campo ou na borda alcançável pelo cano, com espaço para manter trator e bazuca dentro. Usa a caçamba e o sentido da carreta para alinhar. A primeira detecção na borda da caçamba não interrompe mais a aproximação: centraliza antes de iniciar a descarga. Continua exigindo mesma fazenda, grão aceito, capacidade livre, caminhão parado e confirmação exata do receptor pelo jogo.
 
@@ -20,9 +24,9 @@ Não há planejador de rotas nem leitura de cultura. O limite usa o contorno ori
 
 Para atravessar cultura sem dano de rodas, o módulo usa o bloqueio nativo `getBlockFoliageDestruction` no trator e nos implementos acoplados enquanto estiver ativo. Não ativa nem altera a opção global de destruição de cultura da partida. Ao desligar ou desacoplar, restaura o comportamento anterior. Trabalho de ferramentas, como arar ou colher, é independente desse bloqueio de rodas.
 
-Feche o jogo, substitua o ZIP pelo arquivo **0.8.0.0** e remova cópias antigas deste mod. Posicione o conjunto inteiro dentro do talhão e deixe o caminhão em uma borda alcançável por dentro. **Ctrl+Alt+T** liga/desliga; **Ctrl+Alt+D** solicita descarga. As ações aparecem em **Opções > Controles** e na ajuda **F1**. O painel deve mostrar **TRANSBORDO 0.8.0.0**. Desligue e reative ao trocar de campo.
+Feche o jogo, substitua o ZIP pelo arquivo **0.9.0.0** e remova cópias antigas deste mod. Posicione o conjunto inteiro dentro do talhão e deixe o caminhão em uma borda alcançável por dentro. **Ctrl+Alt+T** liga/desliga; **Ctrl+Alt+D** solicita descarga. As ações aparecem em **Opções > Controles** e na ajuda **F1**. O painel deve mostrar **TRANSBORDO 0.9.0.0**. Se mostrar **0.7.0.0**, a versão anterior ao bloqueio do campo continua carregada. Desligue e reative ao trocar de campo.
 
-**Versão experimental, single-player.** Os 130 testes simulados incluem dez aproximações em movimento, frenagem nas bordas nos dois sentidos, recortes côncavos, giro interno antecipado, caminhão alcançável sem sair do campo, alinhamento antes da descarga, velocidade, plataforma, espera e ciclos completos. A física, o contorno do seu mapa e os modelos escolhidos ainda precisam de confirmação no FS25.
+**Versão experimental, single-player.** Os 155 testes simulados incluem dez aproximações em movimento, frenagem nas bordas nos dois sentidos, recortes côncavos, giro interno antecipado, captura de veículos com dados incompletos, escolha de alvos atendíveis, espera em curvas, direção horizontal, alinhamento antes da descarga, plataforma e ciclos completos. A física, o contorno do seu mapa e os modelos escolhidos ainda precisam de confirmação no FS25.
 
 ### Desenvolvimento
 
