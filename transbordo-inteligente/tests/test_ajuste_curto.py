@@ -9,7 +9,7 @@ ROOT=Path(__file__).resolve().parents[1]
 class AjusteCurtoTests(unittest.TestCase):
     def setUp(self):
         self.lua=LuaRuntime(unpack_returned_tuples=True)
-        for name in ['TITalhao.lua','TIProtecao.lua','TIManobraCarreta.lua','TransbordoInteligente.lua','tests/fixture.lua']:
+        for name in ['TITalhao.lua','TIProtecao.lua','TIManobraCarreta.lua','TIConfiguracao.lua','TIRotasCampo.lua','TIHUD.lua','TransbordoInteligente.lua','tests/fixture.lua']:
             self.lua.execute((ROOT/name).read_text())
         self.lua.execute('''
         M,P=TIManobraCarreta,TIProtecao
@@ -439,12 +439,13 @@ class AjusteCurtoTests(unittest.TestCase):
         local lines={}
         function renderText(x,y,size,text) lines[#lines+1]=text end
         TI.onDraw(tractor)
-        local dimensions,clearance=false,false
+        local dimensions,pipe,clearance=false,false,false
         for _,line in ipairs(lines) do
-            dimensions=dimensions or (line:find('Cacamba 2.6 x 12.0 m') and line:find('Cano 4.7 m'))
+            dimensions=dimensions or line:find('Cacamba 2.6 x 12.0 m')
+            pipe=pipe or line:find('Cano: 4.7 m')
             clearance=clearance or line:find('Posicoes livres no talhao:')
         end
-        assert(dimensions and clearance)
+        assert(dimensions and pipe and clearance)
         ''')
 
     def test_combine_arrival_is_faster_on_a_straight_open_stretch(self):

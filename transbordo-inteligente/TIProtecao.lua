@@ -286,7 +286,7 @@ function P.limitar(trator,dt,x,z,requested,moveForwards)
     if #geometries==0 then geometries[1]=P.geometria(trator,nil) end
     local current=speed(trator)
     local reason
-    local precision=spec.centralizando or spec.reposicionando or spec.manobraCarretaCurta
+    local precision=spec.centralizando or spec.reposicionando or spec.manobraCarretaCurta or spec.manobraEntradaCurta
     local matching=precision and spec.colheitadeiraAlvo~=nil and speed(root(spec.colheitadeiraAlvo)) or 0
     local relativeLimit=math.min(requested,matching+P.CONFIG.velocidadeRelativaPrecisao)
     local limits={requested,math.min(requested,P.CONFIG.velocidadePerto),math.min(requested,P.CONFIG.velocidadePrecisao)}

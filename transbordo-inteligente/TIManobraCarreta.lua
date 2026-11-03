@@ -23,6 +23,11 @@ local function clamp(v,a,b) return math.max(a,math.min(b,v)) end
 function M.faixa(trator,target,index)
     local ax,az,bx,bz=TransbordoInteligente.faixaEnchimento(target,index)
     local spec=trator.spec_transbordoInteligente
+    local offset=TransbordoInteligente.config(trator,"offsetCarreta") or 0
+    if ax~=nil and offset~=0 then
+        local nx,_,nz=localDirectionToWorld(target.rootNode,1,0,0)
+        ax,az,bx,bz=ax+nx*offset,az+nz*offset,bx+nx*offset,bz+nz*offset
+    end
     if ax~=nil and spec.pontoDescargaFixo~=nil and spec.caminhaoAlvo==target and spec.indiceCarreta==index then
         local t=spec.pontoDescargaFixo
         ax,az=ax+(bx-ax)*t,az+(bz-az)*t
@@ -235,6 +240,12 @@ function M.pontoCano(job,p)
 end
 
 function M.avaliar(job,p)
+    if job.entrada~=nil then
+        local q=job.entrada
+        local d=math.sqrt((p.x-q.x)^2+(p.z-q.z)^2)
+        local a,t=math.abs(angle(p.a,q.a)),math.abs(angle(p.t,q.a))
+        return d+job.g.raioGiro*a+job.g.drawbar*t,d<0.8 and a<0.15 and t<0.25,0.5,d
+    end
     local x,z=M.pontoCano(job,p)
     local wx,wz=job.bx-job.ax,job.bz-job.az
     local length=wx*wx+wz*wz
@@ -286,6 +297,22 @@ function M.iniciar(trator,target,index,dx,dz,nivel)
     local node={p=g.pose,cost=0,distance=0,changes=0,dir=1,f=1.8*h,goal=goal,fraction=t,pipeDistance=d}
     job.seen[key(job,g.pose,1)]=0
     push(job.heap,node)
+    return job
+end
+
+function M.iniciarEntrada(v,target,x,z,dx,dz,nivel)
+    local g=TIProtecao.geometria(v,target)
+    local q={x=x,z=z,a=math.atan2(dx,dz),t=math.atan2(dx,dz)}
+    if not TIProtecao.poseLivre(g,g.pose,TIProtecao.CONFIG.margemPrecisao)
+        or not TIProtecao.poseLivre(g,q,TIProtecao.CONFIG.margemPrecisao) then return nil end
+    nivel=nivel or 1
+    local profile=perfil(nivel)
+    local job={g=g,start=g.pose,entrada=q,heading=q.a,nivel=nivel,mapa={vagas={{p=q}}},
+        heap={},seen={},expanded=0,step=profile.passo,raio=profile.raio,limitDistance=profile.percurso,
+        maxChanges=profile.trocas,maxNos=profile.nos,turns=nivel>1 and {-1,-0.5,0,0.5,1} or {-1,0,1},status="buscando"}
+    local h,goal,t,d=M.avaliar(job,g.pose)
+    job.seen[key(job,g.pose,1)]=0
+    push(job.heap,{p=g.pose,cost=0,distance=0,changes=0,dir=1,f=1.8*h,goal=goal,fraction=t,pipeDistance=d})
     return job
 end
 
@@ -375,7 +402,7 @@ function M.entrada(trator,target,x,z,dx,dz)
         local ax,az=x+dx*lead,z+dz*lead
         if TIProtecao.posicaoNoTalhao(trator,ax,az,math.atan2(dx,dz)) then return ax,az end
     end
-    for _,back in ipairs({TransbordoInteligente.CONFIG.recuoCarreta,8,6,4}) do
+    for _,back in ipairs({TransbordoInteligente.config(trator,"recuoCarreta"),8,6,4}) do
         local ax,az=x-dx*back,z-dz*back
         if TIProtecao.posicaoLivre(trator,target,ax,az,math.atan2(dx,dz),TIProtecao.CONFIG.margemPrecisao) then return ax,az end
     end
@@ -383,6 +410,67 @@ function M.entrada(trator,target,x,z,dx,dz)
 end
 
 local function stopped(message) return {speed=0,message=message} end
+
+-- Recupera a entrada quando a frente do trator esta atravessada junto da
+-- plataforma. Primeiro alinha atras; receber graos continua sendo para frente.
+function M.comandarEntrada(v,dt,target,x,z,dx,dz)
+    local s=v.spec_transbordoInteligente
+    local g=TIProtecao.geometria(v,target)
+    local p=g.pose
+    local c=s.manobraEntrada
+    if c==nil then c={nivel=1,distance=0,progress=0,segment=1,lastX=p.x,lastZ=p.z,replans=0};s.manobraEntrada=c end
+    local distance=math.sqrt((p.x-c.lastX)^2+(p.z-c.lastZ)^2)
+    c.distance,c.lastX,c.lastZ=c.distance+distance,p.x,p.z
+    if c.executing then c.progress=c.progress+distance end
+    c.motion=(c.motion or 0)+distance
+    if c.motion>=0.05 then c.noMotion,c.motion=0,0 elseif c.requesting then c.noMotion=(c.noMotion or 0)+dt end
+    c.requesting=false
+    local function reset()
+        c.job,c.executing,c.segment,c.progress=nil,false,1,0
+        c.nivel,c.replans=math.min(3,c.nivel+1),c.replans+1
+        c.noMotion,c.motion=0,0
+    end
+    if c.distance>M.CONFIG.percursoTotal or c.replans>M.CONFIG.maxRecalculos then return stopped("Sem entrada segura neste espaco junto da plataforma") end
+    if c.blocked then c.blockedTime=(c.blockedTime or 0)+dt else c.blockedTime=0 end
+    if c.blockedTime>800 or (c.noMotion or 0)>3000 then
+        reset();c.blocked,c.blockedTime=false,0;return stopped("Procurando outro giro atras da plataforma")
+    end
+    if c.job~=nil and ((c.job.entrada.x-x)^2+(c.job.entrada.z-z)^2>9
+        or math.abs(angle(c.job.entrada.a,math.atan2(dx,dz)))>math.rad(8)) then
+        reset();return stopped("Atualizando a entrada da colheitadeira")
+    end
+    if c.job==nil then
+        if v.getLastSpeed~=nil and math.abs(v:getLastSpeed())>0.5 then return stopped("Parando para alinhar antes da plataforma") end
+        c.job=M.iniciarEntrada(v,target,x,z,dx,dz,c.nivel)
+        if c.job==nil then return stopped("Sem folga para girar junto da plataforma") end
+        c.job.limitDistance=math.min(c.job.limitDistance,M.CONFIG.percursoTotal-c.distance)
+    end
+    local job=c.job
+    if job.status=="buscando" then M.avancar(job) end
+    if job.status=="buscando" then return stopped("Conferindo entrada por tras e folga da plataforma") end
+    if job.status~="pronto" then
+        if c.nivel<3 then reset();return stopped("Tentando outra entrada atras da colheitadeira") end
+        return stopped("Nao encontrou entrada livre dentro deste talhao")
+    end
+    c.executing=true
+    while job.path[c.segment]~=nil and c.progress>=job.path[c.segment].step-0.01 do
+        c.progress=math.max(0,c.progress-job.path[c.segment].step);c.segment=c.segment+1
+    end
+    local part=job.path[c.segment]
+    if part==nil then
+        local _,goal=M.avaliar(job,p)
+        if goal then return {done=true,speed=0} end
+        reset();return stopped("Concluindo alinhamento atras da colheitadeira")
+    end
+    local expected=TIProtecao.avancarPose(part.parent.p,part.k,part.dir*c.progress,g.drawbar)
+    if (p.x-expected.x)^2+(p.z-expected.z)^2>1.44 or math.abs(angle(p.a,expected.a))>0.35
+        or math.abs(angle(p.t,expected.t))>0.35 then reset();return stopped("Corrigindo posicao real do engate na entrada") end
+    local aim=TIProtecao.avancarPose(part.parent.p,part.k,part.dir*(c.progress+2),g.drawbar)
+    c.requesting=true
+    return {x=aim.x,z=aim.z,forwards=part.dir>0,
+        speed=part.dir>0 and math.min(3,TransbordoInteligente.config(v,"velocidadeAlinhamento")) or TransbordoInteligente.config(v,"velocidadeRe"),
+        message=string.format("Entrada segura %d/%d %s",c.segment,#job.path,part.dir>0 and "frente" or "re")}
+end
 
 function M.comandar(trator,dt,target,index,dx,dz)
     local spec=trator.spec_transbordoInteligente
@@ -515,6 +603,8 @@ function M.comandar(trator,dt,target,index,dx,dz)
     local distance=M.distanciaCano(trator,target,index)
     control.requestingMotion=true
     local speed=job.nivel>1 and segment.dir>0 and distance>10 and M.CONFIG.velocidadeReentrada or M.CONFIG.velocidade
+    if segment.dir<0 then speed=TransbordoInteligente.config(trator,"velocidadeRe")
+    else speed=math.min(speed,TransbordoInteligente.config(trator,"velocidadeAlinhamento")) end
     return {x=aim.x,z=aim.z,speed=speed,forwards=segment.dir>0,
         message=string.format("%s %d/%d %s | Cano-cacamba %.1f m",M.ALTERNATIVAS[control.nivel].nome,control.segment,#job.path,
             segment.dir>0 and "frente" or "re",distance)}

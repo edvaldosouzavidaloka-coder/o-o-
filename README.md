@@ -1,12 +1,29 @@
 # Mods para Farming Simulator 25
 
-## Transbordo Inteligente — versão de teste 0.11.0.0
+## Transbordo Inteligente PRO — versão de teste 0.12.0.0
 
 [Baixar FS25_TransbordoInteligente.zip](FS25_TransbordoInteligente.zip) · [Instruções](transbordo-inteligente/LEIA-ME.md) · [Código Lua](transbordo-inteligente/TransbordoInteligente.lua)
 
 Atende colheitadeiras com pelo menos 60% de grãos, com jogador ou funcionário nativo. Identifica a bazuca acoplada e usa a posição real do cano aberto e do receptor para alinhar o conjunto. Ao encher, procura a carreta ou caminhão com caçamba compatível mais próximo da borda do talhão, descarrega quando a engine confirmar o receptor e reinicia o ciclo.
 
-**A versão 0.11 tenta outras entradas quando o ajuste curto não encontra passagem.** Primeiro procura uma sequência pequena de frente e ré. Se ela falhar, amplia a busca de esterço e espaço interno; por último, testa curvas até uma entrada alinhada antes da caçamba. A tentativa maior só ocorre depois de esgotar a menor e confere o conjunto inteiro dentro do mesmo talhão. Não volta ao recuo fixo de 50 m para o caminhão.
+**A versão 0.12 substitui os textos do centro da tela por um HUD lateral interativo.** O painel pode ser recolhido e arrastado pelo botão `::`. As configurações são independentes por trator e ficam salvas na partida; o automático permanece desligado ao carregar o jogo.
+
+![Prévia das quatro abas do HUD PRO](transbordo-inteligente/docs/hud-pro.png)
+
+Prévia gerada pelos comandos de desenho do Lua; não é uma captura dentro do FS25.
+
+| Aba | Controles |
+| --- | --- |
+| Controle | Iniciar/parar, descarregar, buscar colheitadeiras em 360°, trocar de alvo e consultar geometria |
+| Velocidades | Chegada à colheitadeira, viagem à carreta, manobra, entrada, ré e reposicionamento |
+| Ajustes | Deslocamentos laterais separados, avanço sob o cano, recuos de entrada e percentual de chamada |
+| Campo | Mapear/recalcular o talhão, visualizar trator/alvo/rota e ativar rotas internas opcionais |
+
+**Ctrl+Alt+H** recolhe/abre o painel. **Ctrl+Alt+M** libera/recolhe o mouse; ao recolher, sair do veículo ou abrir o menu, restaura a câmera. Os atalhos **Ctrl+Alt+T** e **Ctrl+Alt+D** continuam funcionando. O botão de busca 360° pode selecionar uma colheitadeira com grãos antes do percentual automático, inclusive atrás do trator, conservando fazenda, grão compatível, reserva e talhão.
+
+As rotas internas vêm desligadas. Na aba Campo, mapeie e ative a opção para calcular passagens dentro do contorno, incluindo recortes do campo. O mapa considera a folga do conjunto e os veículos selecionados; a proteção articulada continua autorizando cada movimento. Não lê ruas, árvores ou postes. Sem corredor interno reconhecido, aguarda; é possível desligar Rotas e continuar pela direção direta com o bloqueio do campo mantido.
+
+O cálculo do receptor da bazuca usa o conjunto alinhado e o engate medido, evitando que a articulação altere o ponto final de chegada. Quando a entrada fica bloqueada perto de uma colheitadeira parada, tenta alinhar por trás antes de avançar sob o cano. Junto da carreta, mantém as tentativas progressivas de frente e ré dentro do mesmo campo.
 
 O mapeamento mede a largura e o comprimento da carreta, a largura da bazuca, o alcance lateral real do cano, o engate e a cabine do caminhão. Compara posições de descarga nos dois sentidos e descarta as que sobrepõem carrocerias ou ultrapassam o talhão. O HUD mostra as medidas, as posições livres e a folga lateral mapeada. Usa a faixa útil da caçamba informada pelo modelo; sem essa faixa, usa somente o ponto de enchimento conhecido. A largura externa não cria uma abertura de carga fictícia. A engine continua precisando confirmar exatamente a carreta e o compartimento corretos.
 
@@ -20,23 +37,23 @@ Durante uma curva da colheitadeira, aguarda a direção estabilizar em vez de pe
 
 **Ctrl+Alt+D solicita levar a carga atual para a carreta**, mesmo parcialmente cheia. A busca se repete a cada 250 ms e só aceita receptores no campo ou na borda alcançável pelo cano, com espaço para manter trator e bazuca dentro. Continua exigindo mesma fazenda, grão aceito, capacidade livre, caminhão parado e confirmação exata do receptor pelo jogo. A descarga local só é liberada com o cano próximo da faixa útil de recebimento.
 
-O acompanhamento da colheitadeira mantém tolerâncias de **10 cm longitudinal e 15 cm lateral**. A chegada permite até **25 km/h** quando o trecho está alinhado, a colheitadeira está a mais de 40 m e a mira a mais de 20 m. Reduz para até 15 km/h ao se aproximar ou mudar de direção; as proteções podem reduzir mais. Na carreta, o ajuste final e a ré usam **1,5 km/h**; uma reentrada para frente distante da carga pode usar **3 km/h**. A descarga exige o cano a menos de 45 cm da faixa útil e confirmação nativa do receptor. A viagem ao caminhão continua limitada a 15 km/h.
+O acompanhamento da colheitadeira mantém tolerâncias de **10 cm longitudinal e 15 cm lateral**, aplicadas à posição corrigida pelo usuário. Nos padrões, a chegada permite até **25 km/h** em trecho distante e alinhado; a viagem à carreta usa até **15 km/h**. A aproximação, a entrada, a ré e as curvas reduzem a velocidade. Os valores do painel são limites pedidos; as proteções podem reduzir mais. Os deslocamentos laterais positivos apontam para a direita da máquina atendida. Alterá-los não estende o cano nem força a transferência de grãos.
 
 Se a colheitadeira esvaziar antes da bazuca, aguarda a próxima carga ou atende outra máquina elegível do mesmo campo. Depois de descarregar no caminhão, libera a lateral e reinicia o ciclo. A recuperação considera falta de progresso. A entrada sob o cano continua sendo por trás e para frente; quando já chega paralelo ao lado da máquina, pode recuar em linha reta a até 3 km/h para se posicionar atrás, respeitando a borda. Não exige reativar entre ciclos.
 
 A proteção mede separadamente o corpo da colheitadeira e a plataforma engatada. Na centralização final e no reposicionamento reto em baixa velocidade relativa, pode reduzir a folga entre máquinas de 0,75 m para 0,20 m. A folga do limite do campo permanece em 0,35 m. Contato previsto com a plataforma ou com o caminhão continua bloqueando o avanço. Reservar o caminhão não remove a proteção da colheitadeira durante a saída.
 
-Não calcula rotas de viagem nem lê cultura. As sequências de estacionamento são locais, junto da carreta parada, sem buscar caminhos em ruas. O limite usa o contorno original do campo informado pelo mapa, sem acompanhar automaticamente alterações por arado ou edição de terreno. A proteção não é um detector geral de postes e árvores dentro do talhão. Se não houver espaço para manobrar, receber ou descarregar dentro do campo, aguarda reposicionamento.
+As rotas opcionais são restritas ao talhão; não há navegação em ruas nem leitura de cultura. O limite usa o contorno original do campo informado pelo mapa, sem acompanhar automaticamente alterações por arado ou edição de terreno. A proteção não é um detector geral de postes e árvores dentro do talhão. Se não houver espaço para manobrar, receber ou descarregar dentro do campo, aguarda reposicionamento.
 
 Para atravessar cultura sem dano de rodas, o módulo usa o bloqueio nativo `getBlockFoliageDestruction` no trator e nos implementos acoplados enquanto estiver ativo. Não ativa nem altera a opção global de destruição de cultura da partida. Ao desligar ou desacoplar, restaura o comportamento anterior. Trabalho de ferramentas, como arar ou colher, é independente desse bloqueio de rodas.
 
-Feche o jogo, substitua o ZIP pelo arquivo **0.11.0.0** e remova cópias antigas deste mod. Posicione o conjunto inteiro dentro do talhão e deixe o caminhão em uma borda alcançável por dentro. **Ctrl+Alt+T** liga/desliga; **Ctrl+Alt+D** solicita descarga. As ações aparecem em **Opções > Controles** e na ajuda **F1**. O painel deve mostrar **TRANSBORDO 0.11.0.0**. Desligue e reative ao trocar de campo.
+Feche o jogo, substitua o ZIP pelo arquivo **0.12.0.0** e remova cópias antigas deste mod. Posicione o conjunto inteiro dentro do talhão e deixe o caminhão em uma borda alcançável por dentro. As quatro ações aparecem em **Opções > Controles** e na ajuda **F1**. Confira **TRANSBORDO PRO** e **0.12.0.0** no painel. Desligue e reative ao trocar de campo.
 
-**Versão experimental, single-player.** Os 183 testes simulados incluem falha do ajuste curto seguida de chegada por outra entrada dentro do campo, reentrada até um ponto exato sem faixa de carga, canos de 4,2 e 4,7 m, mapeamento de dimensões e cabine, campo sem espaço, orçamento de cálculo, HUD e chegada mais rápida com redução próxima. Mantêm os testes de movimento articulado, pausas a 60 quadros por segundo, talhão, plataforma, captura e ciclos. A física, o contorno do seu mapa e os modelos escolhidos ainda precisam de confirmação no FS25.
+**Versão experimental, single-player.** Os 209 testes simulados incluem botões e abas do HUD, mouse/câmera, atalhos, salvamento de ajustes, busca de veículos atrás do trator, rota acompanhada em campo côncavo, permanência do conjunto no campo e recuperação da entrada junto da plataforma. Mantêm os testes anteriores de alinhamento, carreta, captura, carga, ciclos e dano por rodas. A física, a renderização nativa e os modelos escolhidos ainda precisam de confirmação no FS25.
 
 ### Desenvolvimento
 
-As fontes, manifesto, registro, testes e empacotador estão em [`transbordo-inteligente/`](transbordo-inteligente/). `TIManobraCarreta.lua` calcula e acompanha os ajustes locais; `TIProtecao.lua` e `TITalhao.lua` conferem a geometria e o limite do campo. O antigo planejador de viagem `TINavegacao.lua` continua removido; use o ZIP completo atualizado.
+As fontes, manifesto, registro, testes e empacotador estão em [`transbordo-inteligente/`](transbordo-inteligente/). `TIHUD.lua` desenha o painel e trata o mouse; `TIConfiguracao.lua` valida e salva os ajustes; `TIRotasCampo.lua` calcula o mapa e as rotas internas opcionais. `TIManobraCarreta.lua` acompanha ajustes e entradas locais; `TIProtecao.lua` e `TITalhao.lua` conferem as carrocerias e o limite. O antigo `TINavegacao.lua` continua removido; use o ZIP completo atualizado.
 
 Com Python 3 e `lupa==2.6`:
 

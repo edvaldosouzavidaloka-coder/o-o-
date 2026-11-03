@@ -54,6 +54,9 @@ def main():
         'scripts/TIProtecao.lua': (ROOT / 'TIProtecao.lua').read_bytes(),
         'scripts/TITalhao.lua': (ROOT / 'TITalhao.lua').read_bytes(),
         'scripts/TIManobraCarreta.lua': (ROOT / 'TIManobraCarreta.lua').read_bytes(),
+        'scripts/TIConfiguracao.lua': (ROOT / 'TIConfiguracao.lua').read_bytes(),
+        'scripts/TIRotasCampo.lua': (ROOT / 'TIRotasCampo.lua').read_bytes(),
+        'scripts/TIHUD.lua': (ROOT / 'TIHUD.lua').read_bytes(),
         'LEIA-ME.md': (ROOT / 'LEIA-ME.md').read_bytes(),
         'icon.dds': icon_dds(),
     }
@@ -63,7 +66,7 @@ def main():
     assert desc.findtext('iconFilename') in members
     actions = {entry.attrib['name'] for entry in desc.findall('./actions/action')}
     bindings = {entry.attrib['action'] for entry in desc.findall('./inputBinding/actionBinding')}
-    assert actions == bindings == {'TI_TOGGLE_TRANSBORDO', 'TI_FORCE_UNLOAD'}
+    assert actions == bindings == {'TI_TOGGLE_TRANSBORDO', 'TI_FORCE_UNLOAD','TI_HUD_TOGGLE','TI_HUD_CURSOR'}
     for action in actions:
         assert desc.find(f'./l10n/text[@name="input_{action}"]') is not None
     lua_version = re.search(r'TI\.VERSAO="([\d.]+)"', members['scripts/TransbordoInteligente.lua'].decode()).group(1)

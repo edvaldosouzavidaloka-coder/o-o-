@@ -12,6 +12,8 @@ class DirecaoDiretaTests(unittest.TestCase):
         self.lua.execute((ROOT / 'TITalhao.lua').read_text())
         self.lua.execute((ROOT / 'TIProtecao.lua').read_text())
         self.lua.execute((ROOT / 'TIManobraCarreta.lua').read_text())
+        for name in ['TIConfiguracao.lua','TIRotasCampo.lua','TIHUD.lua']:
+            self.lua.execute((ROOT / name).read_text())
         self.lua.execute((ROOT / 'TransbordoInteligente.lua').read_text())
         self.lua.execute((ROOT / 'tests/fixture.lua').read_text())
         self.lua.execute('''

@@ -10,7 +10,7 @@ ROOT = Path(__file__).resolve().parents[1]
 class EntradaDescargaTests(unittest.TestCase):
     def setUp(self):
         self.lua = LuaRuntime(unpack_returned_tuples=True)
-        for name in ['TITalhao.lua', 'TIProtecao.lua','TIManobraCarreta.lua', 'TransbordoInteligente.lua', 'tests/fixture.lua']:
+        for name in ['TITalhao.lua', 'TIProtecao.lua','TIManobraCarreta.lua','TIConfiguracao.lua','TIRotasCampo.lua','TIHUD.lua', 'TransbordoInteligente.lua', 'tests/fixture.lua']:
             self.lua.execute((ROOT / name).read_text())
 
     def check(self, code):
@@ -154,7 +154,7 @@ class EntradaDescargaTests(unittest.TestCase):
         actions = {x.attrib['name'] for x in desc.findall('./actions/action')}
         bindings = {x.attrib['action']: x.find('binding').attrib['input']
                     for x in desc.findall('./inputBinding/actionBinding')}
-        self.assertEqual(actions, {'TI_TOGGLE_TRANSBORDO', 'TI_FORCE_UNLOAD'})
+        self.assertEqual(actions, {'TI_TOGGLE_TRANSBORDO', 'TI_FORCE_UNLOAD', 'TI_HUD_TOGGLE', 'TI_HUD_CURSOR'})
         self.assertEqual(bindings['TI_FORCE_UNLOAD'], 'KEY_lctrl KEY_lalt KEY_d')
         self.check('''
         InputAction={TI_TOGGLE_TRANSBORDO=123,TI_FORCE_UNLOAD=124}

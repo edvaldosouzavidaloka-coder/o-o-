@@ -1,16 +1,16 @@
 <?xml version="1.0" encoding="utf-8" standalone="no" ?>
 <modDesc descVersion="105">
     <author>Transbordo Inteligente</author>
-    <version>0.11.0.0</version>
+    <version>0.12.0.0</version>
     <title>
-        <en>Smart Auger Wagon - Test Version</en>
-        <pt>Transbordo Inteligente - Versão de Teste</pt>
-        <br>Transbordo Inteligente - Versão de Teste</br>
+        <en>Smart Auger Wagon PRO - Test Version</en>
+        <pt>Transbordo Inteligente PRO - Versão de Teste</pt>
+        <br>Transbordo Inteligente PRO - Versão de Teste</br>
     </title>
     <description>
-        <en>Single-player test version. Ctrl+Alt+T toggles the attached auger wagon controller. Responds to combines at 60 percent, follows their pipe and unloads a full wagon into a compatible parked trailer near the field edge. Direct native steering to the combine pipe and compatible grain trailer. Measures the attached header and lateral pipe reach, slows down and brakes near the selected combine, truck cabin and trailer. Aligns with the central loading aim and the trailer heading in either direction. Waits for the next combine load, retries alignment automatically and repeats unloading cycles while staying active. Prefers combines with usable pipe-side space, waits for their turns to stabilize and aligns the entry heading behind the machine before advancing. Skips invalid vehicle data and replaces deleted discharge points. Uses measured horizontal offsets for pipe alignment and identifies the selected vehicle and locked field in the HUD. Uses low speed precision clearance and recovery based on lack of progress. Ctrl+Alt+D requests delivery of the current load, including partially full wagons. Locks the working field polygon and brakes before tractor or wagon leave it. Accepts receivers in the current field or reachable at its edge while the auger stays inside. Requires alignment before unloading. Turns at up to 8 km/h in open space and slows near machines. Without a valid field contour, holds position. Shows the loaded version in the HUD. No crop scanning or travel route planner. Maps trailer size, wagon width, pipe reach and cabin clearance. If the compact manoeuvre fails, tries wider steering options and mapped reentry curves while keeping the whole rig inside the same field. Shows mapped dimensions and parking clearance in the HUD. Approaches the combine at up to 25 km/h on distant aligned stretches, reducing speed nearby. Eliminates the fixed 50 metre truck approach. Discharge requires the exact receiver confirmed by the engine. Wheel crop damage is blocked only for the active tractor and its attached equipment. Ctrl+Alt+T toggles the controller. Requires validation in FS25.</en>
-        <pt>Versão de teste single-player. Ctrl+Alt+T liga/desliga o controle da bazuca acoplada. Atende colheitadeiras a partir de 60%, acompanha o cano e leva a bazuca cheia até uma carreta compatível estacionada na borda do talhão. Direção direta até o cano da colheitadeira e a carreta de grãos compatível. Mede a plataforma engatada e o alcance lateral do cano, reduz e freia perto da colheitadeira, da cabine do caminhão e da carreta selecionada. Alinha pela mira central da carga e pela orientação da carreta nos dois sentidos. Aguarda a próxima carga, repete o alinhamento automaticamente e mantém o ciclo ativo após descarregar. Prioriza colheitadeiras com espaco de atendimento, aguarda o fim das curvas e alinha a entrada por tras antes de avancar. Ignora dados invalidos de veiculos e substitui pontos de descarga removidos. Usa deslocamentos horizontais medidos e identifica o alvo e o campo fixado no painel. Recupera por falta de progresso. Ctrl+Alt+D solicita levar a carga atual à carreta, mesmo parcial. Fixa o contorno do talhão atual e freia antes de o trator ou a bazuca sair. Atende carretas neste campo ou na borda alcançável, mantendo o conjunto dentro. Centraliza antes de descarregar. Manobra até 8 km/h em área livre, reduzindo perto das máquinas. Sem contorno válido, aguarda parado. Exibe a versão no painel. Sem leitura de cultura ou rotas de viagem. Mapeia dimensoes da carreta, largura da bazuca, alcance do cano e folga da cabine. Se a manobra curta falhar, tenta outros estercos e curvas de reentrada mantendo o conjunto no mesmo talhao. Mostra medidas e folga mapeadas no HUD. Chega a colheitadeira a ate 25 km/h em trechos distantes e alinhados, reduzindo perto. Retira o recuo fixo de 50 metros para o caminhao. A descarga exige confirmacao do receptor exato pela engine. Bloqueia o dano de rodas apenas no trator e nos implementos enquanto estiver ligado. Ctrl+Alt+T liga/desliga. Requer validação no FS25.</pt>
-        <br>Versão de teste single-player. Ctrl+Alt+T liga/desliga o controle da bazuca acoplada. Atende colheitadeiras a partir de 60%, acompanha o cano e leva a bazuca cheia até uma carreta compatível estacionada na borda do talhão. Direção direta até o cano da colheitadeira e a carreta de grãos compatível. Mede a plataforma engatada e o alcance lateral do cano, reduz e freia perto da colheitadeira, da cabine do caminhão e da carreta selecionada. Alinha pela mira central da carga e pela orientação da carreta nos dois sentidos. Aguarda a próxima carga, repete o alinhamento automaticamente e mantém o ciclo ativo após descarregar. Prioriza colheitadeiras com espaco de atendimento, aguarda o fim das curvas e alinha a entrada por tras antes de avancar. Ignora dados invalidos de veiculos e substitui pontos de descarga removidos. Usa deslocamentos horizontais medidos e identifica o alvo e o campo fixado no painel. Recupera por falta de progresso. Ctrl+Alt+D solicita levar a carga atual à carreta, mesmo parcial. Fixa o contorno do talhão atual e freia antes de o trator ou a bazuca sair. Atende carretas neste campo ou na borda alcançável, mantendo o conjunto dentro. Centraliza antes de descarregar. Manobra até 8 km/h em área livre, reduzindo perto das máquinas. Sem contorno válido, aguarda parado. Exibe a versão no painel. Sem leitura de cultura ou rotas de viagem. Mapeia dimensoes da carreta, largura da bazuca, alcance do cano e folga da cabine. Se a manobra curta falhar, tenta outros estercos e curvas de reentrada mantendo o conjunto no mesmo talhao. Mostra medidas e folga mapeadas no HUD. Chega a colheitadeira a ate 25 km/h em trechos distantes e alinhados, reduzindo perto. Retira o recuo fixo de 50 metros para o caminhao. A descarga exige confirmacao do receptor exato pela engine. Bloqueia o dano de rodas apenas no trator e nos implementos enquanto estiver ligado. Ctrl+Alt+T liga/desliga. Requer validação no FS25.</br>
+        <en>Experimental single-player Smart Auger Wagon PRO. Side HUD with Control, Speeds, Adjustments and Field tabs. Ctrl+Alt+H opens/collapses the panel; Ctrl+Alt+M toggles its mouse. Ctrl+Alt+T controls the automatic driver and Ctrl+Alt+D delivers the current load. Per-tractor speed limits, separate lateral offsets, longitudinal correction, entry distances and automatic call threshold are saved with the vehicle. Forced 360-degree combine search also finds machines behind the tractor, respecting farm, crop, capacity and the working field. Optional field-only route mapping handles concave field boundaries; local articulated proximity checks still authorize every movement. Uses the measured pipe, wagon hitch, header, trailer and truck cabin. Recovers a blocked oblique entry behind a stationary combine before receiving forward. Tries progressive unloading entries while keeping the rig in the same field. Native grain transfer requires the exact receiver; wheel crop damage is locally blocked while active. No road navigation, general tree detection or multiplayer. Requires testing in FS25.</en>
+        <pt>Transbordo Inteligente PRO experimental single-player. HUD lateral com abas Controle, Velocidades, Ajustes e Campo. Ctrl+Alt+H abre/recolhe o painel; Ctrl+Alt+M libera/recolhe o mouse. Ctrl+Alt+T controla o automatico e Ctrl+Alt+D leva a carga atual a carreta. Velocidades, laterais separadas, correcao longitudinal, distancias de entrada e percentual de chamada sao salvos por trator. A busca forcada 360 encontra colheitadeiras atras, conservando fazenda, grao, capacidade e talhao. Mapeamento opcional calcula rotas apenas dentro do campo e considera seus recortes; a protecao articulada continua autorizando cada movimento. Usa cano real, engate da bazuca, plataforma, carreta e cabine. Recupera a entrada obliqua bloqueada atras da colheitadeira parada antes de receber para frente. Tenta entradas progressivas para descarregar mantendo o conjunto no mesmo campo. Transferencia nativa exige receptor exato; dano de rodas e bloqueado localmente enquanto ativo. Sem navegacao em ruas, detector geral de arvores ou multiplayer. Requer teste no FS25.</pt>
+        <br>Transbordo Inteligente PRO experimental single-player. HUD lateral com Controle, Velocidades, Ajustes e Campo. Ctrl+Alt+H abre/recolhe; Ctrl+Alt+M libera/recolhe o mouse. Ctrl+Alt+T liga/desliga e Ctrl+Alt+D descarrega. Ajustes salvos por trator, busca forcada 360 inclusive atras, rotas opcionais apenas no talhao, correcao de alinhamento e protecao da plataforma e da cabine. Usa o fluxo nativo de graos e bloqueia dano local de rodas. Sem navegacao em ruas ou multiplayer. Requer teste no FS25.</br>
     </description>
     <iconFilename>icon.dds</iconFilename>
     <multiplayer supported="false" />
@@ -21,11 +21,16 @@
         <sourceFile filename="scripts/TITalhao.lua" />
         <sourceFile filename="scripts/TIProtecao.lua" />
         <sourceFile filename="scripts/TIManobraCarreta.lua" />
+        <sourceFile filename="scripts/TIConfiguracao.lua" />
+        <sourceFile filename="scripts/TIRotasCampo.lua" />
+        <sourceFile filename="scripts/TIHUD.lua" />
         <sourceFile filename="scripts/Bootstrap.lua" />
     </extraSourceFiles>
     <actions>
         <action name="TI_TOGGLE_TRANSBORDO" category="VEHICLE" axisType="HALF" ignoreComboMask="false" />
         <action name="TI_FORCE_UNLOAD" category="VEHICLE" axisType="HALF" ignoreComboMask="false" />
+        <action name="TI_HUD_TOGGLE" category="VEHICLE" axisType="HALF" ignoreComboMask="false" />
+        <action name="TI_HUD_CURSOR" category="VEHICLE" axisType="HALF" ignoreComboMask="false" />
     </actions>
     <inputBinding>
         <actionBinding action="TI_TOGGLE_TRANSBORDO">
@@ -34,8 +39,24 @@
         <actionBinding action="TI_FORCE_UNLOAD">
             <binding device="KB_MOUSE_DEFAULT" input="KEY_lctrl KEY_lalt KEY_d" />
         </actionBinding>
+        <actionBinding action="TI_HUD_TOGGLE">
+            <binding device="KB_MOUSE_DEFAULT" input="KEY_lctrl KEY_lalt KEY_h" />
+        </actionBinding>
+        <actionBinding action="TI_HUD_CURSOR">
+            <binding device="KB_MOUSE_DEFAULT" input="KEY_lctrl KEY_lalt KEY_m" />
+        </actionBinding>
     </inputBinding>
     <l10n>
+        <text name="input_TI_HUD_TOGGLE">
+            <en>Open/close Transbordo PRO panel</en>
+            <pt>Abrir/fechar painel Transbordo PRO</pt>
+            <br>Abrir/fechar painel Transbordo PRO</br>
+        </text>
+        <text name="input_TI_HUD_CURSOR">
+            <en>Toggle Transbordo PRO mouse</en>
+            <pt>Liberar/recolher mouse do Transbordo PRO</pt>
+            <br>Liberar/recolher mouse do Transbordo PRO</br>
+        </text>
         <text name="input_TI_FORCE_UNLOAD">
             <en>Deliver current auger load to trailer</en>
             <pt>Levar carga da bazuca ate a carreta</pt>

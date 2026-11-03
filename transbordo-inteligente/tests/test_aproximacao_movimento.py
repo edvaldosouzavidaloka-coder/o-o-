@@ -9,7 +9,7 @@ ROOT = Path(__file__).resolve().parents[1]
 class AproximacaoMovimentoTests(unittest.TestCase):
     def simulate(self, mode, x, z, angle, field_limits=None):
         lua = LuaRuntime(unpack_returned_tuples=True)
-        for name in ['TITalhao.lua', 'TIProtecao.lua','TIManobraCarreta.lua', 'TransbordoInteligente.lua', 'tests/fixture.lua']:
+        for name in ['TITalhao.lua', 'TIProtecao.lua','TIManobraCarreta.lua','TIConfiguracao.lua','TIRotasCampo.lua','TIHUD.lua', 'TransbordoInteligente.lua', 'tests/fixture.lua']:
             lua.execute((ROOT / name).read_text())
         lua.globals().mode = mode
         lua.globals().startx = x

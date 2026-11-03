@@ -9,7 +9,7 @@ ROOT=Path(__file__).resolve().parents[1]
 class CapturaManobraTests(unittest.TestCase):
     def setUp(self):
         self.lua=LuaRuntime(unpack_returned_tuples=True)
-        for name in ['TITalhao.lua','TIProtecao.lua','TIManobraCarreta.lua','TransbordoInteligente.lua','tests/fixture.lua']:
+        for name in ['TITalhao.lua','TIProtecao.lua','TIManobraCarreta.lua','TIConfiguracao.lua','TIRotasCampo.lua','TIHUD.lua','TransbordoInteligente.lua','tests/fixture.lua']:
             self.lua.execute((ROOT/name).read_text())
 
     def check(self,code):
