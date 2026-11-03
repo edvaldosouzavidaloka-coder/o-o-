@@ -20,6 +20,7 @@ function getWorldTranslation(n)
     local x,z = pose(n)
     return x,0,z
 end
+function getParent(n) return n.parent or 0 end
 function localDirectionToWorld(n,x,y,z)
     local _,_,a = pose(n)
     return math.cos(a)*x+math.sin(a)*z, y, -math.sin(a)*x+math.cos(a)*z
@@ -73,6 +74,7 @@ function discharger(v,index,pipeX,pipeZ)
     v.spec_pipe={currentState=2,targetState=2,automaticDischarge=true}
     v.spec_dischargeable={}
     v.dischargeNode={node=node(pipeX,pipeZ,v.rootNode),fillUnitIndex=index}
+    v.spec_dischargeable.dischargeNodes={v.dischargeNode}
     function v:getCurrentDischargeNode() return self.dischargeNode end
     function v:getIsPipeStateChangeAllowed() return true end
     function v:setPipeState(state) self.spec_pipe.currentState=state; self.spec_pipe.targetState=state end

@@ -156,8 +156,10 @@ class DirecaoDiretaTests(unittest.TestCase):
         truck.rootNode.angle=1.1
         trailer.rootVehicle=truck
         trailer.rootNode.angle=0.9
-        local x,z=TI.alvoDescarregar(tractor,trailer,3)
-        tractor.rootNode.x,tractor.rootNode.z,tractor.rootNode.angle=x,z,1.1
+        local x,z,dx,dz=TI.alvoDescarregar(tractor,trailer,3)
+        local trailerHeadingX,_,trailerHeadingZ=localDirectionToWorld(trailer.rootNode,0,0,1)
+        assert(math.abs(dx*trailerHeadingZ-dz*trailerHeadingX)<0.000001)
+        tractor.rootNode.x,tractor.rootNode.z,tractor.rootNode.angle=x,z,math.atan2(dx,dz)
         local px,_,pz=getWorldTranslation(wagon.dischargeNode.node)
         local fx,_,fz=getWorldTranslation(trailer:getFillUnitExactFillRootNode(3))
         assert(math.abs(px-fx)<0.000001 and math.abs(pz-fz)<0.000001)

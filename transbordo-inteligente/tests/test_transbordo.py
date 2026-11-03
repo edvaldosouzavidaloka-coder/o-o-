@@ -171,23 +171,26 @@ class TransbordoTests(unittest.TestCase):
     def test_empty_combine_does_not_send_part_filled_auger_to_truck(self):
         self.check('''
         activate(); tick()
+        local x,z=TI.alvoReceber(tractor,combine)
+        teleport(x,z);tick()
         wagon.units[2].level=5000; wagon.units[2].kind=1
         combine.units[2].level=0
-        tick(); assert(state() == E.SAINDO)
+        tick(); assert(state() == E.AGUARDANDO_CARGA)
         local spec=tractor.spec_transbordoInteligente
-        teleport(spec.saidaX,spec.saidaZ); tick()
-        assert(state() == E.BUSCANDO)
+        tick(TI.CONFIG.tempoManobra+1)
+        assert(state() == E.AGUARDANDO_CARGA and spec.isAtivo)
         assert(wagon.units[2].level == 5000)
+        combine.units[2].level=500
+        tick();assert(state()==E.ACOMPANHANDO)
+        assert(spec.isAtivo and spec.colheitadeiraAlvo==combine)
         ''')
 
     def test_navigation_cannot_enable_discharge_by_proximity_alone(self):
         self.check('''
         wagon.units[2].level=20000; wagon.units[2].kind=1
         activate(); tick()
-        local x,z=TI.alvoDescarregar(tractor,trailer,3)
-        assert(x == 45 and z == 8)
-        teleport(x,z-18); tick()
-        teleport(x,z); tick()
+        local x,z,dx,dz=TI.alvoDescarregar(tractor,trailer,3)
+        teleport(x,z);tractor.rootNode.angle=math.atan2(dx,dz);tick()
         assert(state() == E.APROXIMANDO_CARRETA)
         assert(wagon.dischargeState == Dischargeable.DISCHARGE_STATE_OFF)
         ''')
@@ -212,8 +215,12 @@ class TransbordoTests(unittest.TestCase):
         assert(wagon.turnedOn and trailer.prepared == 3)
         -- O teste injeta a mudanca que seria feita pelo sistema de graos do jogo.
         wagon.units[2].level=0
-        tick(); assert(state() == E.BUSCANDO)
+        tick(); assert(state() == E.SAINDO)
         assert(wagon.dischargeState == Dischargeable.DISCHARGE_STATE_OFF)
+        local spec=tractor.spec_transbordoInteligente
+        assert(spec.isAtivo)
+        teleport(spec.saidaX,spec.saidaZ);tick()
+        assert(state()==E.BUSCANDO and spec.isAtivo)
         assert(not wagon.turnedOn)
         assert(TI.reservasCarretas[trailer] == nil)
         tick(); assert(state() == E.APROXIMANDO)
@@ -244,14 +251,17 @@ class TransbordoTests(unittest.TestCase):
         assert(wagon.units[2].level == 10000)
         ''')
 
-    def test_stall_watchdog_disables_discharge(self):
+    def test_stall_watchdog_stops_discharge_and_researches_automatically(self):
         self.check('''
         wagon.units[2].level=20000; wagon.units[2].kind=1
         activate(); tick(); permitUnload(); tick(); tick()
         tick(TI.CONFIG.tempoSemDescarga+1)
-        assert(state() == E.PAUSADO)
+        assert(state() == E.BUSCANDO_CARRETA)
+        assert(tractor.spec_transbordoInteligente.isAtivo)
         assert(wagon.dischargeState == Dischargeable.DISCHARGE_STATE_OFF)
         assert(TI.reservasCarretas[trailer] == nil)
+        tick();assert(state()==E.BUSCANDO_CARRETA)
+        tick(10001);assert(state()==E.APROXIMANDO_CARRETA)
         ''')
 
     def test_detach_deactivate_and_delete_release_reservations(self):
@@ -289,12 +299,16 @@ class TransbordoTests(unittest.TestCase):
         assert(tractor.command == nil)
         ''')
 
-    def test_approach_timeout_brakes_and_does_not_circle_forever(self):
+    def test_approach_timeout_brakes_then_retries_without_deactivation(self):
         self.check('''
         activate(); tick(); tick(TI.CONFIG.tempoManobra+1)
-        assert(state() == E.PAUSADO)
+        assert(state() == E.RETOMANDO)
         assert(not tractor.command.allowed)
-        assert(TI.reservasColheitadeiras[combine] == nil)
+        assert(tractor.spec_transbordoInteligente.isAtivo)
+        assert(TI.reservasColheitadeiras[combine] == tractor)
+        tick(TI.CONFIG.intervaloRetentativa)
+        assert(state()==E.APROXIMANDO)
+        tick();assert(tractor.command.allowed)
         ''')
 
     def test_update_activity_wrapper_preserves_normal_behavior(self):
@@ -323,14 +337,17 @@ class TransbordoTests(unittest.TestCase):
         assert(not tractor.spec_transbordoInteligente.isAtivo)
         ''')
 
-    def test_no_receiving_flow_pauses_instead_of_following_forever(self):
+    def test_no_receiving_flow_realigns_and_remains_active(self):
         self.check('''
         activate(); tick()
         local x,z=TI.alvoReceber(tractor,combine)
         teleport(x,z-18); tick(); teleport(x,z); tick()
         assert(state() == E.ACOMPANHANDO)
         tick(); tick(TI.CONFIG.tempoSemDescarga+1)
-        assert(state() == E.PAUSADO and not tractor.command.allowed)
+        assert(state() == E.RETOMANDO and not tractor.command.allowed)
+        assert(tractor.spec_transbordoInteligente.isAtivo)
+        tick(TI.CONFIG.intervaloRetentativa);tick()
+        assert(state()==E.ACOMPANHANDO)
         ''')
 
     def test_deleted_combine_is_released_without_nil_node_failure(self):

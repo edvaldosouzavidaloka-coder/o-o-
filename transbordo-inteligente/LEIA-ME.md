@@ -1,8 +1,18 @@
-# Transbordo Inteligente — versão de teste 0.5.0.0
+# Transbordo Inteligente — versão de teste 0.6.0.0
 
 Controlador single-player para Farming Simulator 25, adaptado do arquivo enviado pelo usuário. Usa direção direta e o fluxo de grãos do próprio jogo. Não depende de TG GPS ou Courseplay. A lógica foi testada em Lua 5.1 com contratos simulados da engine; esta versão ainda precisa ser confirmada no FS25.
 
-## Proteção de proximidade da versão 0.5
+## Reconhecimento e continuidade da versão 0.6
+
+A mira usa o `autoAimTarget` do compartimento de carga, quando disponível, com o centro da faixa móvel de enchimento. Se o modelo não informar essa mira, usa o `exactFillRootNode`. A primeira confirmação de recebimento não fixa mais a bazuca antes do centro quando a posição central estiver livre. Mantém a posição anterior somente quando avançar atingiria a plataforma.
+
+A aproximação final usa velocidade mínima de 1,3 km/h enquanto ainda houver correção, pois `AIVehicleUtil.driveToPoint` deixa de acelerar abaixo de 1 km/h. A linha paralela é seguida por um ponto à frente da projeção atual, evitando cruzar o alinhamento ao chegar de lado. Uma aproximação atravessada usa um ponto recuado em pelo menos 50 m; se já estiver paralelo e próximo, entra diretamente no alinhamento.
+
+O destino é procurado assim que a bazuca enche, com novas buscas a cada 250 ms quando necessário. Usa a orientação da carreta, mesmo com a cabine virada, e escolhe entre os dois sentidos paralelos considerando o lado atual, o cano e a folga. Uma pequena ultrapassagem pode ser corrigida em ré reta a 1,5 km/h, até 8 m. A saída perto de uma plataforma usa ré reta de 12 m; a saída do caminhão segue para frente e para fora. A proteção de proximidade considera o sentido do movimento.
+
+Se a colheitadeira esvaziar e a bazuca ainda tiver espaço, permanece ligado aguardando a próxima carga ou atende outra colheitadeira elegível. Depois de esvaziar a bazuca no caminhão, libera a lateral e volta à busca. Uma falha temporária na leitura da carga aguarda nova leitura. Os limites de tempo passam a tentar novamente automaticamente, em vez de exigir desligar e ligar o atalho.
+
+## Proteção de proximidade
 
 Mantém a direção direta, sem planejador, fila de busca, leitura de cultura ou biblioteca `coroutine`. Antes de enviar um comando positivo de velocidade, mede os conjuntos selecionados e verifica o movimento próximo:
 
@@ -12,7 +22,7 @@ Mantém a direção direta, sem planejador, fila de busca, leitura de cultura ou
 
 Uma aproximação por trás usa o limite traseiro do conjunto medido. A velocidade é reduzida e a frenagem é solicitada quando a previsão de movimento alcança o espaço de segurança da plataforma ou do veículo. Não exige recálculo de rota para funcionar.
 
-Quando a engine confirma que o cano da colheitadeira já pode descarregar na bazuca correta, e a posição está livre, o controlador mantém aquela posição longitudinal relativa à colheitadeira. Assim não tenta avançar até o centro exato da bazuca quando isso levaria a frente do trator contra a plataforma. Ajustes automáticos do cano também não puxam essa posição para frente.
+Quando centralizar a carga atingiria a plataforma, e a engine confirmar que o cano pode descarregar na bazuca correta numa posição livre, o controlador mantém aquela posição longitudinal relativa à colheitadeira. Ajustes automáticos do cano também não puxam essa posição para frente. Se o centro estiver livre, continua até ele. Reservar o caminhão durante a saída não remove a proteção da colheitadeira.
 
 O HUD mostra **Plataforma: largura lateral** e **Alcance lateral do cano** separadamente. Se faltar largura nos dados e marcadores da plataforma, usa uma dimensão padrão conservadora e exibe “estimada”. Não transforma essa estimativa em um alcance fictício do cano.
 
@@ -22,10 +32,10 @@ O dano de rodas à lavoura é bloqueado localmente pelo método nativo `getBlock
 
 ## Instalação e atalho
 
-1. Feche o FS25. Substitua o ZIP antigo por **FS25_TransbordoInteligente.zip versão 0.5.0.0**, sem descompactar, na pasta `mods` usada pelo jogo. Remova outra cópia antiga deste mesmo mod.
+1. Feche o FS25. Substitua o ZIP antigo por **FS25_TransbordoInteligente.zip versão 0.6.0.0**, sem descompactar, na pasta `mods` usada pelo jogo. Remova outra cópia antiga deste mesmo mod.
 2. Abra uma partida single-player, ative o mod e entre no trator com **uma bazuca** acoplada.
 3. Use **Ctrl esquerdo + Alt esquerdo + T** para ligar/desligar. Se a tecla não responder, procure **Ligar/desligar Transbordo Inteligente** em **Opções > Controles**, atribua a combinação e confira a ajuda **F1**. A ação continua sendo `TI_TOGGLE_TRANSBORDO`.
-4. O mod informa a versão carregada em `log.txt`. Se ainda aparecer mensagem de cálculo de rota, confira se a partida foi reaberta e se o ZIP ativo é o 0.5.0.0.
+4. O mod informa a versão carregada em `log.txt`. Confira se a partida foi reaberta e se o ZIP ativo é o 0.6.0.0.
 
 ## Atendimento da colheitadeira
 
@@ -33,24 +43,24 @@ As máquinas devem pertencer à mesma fazenda. A partir de **60%** do compartime
 
 A direção aponta primeiro para uma posição atrás do conjunto medido e, depois, alinha o receptor da bazuca com a descarga, respeitando o limite de proximidade. O lado vem do cano real, seja esquerdo ou direito. Não usa a largura genérica da plataforma como substituta da posição do cano. Aguarda o cano abrir antes de usar sua geometria. Aceleração e esterço seguem os comandos enviados a `AIVehicleUtil.driveToPoint`.
 
-Ao encher **99,9%**, o conjunto tenta sair da lateral e procura o caminhão. Se a colheitadeira esvaziar antes disso, mantém a carga parcial e procura outra com cultura compatível. Sem colheitadeira elegível, espera onde estiver.
+Ao encher **99,9%**, seleciona o caminhão e sai da lateral. Se a colheitadeira esvaziar antes disso, mantém a carga parcial, permanece ativo junto dela e verifica se outra máquina com grão compatível precisa de atendimento. Sem outra elegível, aguarda e acompanha a colheitadeira atual; retoma quando ela acumular grãos novamente, sem exigir mais 60% para o atendimento já iniciado. Se o alvo esvaziar antes de a bazuca chegar perto, volta à busca.
 
 ## Caminhão e descarga
 
 Estacione a carreta ou caminhão com caçamba na borda do talhão. O destino precisa estar parado, pertencer à mesma fazenda, aceitar o grão, ter espaço e informar um receptor de enchimento válido. A seleção inclui carretas e veículos com volume de carga; exclui a própria bazuca, outras máquinas com cano, colheitadeiras, misturadores e semeadoras.
 
-Aproxima-se por trás da posição de alinhamento e usa o ponto real do receptor, não apenas a cabine do caminhão. O HUD mostra o nome do alvo, a distância, a largura da plataforma e o alcance lateral do cano. A proteção considera também a cabine e os demais implementos do caminhão receptor. A bazuca só aciona `DISCHARGE_STATE_OBJECT` quando o jogo confirma exatamente o veículo e o compartimento selecionados sob o cano. Não programa descarga no chão e não transfere grãos alterando os níveis diretamente.
+Aproxima-se por trás no sentido paralelo escolhido e usa a mira do receptor, não apenas a cabine do caminhão. Aguarda a abertura completa do cano da bazuca antes de calcular o alinhamento. O HUD mostra o nome do alvo, a distância, a largura da plataforma e o alcance lateral do cano. A proteção considera também a cabine e os demais implementos do caminhão receptor. A bazuca só aciona `DISCHARGE_STATE_OBJECT` quando o jogo confirma exatamente o veículo e o compartimento selecionados sob o cano. Não programa descarga no chão e não transfere grãos alterando os níveis diretamente.
 
-Se a carreta encher, procura outra e mantém o restante da carga. Se o destino começar a andar ou desaparecer, interrompe a descarga e procura um receptor disponível. Quando a bazuca esvazia, reinicia a busca por colheitadeiras.
+Se a carreta encher, procura outra e mantém o restante da carga. Se o destino começar a andar ou desaparecer, interrompe a descarga e procura um receptor disponível. Quando a bazuca esvazia, sai da lateral do caminhão e reinicia a busca por colheitadeiras, mantendo o automático ligado.
 
 ## Limites e parâmetros
 
-- Não há planejamento de rotas, leitura de ruas, desvio geral de obstáculos ou manobra automática de ré. Há redução e frenagem de proximidade dos conjuntos selecionados. Há direção direta aos pontos de aproximação e alinhamento. Os canos ajustáveis não têm regulagem automática de altura.
+- Não há planejamento de rotas, leitura de ruas ou desvio geral de obstáculos. Há redução e frenagem de proximidade dos conjuntos selecionados, direção direta e correções locais de ré reta. Não faz estacionamento complexo em ré. Os canos ajustáveis não têm regulagem automática de altura.
 - O bloqueio de dano cobre o mecanismo nativo de destruição por rodas. Ao desligar o módulo, volta a valer o comportamento original e a configuração da partida. O efeito visual de dobrar plantas e o trabalho de outros implementos são mecanismos diferentes.
 - Use uma bazuca por trator. Tratores articulados, esteiras, configurações especiais de direção, física de frenagem, alturas dos canos e desempenho real ainda não foram validados no FS25.
-- O talhão vem do contorno original do mapa. Ao ativar fora do campo, tenta usar o campo da colheitadeira da mesma fazenda mais próxima, até 600 m. Reative ao trocar de talhão. Sem contorno, procura colheitadeiras até 600 m do trator e destinos até 200 m da posição inicial. Esses raios não garantem que todos estejam no mesmo campo.
-- Por padrão, aceita destinos até 60 m da borda original do campo e parados a menos de 1 km/h. Viaja até 15 km/h, faz a aproximação final a até 5 km/h e acompanha colheitadeiras a até 15 km/h.
-- Sem fluxo por 30 s ou sem terminar uma aproximação por 120 s, pausa e mostra o motivo. Desligue, reposicione e reative. Não contrata ajudante visual, não cobra salário e não persiste o estado ligado entre partidas.
+- O talhão vem do contorno original do mapa. Ao ativar fora do campo, tenta usar o campo da colheitadeira da mesma fazenda mais próxima, até 600 m. Reative ao trocar de talhão. Sem contorno, procura colheitadeiras até 600 m do trator. Os destinos são limitados a 600 m da posição atual do cano da bazuca. Esses raios não garantem que todos estejam no mesmo campo.
+- Prioriza destinos até 60 m da borda original do campo. Sem contorno, prioriza até 200 m da posição inicial. Se não encontrar um nesses limites preferenciais, aceita outro receptor compatível dentro dos 600 m. O destino precisa estar parado a menos de 1 km/h. Viaja até 15 km/h, aproxima-se a até 5 km/h e acompanha colheitadeiras a até 15 km/h.
+- Sem fluxo por 30 s ou sem terminar uma aproximação por 120 s, interrompe a manobra e repete automaticamente após 2 s. Na descarga sem fluxo, libera o receptor e busca outro, evitando o mesmo destino por 10 s. Não desativa por espera ou tempo excedido. Obstáculo persistente ou conjunto incompatível ainda pode exigir reposicionamento. Não contrata ajudante visual, não cobra salário e não persiste o estado ligado entre partidas.
 - Desative outro piloto do trator antes de ligar. O funcionário da colheitadeira pode continuar trabalhando. Multiplayer não é suportado.
 
 Os valores de chamada, carga, velocidade, raios e tempos ficam em `TransbordoInteligente.CONFIG`. A proteção fica em `TIProtecao.CONFIG`, com margem inicial de 0,75 m, reação de 0,7 s, desaceleração estimada de 2 m/s², redução para até 5 e 2 km/h e previsão amostrada a cada 0,5 m. Se o modelo não informar dimensões, usa padrões de 4 x 8 m para veículos e 12 x 3 m para plataforma, ajustados pelos marcadores disponíveis.
@@ -59,7 +69,7 @@ A previsão é geométrica e simplificada. A massa da carga, frenagem real, decl
 
 ## Teste no jogo
 
-Comece em campo plano, com uma colheitadeira, um trator com bazuca e uma carreta. Confira o atalho e o alvo no HUD. Teste 59% e 60%, os dois modos de condução da colheitadeira, o alinhamento e a entrada real de grãos. Atravesse uma pequena faixa de cultura e confira que os estados das plantas não são destruídos pelas rodas enquanto o módulo está ativo. Observe as medidas do HUD com a plataforma realmente acoplada. Teste aproximação por trás, recebimento com a frente atrás da plataforma, frenagem próxima ao limite e descarregamento perto da carreta e da cabine. Se a geometria não permitir receber sem atingir a plataforma, confira que permanece parado. Depois teste bazuca cheia, caminhão escolhido, descarga, carreta cheia durante a transferência, novo ciclo, desligamento e desacoplamento.
+Comece em campo plano, com uma colheitadeira, um trator com bazuca e uma carreta. Confira o atalho e o alvo no HUD. Teste 59% e 60%, os dois modos de condução da colheitadeira, o alinhamento e a entrada real de grãos. Observe o centro da bazuca, a espera depois de esvaziar a colheitadeira e a retomada sem apertar o atalho. Teste a carreta dos dois lados, com a cabine virada e com o trator vindo de lado; deixe espaço para alinhar o conjunto. Atravesse uma pequena faixa de cultura e confira que os estados das plantas não são destruídos pelas rodas enquanto o módulo está ativo. Observe as medidas do HUD com a plataforma realmente acoplada. Teste recebimento atrás da plataforma, frenagem próxima ao limite, saída em ré reta e descarregamento perto da carreta e da cabine. Se a geometria não permitir receber sem atingir a plataforma, confira que permanece parado. Depois teste bazuca cheia, carreta cheia durante a transferência e pelo menos dois ciclos completos, mantendo o automático ligado. Por fim, teste desligamento e desacoplamento.
 
 A verificação local não substitui esse teste de física e integração. Se houver erro, confira `Documentos/My Games/FarmingSimulator2025/log.txt` ou a pasta de documentos configurada no seu jogo.
 
@@ -68,7 +78,7 @@ A verificação local não substitui esse teste de física e integração. Se ho
 - `TransbordoInteligente.lua`: direção, estados, seleção, alinhamento e bloqueio local de dano por rodas.
 - `TIProtecao.lua`: dimensões e marcadores dos conjuntos, previsão local de proximidade e limite de velocidade. Não contém planejador de rotas.
 - `Bootstrap.lua` e `modDesc.xml`: especialização dos tipos de veículo e ação de entrada.
-- `tests/`: testes simulados de direção direta sem sensores, carga, reservas, alvos, alinhamento, descarga, dano local, restauração de callbacks e carregamento pelo manifesto.
+- `tests/`: testes simulados de direção direta sem sensores, mira de carga, reservas, alvos, alinhamento, descarga, ré, espera, retomada, ciclos completos, dano local, restauração de callbacks e carregamento pelo manifesto. A convergência é exercitada em seis aproximações com movimento cinemático simplificado, sem simular física ou fluxo real de grãos.
 - `package.py`: gera o ZIP do mod e um ZIP das fontes. O antigo `TINavegacao.lua` e o planejador continuam removidos. Os testes adicionais verificam plataformas largas e giradas, alcance do cano, recebimento confirmado, cabine do caminhão e frenagem em simulação cinemática.
 
 Com Python 3 e `lupa==2.6`:

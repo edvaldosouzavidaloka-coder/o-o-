@@ -273,6 +273,44 @@ class ProtecaoTests(unittest.TestCase):
         assert(tractor.spec_transbordoInteligente.mensagemNavegacao:find('medir'))
         ''')
 
+    def test_preselected_truck_does_not_remove_combine_header_protection(self):
+        self.check('''
+        attachHeader(15);selectCombine()
+        local spec=tractor.spec_transbordoInteligente
+        spec.caminhaoAlvo,spec.indiceCarreta=trailer,3
+        teleport(-6,100)
+        tractor.speed=15
+        TI.dirigir(tractor,100,-6,114,15)
+        assert(not tractor.command.allowed and spec.larguraPlataforma==15)
+        ''')
+
+    def test_reverse_checks_rear_of_wagon_rather_than_space_in_front(self):
+        self.check('''
+        activate()
+        trailer.rootNode.x,trailer.rootNode.z=0,-20
+        tractor.spec_transbordoInteligente.caminhaoAlvo=trailer
+        assert(P.posicaoLivre(tractor,trailer,0,0,0))
+        TI.dirigir(tractor,100,0,10,15,true)
+        assert(tractor.command.allowed)
+        tractor.speed,tractor.movingDirection=15,-1
+        TI.dirigir(tractor,100,0,-10,15,false)
+        assert(not tractor.command.allowed and not tractor.command.forwards)
+        ''')
+
+    def test_header_exit_reverses_with_both_targets_still_protected(self):
+        self.check('''
+        attachHeader(15);selectCombine()
+        teleport(-6,101)
+        wagon.units[2].level,wagon.units[2].kind=20000,1
+        tick()
+        local spec=tractor.spec_transbordoInteligente
+        assert(state()==E.SAINDO and spec.saidaDeRe)
+        assert(spec.saidaZ<101 and spec.caminhaoAlvo==trailer)
+        tick(100)
+        assert(tractor.command.allowed and not tractor.command.forwards)
+        assert(spec.larguraPlataforma==15 and spec.colheitadeiraAlvo==combine)
+        ''')
+
 
 if __name__=='__main__':
     unittest.main(verbosity=2)

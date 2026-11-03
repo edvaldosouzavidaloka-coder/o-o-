@@ -87,11 +87,6 @@ function P.sobrepoe(a,b,margin)
     return true
 end
 
-local function alvo(trator)
-    local spec=trator.spec_transbordoInteligente
-    return spec.caminhaoAlvo or spec.colheitadeiraAlvo
-end
-
 local function partes(v,reference,wagon)
     local result={}
     local a=yaw(reference)
@@ -189,7 +184,7 @@ function P.posicaoLivre(trator,target,x,z,a)
     return livre(g,{x=x,z=z,a=a or g.pose.a,t=a or g.pose.t},0)
 end
 
-local function prever(g,x,z,requested,current,dt)
+local function prever(g,x,z,requested,current,dt,moveForwards)
     local p=g.pose
     local dx,dz=x-p.x,z-p.z
     local lateral=dx*math.cos(p.a)-dz*math.sin(p.a)
@@ -199,26 +194,41 @@ local function prever(g,x,z,requested,current,dt)
     local safe,reason=livre(g,p,0)
     if not safe then return false,reason end
     local steps=math.max(1,math.ceil(horizon/P.CONFIG.amostra))
-    local ds=horizon/steps
+    local step=horizon/steps
+    local ds=moveForwards==false and -step or step
     for i=1,steps do
         p=avancar(p,curvature,ds,g.drawbar)
-        safe,reason=livre(g,p,v>0 and i*ds/v or 0)
+        safe,reason=livre(g,p,v>0 and i*step/v or 0)
         if not safe then return false,reason end
     end
     return true
 end
 
-function P.limitar(trator,dt,x,z,requested)
-    local target=alvo(trator)
-    if target==nil or not nodeOk(target.rootNode) then return requested end
-    local g=P.geometria(trator,target)
+function P.limitar(trator,dt,x,z,requested,moveForwards)
     local spec=trator.spec_transbordoInteligente
-    spec.larguraPlataforma=g.larguraPlataforma
-    spec.larguraPlataformaEstimada=g.larguraEstimada
+    local geometries,seen={},{}
+    spec.larguraPlataforma,spec.larguraPlataformaEstimada=0,false
+    -- O destino pode ser reservado enquanto a bazuca ainda sai da colheitadeira.
+    -- Ambos continuam protegidos durante essa transicao.
+    for _,key in ipairs({"colheitadeiraAlvo","caminhaoAlvo"}) do
+        local target=spec[key]
+        if target~=nil and nodeOk(target.rootNode) and not seen[root(target)] then
+            seen[root(target)]=true
+            local g=P.geometria(trator,target)
+            geometries[#geometries+1]=g
+            spec.larguraPlataforma=math.max(spec.larguraPlataforma,g.larguraPlataforma)
+            spec.larguraPlataformaEstimada=spec.larguraPlataformaEstimada or g.larguraEstimada
+        end
+    end
+    if #geometries==0 then return requested end
     local current=speed(trator)
     local reason
     for _,limit in ipairs({requested,math.min(requested,P.CONFIG.velocidadePerto),math.min(requested,P.CONFIG.velocidadePrecisao)}) do
-        local safe,why=prever(g,x,z,limit,current,dt)
+        local safe,why=true,nil
+        for _,g in ipairs(geometries) do
+            safe,why=prever(g,x,z,limit,current,dt,moveForwards)
+            if not safe then break end
+        end
         if safe then
             return limit,limit<requested and "Aproximacao reduzida: distancia de seguranca" or nil
         end
@@ -230,14 +240,13 @@ end
 -- Apenas desloca o ponto de aproximacao para tras do conjunto medido.
 -- Nao calcula desvios em volta da lavoura nem cria uma fila de busca.
 function P.aproximacao(trator,target,x,z,dx,dz,recuo)
-    local reference=direction(root(target))
-    local minZ=math.huge
+    local minAlong=math.huge
     for _,object in ipairs(TransbordoInteligente.getConjunto(root(target))) do
         local b=P.medir(object)
         for _,lx in ipairs({b.xmin,b.xmax}) do
             for _,lz in ipairs({b.zmin,b.zmax}) do
-                local _,_,pz=localToLocal(object.rootNode,reference,lx,0,lz)
-                minZ=math.min(minZ,pz)
+                local px,_,pz=localToWorld(object.rootNode,lx,0,lz)
+                minAlong=math.min(minAlong,(px-x)*dx+(pz-z)*dz)
             end
         end
     end
@@ -251,9 +260,6 @@ function P.aproximacao(trator,target,x,z,dx,dz,recuo)
             end
         end
     end
-    local _,py=getWorldTranslation(reference)
-    local _,_,targetZ=worldToLocal(reference,x,py,z)
-    local behind=math.min(targetZ-recuo,minZ-ownFront-P.CONFIG.margem-2)
-    local delta=targetZ-behind
-    return x-dx*delta,z-dz*delta
+    local behind=math.min(-recuo,minAlong-ownFront-P.CONFIG.margem-2)
+    return x+dx*behind,z+dz*behind
 end
