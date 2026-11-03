@@ -32,11 +32,10 @@ class NavegacaoTests(unittest.TestCase):
         end
         function findPath(x,z,sensor,goalAngle)
             local m=model()
-            local co=N.criarBusca(m,sensor or assert(N.sensor(m)),N.pose(m),{x=x,z=z,a=goalAngle})
+            local search=N.criarBusca(m,sensor or assert(N.sensor(m)),N.pose(m),{x=x,z=z,a=goalAngle})
             for i=1,100000 do
-                local ok,result,reason=coroutine.resume(co)
-                assert(ok,result)
-                if coroutine.status(co)=='dead' then return result,reason,i end
+                local done,result,reason=N.atualizarBusca(search)
+                if done then return result,reason,i end
             end
             error('Busca nao terminou no limite do teste')
         end
@@ -231,11 +230,102 @@ class NavegacaoTests(unittest.TestCase):
         assert(path==nil and reason~=nil)
         ''')
 
-    def test_search_yields_instead_of_blocking_one_frame(self):
+    def test_search_advances_across_frames_instead_of_blocking_one_frame(self):
         self.check('''
         N.CONFIG.consultasPorQuadro=3
         local path,reason,frames=findPath(0,40)
         assert(path and frames>3)
+        ''')
+
+    def test_planning_and_native_drive_work_with_coroutine_absent(self):
+        self.check('''
+        assert(coroutine==nil)
+        local path=assert(findPath(0,40,nil,0))
+        assert(#path>1)
+        for i=1,200 do
+            TI.dirigir(tractor,100,0,40,10,'viagem',0,1)
+            if tractor.command.allowed then break end
+        end
+        assert(tractor.command.allowed)
+        ''')
+
+    def test_one_query_per_frame_preserves_partial_curve_progress(self):
+        self.check('''
+        N.CONFIG.consultasPorQuadro=1
+        local m=model()
+        local sensor={calls=0,livre=function(self,p) self.calls=self.calls+1;return true end}
+        local search=N.criarBusca(m,sensor,N.pose(m),{x=0,z=24,a=0})
+        local result
+        for i=1,2000 do
+            local before=sensor.calls
+            local done,path=N.atualizarBusca(search)
+            assert(sensor.calls-before<=1)
+            assert(search.consultasUltimoQuadro<=1)
+            if done then result=path;break end
+        end
+        assert(result and #result>3)
+        ''')
+
+    def test_same_detour_with_small_and_large_frame_budgets(self):
+        self.check('''
+        obstacles={{x=0,z=22,r=0.15}}
+        N.CONFIG.consultasPorQuadro=1
+        local small=assert(findPath(0,50,nil,0))
+        N.CONFIG.consultasPorQuadro=1000
+        local large=assert(findPath(0,50,nil,0))
+        assert(#small==#large)
+        for i,p in ipairs(small) do
+            assert(math.abs(p.x-large[i].x)<0.000001)
+            assert(math.abs(p.z-large[i].z)<0.000001)
+            assert(math.abs(p.a-large[i].a)<0.000001)
+        end
+        ''')
+
+    def test_search_creation_failure_brakes_and_retries_without_frame_spam(self):
+        self.check('''
+        local attempts,warnings=0,0
+        Logging.warning=function() warnings=warnings+1 end
+        N.criarBusca=function() attempts=attempts+1;error('falha de inicializacao injetada') end
+        TI.dirigir(tractor,100,0,40,10)
+        assert(attempts==1 and warnings==1 and not tractor.command.allowed)
+        for i=1,10 do TI.dirigir(tractor,100,0,40,10) end
+        assert(attempts==1 and warnings==1 and not tractor.command.allowed)
+        TI.dirigir(tractor,1000,0,40,10)
+        assert(attempts==2 and warnings==1 and not tractor.command.allowed)
+        ''')
+
+    def test_sensor_error_mid_search_finishes_without_unchecked_route(self):
+        self.check('''
+        N.CONFIG.consultasPorQuadro=1
+        local m=model()
+        local sensor={calls=0,livre=function(self,p)
+            self.calls=self.calls+1
+            if self.calls>2 then return nil,'Sensor de teste indisponivel' end
+            return true
+        end}
+        local search=N.criarBusca(m,sensor,N.pose(m),{x=0,z=40})
+        local done,path,reason
+        for i=1,20 do
+            done,path,reason=N.atualizarBusca(search)
+            if done then break end
+        end
+        assert(done and path==nil and reason=='Sensor de teste indisponivel')
+        ''')
+
+    def test_finished_search_is_stable_and_does_not_repeat_sensor_reads(self):
+        self.check('''
+        local m=model()
+        local sensor={calls=0,livre=function(self,p) self.calls=self.calls+1;return true end}
+        local search=N.criarBusca(m,sensor,N.pose(m),{x=0,z=12,a=0})
+        local result
+        for i=1,100 do
+            local done,path=N.atualizarBusca(search)
+            if done then result=path;break end
+        end
+        assert(result)
+        local calls=sensor.calls
+        local done,path=N.atualizarBusca(search)
+        assert(done and path==result and sensor.calls==calls)
         ''')
 
     def test_thin_obstacle_between_waypoints_is_not_skipped(self):

@@ -261,55 +261,97 @@ local function key(p)
 end
 
 function N.criarBusca(model,sensor,start,goal)
-    return coroutine.create(function()
-        local heap,best={},{}
-        local count,queries=0,0
-        local xmin,xmax=math.min(start.x,goal.x)-N.CONFIG.margemBusca,math.max(start.x,goal.x)+N.CONFIG.margemBusca
-        local zmin,zmax=math.min(start.z,goal.z)-N.CONFIG.margemBusca,math.max(start.z,goal.z)+N.CONFIG.margemBusca
-        local function heuristic(p) return norma(goal.x-p.x,goal.z-p.z) end
-        local function check(p)
-            queries=queries+1
-            if queries>N.CONFIG.consultasPorQuadro then
-                queries=1; coroutine.yield("planejando")
+    -- O ambiente Lua do FS25 pode nao expor a biblioteca coroutine.
+    -- Todo o progresso (inclusive a amostra dentro de uma curva) fica nesta tabela.
+    local samples=math.max(1,math.ceil(N.CONFIG.passo/N.CONFIG.amostra))
+    return {model=model,sensor=sensor,start=start,goal=goal,heap={},best={},count=0,
+        samples=samples,ds=N.CONFIG.passo/samples,started=false,finished=false,
+        xmin=math.min(start.x,goal.x)-N.CONFIG.margemBusca,
+        xmax=math.max(start.x,goal.x)+N.CONFIG.margemBusca,
+        zmin=math.min(start.z,goal.z)-N.CONFIG.margemBusca,
+        zmax=math.max(start.z,goal.z)+N.CONFIG.margemBusca}
+end
+
+local function terminarBusca(search,path,reason)
+    search.finished,search.path,search.reason=true,path,reason
+    return true,path,reason
+end
+
+local function proximaCurva(search)
+    local current=search.current
+    current.turn=current.turn+1
+    current.q,current.sample=current.parent,0
+    if current.turn>3 then search.current=nil end
+end
+
+-- Retorna terminou, caminho, motivo. Cada chamada respeita seu orcamento de
+-- consultas e operacoes; nenhuma pilha de execucao fica suspensa entre quadros.
+function N.atualizarBusca(search)
+    if search.finished then return true,search.path,search.reason end
+    local budget=math.max(1,math.floor(N.CONFIG.consultasPorQuadro))
+    local queries,operations=0,0
+    local function heuristic(p) return norma(search.goal.x-p.x,search.goal.z-p.z) end
+    search.consultasUltimoQuadro=0
+    if not search.started then
+        local clear,reason=search.sensor:livre(search.start)
+        queries=queries+1
+        search.consultasUltimoQuadro=queries
+        if not clear then return terminarBusca(search,nil,reason or "Posicao inicial bloqueada") end
+        search.start.g,search.start.f=0,heuristic(search.start)
+        push(search.heap,search.start)
+        search.best[key(search.start)]=0
+        search.started=true
+    end
+    while queries<budget and operations<budget*8 do
+        operations=operations+1
+        local current=search.current
+        if current==nil then
+            if #search.heap==0 or search.count>=N.CONFIG.maxNos then
+                return terminarBusca(search,nil,"Sem rota livre de cultura e obstaculos dentro do limite de busca")
             end
-            return sensor:livre(p)
-        end
-        local clear,reason=check(start)
-        if not clear then return nil,reason or "Posicao inicial bloqueada" end
-        start.g,start.f=0,heuristic(start)
-        push(heap,start); best[key(start)]=0
-        while #heap>0 and count<N.CONFIG.maxNos do
-            local p=pop(heap)
-            if p.g<=best[key(p)]+0.000001 then
-                count=count+1
+            local p=pop(search.heap)
+            if p.g<=search.best[key(p)]+0.000001 then
+                search.count=search.count+1
+                local goal=search.goal
                 if heuristic(p)<=N.CONFIG.tolerancia and (goal.a==nil or math.abs(angulo(goal.a-p.a))<math.rad(25)) then
                     local path={}
                     while p~=nil do table.insert(path,1,p); p=p.parent end
-                    return path
+                    return terminarBusca(search,path)
                 end
-                for _,turn in ipairs({0,-1,1}) do
-                    local q=p
-                    local valid=true
-                    local ds=N.CONFIG.passo/math.ceil(N.CONFIG.passo/N.CONFIG.amostra)
-                    for _=1,math.ceil(N.CONFIG.passo/N.CONFIG.amostra) do
-                        q=N.avancar(model,q,turn/model.radius,ds)
-                        if q.x<xmin or q.x>xmax or q.z<zmin or q.z>zmax then valid=false; break end
-                        local free=check(q)
-                        if sensor.error~=nil then return nil,sensor.error end
-                        if not free then valid=false; break end
-                    end
-                    if valid then
+                search.current={parent=p,q=p,turn=1,sample=0}
+            end
+        else
+            local turn=current.turn==1 and 0 or (current.turn==2 and -1 or 1)
+            local q=N.avancar(search.model,current.q,turn/search.model.radius,search.ds)
+            if q.x<search.xmin or q.x>search.xmax or q.z<search.zmin or q.z>search.zmax then
+                proximaCurva(search)
+            else
+                local free,reason=search.sensor:livre(q)
+                queries=queries+1
+                search.consultasUltimoQuadro=queries
+                if search.sensor.error~=nil or free==nil then
+                    return terminarBusca(search,nil,search.sensor.error or reason or "Falha na leitura do trajeto")
+                end
+                if not free then
+                    proximaCurva(search)
+                else
+                    current.q,current.sample=q,current.sample+1
+                    if current.sample>=search.samples then
+                        local p=current.parent
                         q.g=p.g+N.CONFIG.passo*(1+math.abs(turn)*0.08)
                         q.f=q.g+heuristic(q)*1.05
                         q.parent,q.turn=p,turn
                         local k=key(q)
-                        if best[k]==nil or q.g<best[k] then best[k]=q.g; push(heap,q) end
+                        if search.best[k]==nil or q.g<search.best[k] then
+                            search.best[k]=q.g; push(search.heap,q)
+                        end
+                        proximaCurva(search)
                     end
                 end
             end
         end
-        return nil,"Sem rota livre de cultura e obstaculos dentro do limite de busca"
-    end)
+    end
+    return false,nil,"planejando"
 end
 
 function N.reset(trator)
@@ -381,16 +423,26 @@ function N.dirigir(trator,dt,x,z,speed,modo,dx,dz)
     end
     if nav.path==nil then
         if nav.clock<nav.retry then return frear(trator,dt,"Aguardando rota livre") end
-        if nav.search==nil then
-            nav.goal=goal
-            nav.search=N.criarBusca(nav.model,nav.sensor,pose,goal)
-        end
-        local ok,result,reason=coroutine.resume(nav.search)
+        -- Protege tanto a criacao quanto o avanco: uma falha nao pode escapar
+        -- do update, impedir a frenagem e se repetir a cada quadro no log.
+        local ok,done,result,reason=pcall(function()
+            if nav.search==nil then
+                nav.goal=goal
+                nav.search=N.criarBusca(nav.model,nav.sensor,pose,goal)
+            end
+            return N.atualizarBusca(nav.search)
+        end)
         if not ok then
             nav.search=nil; nav.retry=nav.clock+N.CONFIG.tentarNovamente
-            return frear(trator,dt,"Falha no planejamento; movimento interrompido")
+            local message=tostring(done)
+            if spec.ultimoErroPlanejador~=message and Logging~=nil and Logging.warning~=nil then
+                Logging.warning("[Transbordo Inteligente] Planejamento interrompido: %s",message)
+            end
+            spec.ultimoErroPlanejador=message
+            return frear(trator,dt,"Falha no planejamento; confira log.txt")
         end
-        if coroutine.status(nav.search)~="dead" then return frear(trator,dt,"Calculando rota sem pisar na cultura") end
+        spec.ultimoErroPlanejador=nil
+        if not done then return frear(trator,dt,"Calculando rota sem pisar na cultura") end
         nav.search=nil
         if result==nil then
             nav.retry=nav.clock+N.CONFIG.tentarNovamente

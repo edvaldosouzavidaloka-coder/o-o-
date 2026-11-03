@@ -1,4 +1,6 @@
 -- Contratos simulados da engine. Nao simula fisica, colisao ou fluxo real de graos.
+-- O log real do FS25 confirma que esta biblioteca nao esta exposta ao mod.
+coroutine=nil
 FillType = {UNKNOWN=0}
 Dischargeable = {DISCHARGE_STATE_OFF=0, DISCHARGE_STATE_OBJECT=2, DISCHARGE_STATE_GROUND=1}
 Drivable = {CRUISECONTROL_STATE_OFF=0}

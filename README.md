@@ -1,8 +1,10 @@
 # Mods para Farming Simulator 25
 
-## Transbordo Inteligente — versão de teste 0.3.0.2
+## Transbordo Inteligente — versão de teste 0.3.0.3
 
 [Baixar FS25_TransbordoInteligente.zip](FS25_TransbordoInteligente.zip) · [Instruções de uso](transbordo-inteligente/LEIA-ME.md) · [Código Lua](transbordo-inteligente/TransbordoInteligente.lua)
+
+**Correção 0.3.0.3:** remove a dependência de `coroutine`, ausente no ambiente do FS25 observado no log enviado. Essa dependência causava `TINavegacao.lua:264: attempt to index nil with 'create'` ao iniciar o planejamento. O progresso da busca agora fica em tabelas e avança por chamadas com orçamento limitado por quadro. Criação e avanço da busca são protegidos: uma falha solicita frenagem, limita novas tentativas e registra o diagnóstico sem repetir a mesma exceção a cada quadro. Os testes executam sem a biblioteca `coroutine`.
 
 **Correção 0.3.0.2:** resolve o bloqueio `Leitura de cultura indisponivel` causado pela dependência da tabela antiga `g_currentMission.fruits`. A leitura usa `FruitTypeDesc:getDataPlaneInfo()` ou os dados do próprio descritor no FS25. Os estados colhidos são identificados por `getIsCut`/`cutStates`, sem deslocar sua numeração. A proteção continua ativa para cultura em crescimento e pronta para colher; dados ausentes ainda interrompem o movimento com diagnóstico específico.
 
