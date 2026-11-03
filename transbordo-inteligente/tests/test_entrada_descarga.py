@@ -10,7 +10,7 @@ ROOT = Path(__file__).resolve().parents[1]
 class EntradaDescargaTests(unittest.TestCase):
     def setUp(self):
         self.lua = LuaRuntime(unpack_returned_tuples=True)
-        for name in ['TIProtecao.lua', 'TransbordoInteligente.lua', 'tests/fixture.lua']:
+        for name in ['TITalhao.lua', 'TIProtecao.lua', 'TransbordoInteligente.lua', 'tests/fixture.lua']:
             self.lua.execute((ROOT / name).read_text())
 
     def check(self, code):
@@ -25,9 +25,9 @@ class EntradaDescargaTests(unittest.TestCase):
         tick(100)
         local s=tractor.spec_transbordoInteligente
         assert(not s.entradaPelaTraseira and state()==E.APROXIMANDO)
-        assert(tractor.command.allowed and tractor.command.forwards)
-        assert(tractor.command.z>0 and math.abs(tractor.command.x)>1)
-        assert(s.mensagem:find('Entrando por tras'))
+        assert(tractor.command.allowed and not tractor.command.forwards)
+        assert(tractor.command.z<0 and math.abs(tractor.command.x)<0.001)
+        assert(s.mensagem:find('Reposicionando atras'))
         ''')
 
     def test_already_behind_can_enter_only_by_driving_forward(self):
@@ -68,7 +68,7 @@ class EntradaDescargaTests(unittest.TestCase):
         assert(state()==E.APROXIMANDO and tractor.command.allowed)
         ''')
 
-    def test_forced_unload_sends_partial_cargo_to_far_trailer(self):
+    def test_forced_unload_sends_partial_cargo_to_far_trailer_in_same_field(self):
         self.check('''
         wagon.units[2].level,wagon.units[2].kind=5000,1
         teleport(1500,0,trailer)
@@ -88,7 +88,7 @@ class EntradaDescargaTests(unittest.TestCase):
         assert(tractor.spec_transbordoInteligente.isAtivo)
         tick();permitUnload(makeTrailer(40,0),3);tick()
         assert(state()~=E.DESCARREGANDO)
-        permitUnload();tick();tick()
+        alignTrailer();permitUnload();tick();tick()
         assert(wagon.dischargeState==Dischargeable.DISCHARGE_STATE_OBJECT)
         ''')
 
@@ -128,7 +128,7 @@ class EntradaDescargaTests(unittest.TestCase):
         assert(state()==E.APROXIMANDO_CARRETA)
         ''')
 
-    def test_local_compatible_trailer_precedes_global_fallback(self):
+    def test_nearest_receiver_precedes_farther_receiver_in_same_field(self):
         self.check('''
         wagon.units[2].level,wagon.units[2].kind=20000,1
         local far=makeTrailer(1200,0)

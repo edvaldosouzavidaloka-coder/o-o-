@@ -7,14 +7,22 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class AproximacaoMovimentoTests(unittest.TestCase):
-    def simulate(self, mode, x, z, angle):
+    def simulate(self, mode, x, z, angle, field_limits=None):
         lua = LuaRuntime(unpack_returned_tuples=True)
-        for name in ['TIProtecao.lua', 'TransbordoInteligente.lua', 'tests/fixture.lua']:
+        for name in ['TITalhao.lua', 'TIProtecao.lua', 'TransbordoInteligente.lua', 'tests/fixture.lua']:
             lua.execute((ROOT / name).read_text())
         lua.globals().mode = mode
         lua.globals().startx = x
         lua.globals().startz = z
         lua.globals().starta = angle
+        if field_limits is not None:
+            lua.globals().limits=lua.table_from(field_limits)
+            lua.execute('''
+            defaultField=makeField(limits[1],limits[2],limits[3],limits[4])
+            g_farmlandManager={getFarmlandAtWorldPosition=function()
+                return {getField=function() return defaultField end}
+            end}
+            ''')
         lua.execute('''
         tractor.rootNode.x,tractor.rootNode.z,tractor.rootNode.angle=startx,startz,starta
         if mode=='truck' then wagon.units[2].level,wagon.units[2].kind=20000,1 end
@@ -44,6 +52,8 @@ class AproximacaoMovimentoTests(unittest.TestCase):
                 tractor.movingDirection=c.forwards and 1 or -1
             else tractor.speed=0 end
             assert(tractor.spec_transbordoInteligente.isAtivo)
+            assert(TIProtecao.posicaoNoTalhao(tractor,tractor.rootNode.x,tractor.rootNode.z),
+                'O conjunto atravessou o limite do campo')
             assert(wagon.dischargeState~=Dischargeable.DISCHARGE_STATE_OBJECT)
         end
         assert(reached,'Nao convergiu para o centro dentro de 120 segundos simulados')
@@ -72,6 +82,12 @@ class AproximacaoMovimentoTests(unittest.TestCase):
 
     def test_truck_already_parallel_in_opposite_heading(self):
         self.simulate('truck', 35, 30, 3.141592653589793)
+
+    def test_combine_manoeuvre_stays_in_bounded_working_field(self):
+        self.simulate('combine', -6, 125, 0, (-40,-20,40,150))
+
+    def test_truck_approach_stays_in_bounded_working_field(self):
+        self.simulate('truck', -6, 120, 0, (-80,-80,80,165))
 
 
 if __name__ == '__main__':

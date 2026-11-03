@@ -52,6 +52,7 @@ def main():
         'scripts/TransbordoInteligente.lua': (ROOT / 'TransbordoInteligente.lua').read_bytes(),
         'scripts/Bootstrap.lua': (ROOT / 'Bootstrap.lua').read_bytes(),
         'scripts/TIProtecao.lua': (ROOT / 'TIProtecao.lua').read_bytes(),
+        'scripts/TITalhao.lua': (ROOT / 'TITalhao.lua').read_bytes(),
         'LEIA-ME.md': (ROOT / 'LEIA-ME.md').read_bytes(),
         'icon.dds': icon_dds(),
     }

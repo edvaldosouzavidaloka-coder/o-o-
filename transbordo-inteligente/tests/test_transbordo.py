@@ -10,6 +10,7 @@ ROOT = Path(__file__).resolve().parents[1]
 class TransbordoTests(unittest.TestCase):
     def setUp(self):
         self.lua = LuaRuntime(unpack_returned_tuples=True)
+        self.lua.execute((ROOT / 'TITalhao.lua').read_text())
         self.lua.execute((ROOT / 'TIProtecao.lua').read_text())
         self.lua.execute((ROOT / 'TransbordoInteligente.lua').read_text())
         self.lua.execute((ROOT / 'tests' / 'fixture.lua').read_text())
@@ -118,7 +119,7 @@ class TransbordoTests(unittest.TestCase):
         assert(tractor.spec_transbordoInteligente.caminhaoAlvo == near)
         ''')
 
-    def test_edge_restriction_ignores_trailer_in_middle_of_large_field(self):
+    def test_nearest_compatible_receiver_inside_current_field_is_preferred(self):
         self.check('''
         wagon.units[2].level=20000; wagon.units[2].kind=1
         local field=makeField(-500,-500,500,500)
@@ -128,7 +129,7 @@ class TransbordoTests(unittest.TestCase):
         local edge=makeTrailer(490,0)
         table.insert(g_currentMission.vehicleSystem.vehicles,edge)
         activate(); tick()
-        assert(tractor.spec_transbordoInteligente.caminhaoAlvo == edge)
+        assert(tractor.spec_transbordoInteligente.caminhaoAlvo == trailer)
         ''')
 
     def test_waits_with_brake_when_no_compatible_trailer(self):
@@ -210,7 +211,7 @@ class TransbordoTests(unittest.TestCase):
     def test_unload_cycle_uses_object_constant_and_repeats_search(self):
         self.check('''
         wagon.units[2].level=20000; wagon.units[2].kind=1
-        activate(); tick(); permitUnload()
+        activate(); tick(); alignTrailer();permitUnload()
         tick(); assert(state() == E.DESCARREGANDO)
         tick(); assert(wagon.dischargeState == Dischargeable.DISCHARGE_STATE_OBJECT)
         assert(wagon.turnedOn and trailer.prepared == 3)
@@ -230,7 +231,7 @@ class TransbordoTests(unittest.TestCase):
     def test_lost_discharge_target_stops_before_realigning(self):
         self.check('''
         wagon.units[2].level=20000; wagon.units[2].kind=1
-        activate(); tick(); permitUnload(); tick(); tick()
+        activate(); tick(); alignTrailer();permitUnload(); tick(); tick()
         wagon.raycastObject=nil
         tick()
         assert(state() == E.APROXIMANDO_CARRETA)
@@ -243,7 +244,7 @@ class TransbordoTests(unittest.TestCase):
         wagon.units[2].level=20000; wagon.units[2].kind=1
         local other=makeTrailer(50,0)
         table.insert(g_currentMission.vehicleSystem.vehicles,other)
-        activate(); tick(); permitUnload(); tick(); tick()
+        activate(); tick(); alignTrailer();permitUnload(); tick(); tick()
         wagon.units[2].level=10000
         trailer.units[3].level=30000; trailer.units[3].kind=1
         tick(); assert(state() == E.BUSCANDO_CARRETA)
@@ -255,7 +256,7 @@ class TransbordoTests(unittest.TestCase):
     def test_stall_watchdog_stops_discharge_and_researches_automatically(self):
         self.check('''
         wagon.units[2].level=20000; wagon.units[2].kind=1
-        activate(); tick(); permitUnload(); tick(); tick()
+        activate(); tick(); alignTrailer();permitUnload(); tick(); tick()
         tick(TI.CONFIG.tempoSemDescarga+1)
         assert(state() == E.BUSCANDO_CARRETA)
         assert(tractor.spec_transbordoInteligente.isAtivo)

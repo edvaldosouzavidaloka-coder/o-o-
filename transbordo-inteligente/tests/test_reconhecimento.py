@@ -9,7 +9,7 @@ ROOT = Path(__file__).resolve().parents[1]
 class ReconhecimentoTests(unittest.TestCase):
     def setUp(self):
         self.lua = LuaRuntime(unpack_returned_tuples=True)
-        for name in ['TIProtecao.lua', 'TransbordoInteligente.lua', 'tests/fixture.lua']:
+        for name in ['TITalhao.lua', 'TIProtecao.lua', 'TransbordoInteligente.lua', 'tests/fixture.lua']:
             self.lua.execute((ROOT / name).read_text())
 
     def check(self, code):
@@ -85,8 +85,8 @@ class ReconhecimentoTests(unittest.TestCase):
         tick(100)
         assert(state()==E.APROXIMANDO and not tractor.spec_transbordoInteligente.entradaPelaTraseira)
         tick(100)
-        assert(tractor.command.allowed and tractor.command.forwards)
-        assert(tractor.command.z>0 and math.abs(tractor.command.x)>1)
+        assert(tractor.command.allowed and not tractor.command.forwards)
+        assert(tractor.command.z<0 and math.abs(tractor.command.x)<0.001)
         ''')
 
     def test_lateral_error_alone_does_not_hold_stationary_combine_follower(self):
@@ -163,7 +163,7 @@ class ReconhecimentoTests(unittest.TestCase):
         assert(tractor.spec_transbordoInteligente.caminhaoAlvo==trailer)
         ''')
 
-    def test_search_falls_back_beyond_field_edge_filter_and_local_radius(self):
+    def test_search_does_not_leave_current_field_for_distant_trailer(self):
         self.check('''
         wagon.units[2].level,wagon.units[2].kind=20000,1
         local field=makeField(-30,-10,30,150)
@@ -172,9 +172,9 @@ class ReconhecimentoTests(unittest.TestCase):
         end}
         teleport(250,0,trailer)
         activate();tick(250)
-        assert(tractor.spec_transbordoInteligente.caminhaoAlvo==trailer)
+        assert(tractor.spec_transbordoInteligente.caminhaoAlvo==nil)
         teleport(1000,0,trailer)
-        assert(TI.encontrarCaminhao(tractor)==trailer)
+        assert(TI.encontrarCaminhao(tractor)==nil)
         ''')
 
     def test_search_reacts_to_new_trailer_in_quarter_second(self):
@@ -191,7 +191,7 @@ class ReconhecimentoTests(unittest.TestCase):
     def test_cached_discharge_node_keeps_empty_wagon_readable_and_active(self):
         self.check('''
         wagon.units[2].level,wagon.units[2].kind=20000,1
-        activate();tick();permitUnload();tick();tick()
+        activate();tick();alignTrailer();permitUnload();tick();tick()
         wagon.units[2].level,wagon.units[2].kind=0,0
         function wagon:getCurrentDischargeNode() return nil end
         wagon.spec_dischargeable.dischargeNodes={}
@@ -279,7 +279,7 @@ class ReconhecimentoTests(unittest.TestCase):
             assert(state()==E.APROXIMANDO_CARRETA)
             local tx,tz,dx,dz=TI.alvoDescarregar(tractor,trailer,3)
             teleport(tx,tz);tractor.rootNode.angle=math.atan2(dx,dz)
-            permitUnload();tick();tick()
+            alignTrailer();permitUnload();tick();tick()
             assert(state()==E.DESCARREGANDO and wagon.dischargeState==Dischargeable.DISCHARGE_STATE_OBJECT)
             wagon.units[2].level,wagon.units[2].kind=0,0
             tick();assert(state()==E.SAINDO)

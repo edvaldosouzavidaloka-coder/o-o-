@@ -9,7 +9,7 @@ ROOT=Path(__file__).resolve().parents[1]
 class ProtecaoTests(unittest.TestCase):
     def setUp(self):
         self.lua=LuaRuntime(unpack_returned_tuples=True)
-        for name in ['TIProtecao.lua','TransbordoInteligente.lua','tests/fixture.lua']:
+        for name in ['TITalhao.lua', 'TIProtecao.lua','TransbordoInteligente.lua','tests/fixture.lua']:
             self.lua.execute((ROOT/name).read_text())
         self.lua.execute('''
         P=TIProtecao

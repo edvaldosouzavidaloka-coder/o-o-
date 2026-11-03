@@ -1,19 +1,20 @@
--- Transbordo Inteligente - FS25, single-player, versao de teste 0.7.0.0.
+-- Transbordo Inteligente - FS25, single-player, versao de teste 0.8.0.0.
 -- A direcao usa AIVehicleUtil; transferencia de graos exclusivamente pela engine.
 -- Direcao direta, sem leitura de cultura ou planejamento de rotas.
 TransbordoInteligente = {}
 local TI = TransbordoInteligente
-TI.VERSAO="0.7.0.0"
+TI.VERSAO="0.8.0.0"
 
 TI.CONFIG = {
     chamada = 60, cheio = 99.9, vazio = 0.1,
-    raioColheitadeiras = 600, raioCaminhaoSemMapa = 200, distanciaBorda = 60,
-    velocidadeViagem = 15, velocidadeManobra = 5, velocidadeMaxColheita = 15,
+    velocidadeViagem = 15, velocidadeManobra = 8, velocidadeManobraPerto = 5,
+    velocidadeAlinhamento = 4, velocidadeMaxColheita = 15,
     recuoAproximacao = 50, distanciaEntradaDireta = 55, pontoMira = 8, intervaloBusca = 1000,
     tempoSemDescarga = 30000, tempoManobra = 120000,
-    raioDestino = 600, intervaloDestino = 250, intervaloRetentativa = 2000,
-    velocidadeMinima = 1.3, velocidadeRe = 1.5, limiteCorrecaoRe = 8,
-    toleranciaLongitudinal = 0.2, toleranciaLateral = 0.25
+    intervaloDestino = 250, intervaloRetentativa = 2000,
+    velocidadeMinima = 1.3, velocidadeRe = 1.5, velocidadeReposicionar = 3, limiteCorrecaoRe = 8,
+    toleranciaLongitudinal = 0.1, toleranciaLateral = 0.15,
+    alcanceBorda = 12, folgaManobraTalhao = 8
 }
 TI.ESTADOS = {
     INATIVO = 1, BUSCANDO = 2, APROXIMANDO = 3, ACOMPANHANDO = 4,
@@ -266,16 +267,25 @@ function TI.atualizarProgresso(trator,dt,carga)
     else spec.tempoSemProgresso=(spec.tempoSemProgresso or 0)+dt end
 end
 
--- Contorno original do mapa. Sem API de talhao, usa a posicao inicial + raios.
+-- Contorno original do mapa. Propriedade rural nao substitui o poligono do campo.
 function TI.getTalhao(v)
-    if g_farmlandManager == nil or g_farmlandManager.getFarmlandAtWorldPosition == nil then return nil end
     local x, _, z = getWorldTranslation(v.rootNode)
-    local farmland = g_farmlandManager:getFarmlandAtWorldPosition(x, z)
+    if TITalhao==nil then return nil end
+    local farmland = g_farmlandManager~=nil and g_farmlandManager.getFarmlandAtWorldPosition~=nil
+        and g_farmlandManager:getFarmlandAtWorldPosition(x,z) or nil
     local field = farmland ~= nil and farmland.getField ~= nil and farmland:getField() or nil
     local polygon = field ~= nil and field.getDensityMapPolygon ~= nil and field:getDensityMapPolygon() or nil
     local flat = polygon ~= nil and polygon.getVerticesList ~= nil and polygon:getVerticesList() or nil
-    if type(flat) ~= "table" or #flat < 6 or #flat % 2 ~= 0 then return nil end
-    return {objeto = field, vertices = flat}
+    local talhao=TITalhao.criar(field,flat)
+    if talhao~=nil and TITalhao.contem(talhao,x,z) then return talhao end
+    -- Alguns mapas informam os campos pelo FieldManager.
+    for _,candidate in pairs(g_fieldManager~=nil and g_fieldManager.getFields~=nil and g_fieldManager:getFields() or {}) do
+        local polygon=candidate.getDensityMapPolygon~=nil and candidate:getDensityMapPolygon() or nil
+        local vertices=polygon~=nil and polygon.getVerticesList~=nil and polygon:getVerticesList() or nil
+        local other=TITalhao.criar(candidate,vertices)
+        if other~=nil and TITalhao.contem(other,x,z) then return other end
+    end
+    return nil
 end
 
 function TI.distanciaBorda(talhao, x, z)
@@ -294,11 +304,9 @@ end
 
 local function mesmoTalhao(trator, v)
     local spec = trator.spec_transbordoInteligente
-    if spec.talhao == nil then
-        return distancia(trator.rootNode, v.rootNode) <= TI.CONFIG.raioColheitadeiras
-    end
-    local talhao = TI.getTalhao(v)
-    return talhao ~= nil and talhao.objeto == spec.talhao.objeto
+    if spec.talhao==nil or TITalhao==nil then return false end
+    local x,_,z=getWorldTranslation(v.rootNode)
+    return TITalhao.contem(spec.talhao,x,z)
 end
 
 function TI.encontrarColheitadeira(trator)
@@ -324,7 +332,7 @@ end
 function TI.encontrarCaminhao(trator)
     local spec = trator.spec_transbordoInteligente
     local carga = TI.getCarga(spec.bazuca)
-    if carga == nil then return nil end
+    if carga == nil or spec.talhao==nil then return nil end
     local _, conjunto = TI.getConjunto(trator)
     local melhor, indice, menorDistancia,melhorClasse = nil, nil, math.huge,math.huge
     local contagem={compativeis=0,movendo=0,reservadas=0,temporarias=0}
@@ -335,25 +343,24 @@ function TI.encontrarCaminhao(trator)
             and v.spec_combine == nil and v.spec_mixerWagon == nil and v.spec_sowingMachine == nil
             and v.spec_pipe == nil and mesmaFazenda(trator, v) then
             local raiz = v.getRootVehicle ~= nil and v:getRootVehicle() or v
-            local x, _, z = getWorldTranslation(v.rootNode)
-            local pertoBorda
-            if spec.talhao ~= nil then
-                pertoBorda = TI.distanciaBorda(spec.talhao, x, z) <= TI.CONFIG.distanciaBorda
-            else
-                pertoBorda = math.sqrt((x-spec.inicioX)^2 + (z-spec.inicioZ)^2) <= TI.CONFIG.raioCaminhaoSemMapa
-            end
             for index in pairs(v.spec_fillUnit ~= nil and v.spec_fillUnit.fillUnits or {}) do
                 if aceita(v, index, carga.tipo) and pontoEnchimento(v, index) ~= nil then
                     contagem.compativeis=contagem.compativeis+1
                     local fx,_,fz=TI.pontoEnchimento(v,index)
                     local d=math.sqrt((fx-sx)^2+(fz-sz)^2)
-                    -- Primeiro busca perto; sem destino local, considera todas
-                    -- as carretas compativeis da missao, inclusive fora do talhao.
-                    local classe=d>TI.CONFIG.raioDestino and 2 or (pertoBorda and 0 or 1)
+                    -- O cano pode alcancar uma caçamba na borda; as rodas ficam
+                    -- dentro do campo, inclusive na posicao final de alinhamento.
+                    local inside=TITalhao.contem(spec.talhao,fx,fz)
+                    local nearby=inside or TITalhao.distancia(spec.talhao,fx,fz)<=TI.CONFIG.alcanceBorda
+                    local classe=inside and 0 or 1
                     local ignored=spec.destinosIgnorados~=nil and spec.destinosIgnorados[v] or nil
-                    if velocidade(raiz)>=1 then contagem.movendo=contagem.movendo+1
+                    if not nearby then
+                        contagem.compativeis=contagem.compativeis-1
+                    elseif velocidade(raiz)>=1 then contagem.movendo=contagem.movendo+1
                     elseif not disponivel(TI.reservasCarretas,v,trator) then contagem.reservadas=contagem.reservadas+1
                     elseif ignored~=nil and ignored>(spec.tempoTotal or 0) then contagem.temporarias=contagem.temporarias+1
+                    elseif spec.bazuca.spec_pipe.currentState==2 and TI.alvoDescarregar(trator,v,index,true)==nil then
+                        contagem.compativeis=contagem.compativeis-1
                     elseif classe<melhorClasse or (classe==melhorClasse and d<menorDistancia) then
                         melhor,indice,menorDistancia,melhorClasse=v,index,d,classe
                     end
@@ -362,7 +369,7 @@ function TI.encontrarCaminhao(trator)
         end
     end
     if melhor~=nil then spec.motivoBuscaDestino=nil
-    elseif contagem.compativeis==0 then spec.motivoBuscaDestino="Nenhuma carreta da fazenda com espaco para este grao"
+    elseif contagem.compativeis==0 then spec.motivoBuscaDestino="Nenhuma carreta compativel neste talhao; estacione na borda com espaco interno"
     elseif contagem.movendo==contagem.compativeis then spec.motivoBuscaDestino="Pare o caminhao para receber a carga"
     elseif contagem.reservadas==contagem.compativeis then spec.motivoBuscaDestino="Carretas ocupadas por outra bazuca"
     else spec.motivoBuscaDestino="Procurando receptor livre; repetindo busca automaticamente" end
@@ -385,6 +392,9 @@ function TI.dirigir(trator, dt, x, z, velocidadeAlvo, moveForwards,somenteFrente
     -- Direcao direta com limite de proximidade dos conjuntos selecionados.
     -- Nao ha leitura de cultura, busca de rotas ou dependencia de coroutine.
     local spec=trator.spec_transbordoInteligente
+    if velocidadeAlvo>0 and spec.talhao==nil then
+        velocidadeAlvo=0;spec.mensagemNavegacao="Talhao nao reconhecido; ative dentro do campo"
+    end
     moveForwards=moveForwards~=false
     local steeringNode = trator.getAISteeringNode ~= nil and trator:getAISteeringNode() or direcao(trator)
     local y = select(2, getWorldTranslation(steeringNode))
@@ -403,6 +413,13 @@ function TI.dirigir(trator, dt, x, z, velocidadeAlvo, moveForwards,somenteFrente
             velocidadeAlvo=math.min(velocidadeAlvo,TI.CONFIG.velocidadeManobra)
         end
     elseif lz>1 then spec.ladoManobra=nil end
+    if velocidadeAlvo>TI.CONFIG.velocidadeManobraPerto and (spec.ladoManobra~=nil or spec.estadoAtual==E.SAINDO) then
+        for _,key in ipairs({"colheitadeiraAlvo","caminhaoAlvo"}) do
+            if valido(spec[key]) and distancia(trator.rootNode,spec[key].rootNode)<25 then
+                velocidadeAlvo=math.min(velocidadeAlvo,TI.CONFIG.velocidadeManobraPerto)
+            end
+        end
+    end
     if velocidadeAlvo>0 then
         if trator.getLastSpeed~=nil and velocidade(trator)>0.5 and trator.movingDirection~=nil
             and ((moveForwards and trator.movingDirection<0) or (not moveForwards and trator.movingDirection>0)) then
@@ -415,8 +432,23 @@ function TI.dirigir(trator, dt, x, z, velocidadeAlvo, moveForwards,somenteFrente
             velocidadeAlvo=0
             spec.mensagemNavegacao="Protecao de proximidade nao carregada"
         else
-            local ok,limit,reason=pcall(TIProtecao.limitar,trator,dt,x,z,velocidadeAlvo,moveForwards)
+            local ok,limit,reason,kind=pcall(TIProtecao.limitar,trator,dt,x,z,velocidadeAlvo,moveForwards)
             if ok then
+                if limit==0 and kind=="talhao" and moveForwards and not spec.centralizando then
+                    local best,bestX,bestZ,bestLimit=-math.huge,nil,nil,nil
+                    for _,side in ipairs({-1,1}) do
+                        local cx,_,cz=localToWorld(steeringNode,side*12,0,12)
+                        if TITalhao.contem(spec.talhao,cx,cz,2) then
+                            local safe,speed=pcall(TIProtecao.limitar,trator,dt,cx,cz,math.min(velocidadeAlvo,TI.CONFIG.velocidadeManobra),true)
+                            local score=TITalhao.distancia(spec.talhao,cx,cz)
+                            if safe and speed>0 and score>best then best,bestX,bestZ,bestLimit=score,cx,cz,speed end
+                        end
+                    end
+                    if bestX~=nil then
+                        x,z,limit,reason=bestX,bestZ,bestLimit,"Manobrando para dentro do talhao"
+                        spec.ladoManobra=nil
+                    end
+                end
                 velocidadeAlvo=limit
                 spec.mensagemNavegacao=reason
             else
@@ -429,6 +461,7 @@ function TI.dirigir(trator, dt, x, z, velocidadeAlvo, moveForwards,somenteFrente
             end
         end
     end
+    lx,_,lz=worldToLocal(steeringNode,x,y,z)
     AIVehicleUtil.driveToPoint(trator, dt, 1, velocidadeAlvo > 0, moveForwards, lx, lz, velocidadeAlvo)
     return velocidadeAlvo>0
 end
@@ -497,8 +530,8 @@ function TI.entradaColheitadeira(trator,dt,combine,x,z,dx,dz)
     end
     local ok,bx,bz=pcall(TIProtecao.aproximacao,trator,combine,x,z,dx,dz,18)
     local okFar,farX,farZ=pcall(TIProtecao.aproximacao,trator,combine,x,z,dx,dz,TI.CONFIG.recuoAproximacao)
-    if not ok or not okFar then
-        parar(trator,dt);spec.mensagemNavegacao="Nao foi possivel medir a traseira da colheitadeira";return false
+    if not ok or not okFar or bx==nil or farX==nil then
+        parar(trator,dt);spec.mensagemNavegacao="Sem espaco dentro do talhao para entrar por tras";return false
     end
     ax,az=farX,farZ
     local tx,_,tz=getWorldTranslation(direcao(trator))
@@ -509,6 +542,17 @@ function TI.entradaColheitadeira(trator,dt,combine,x,z,dx,dz)
     if chegou or jaAtras then
         spec.entradaPelaTraseira,spec.aproximacaoConcluida=true,true
         return true
+    end
+    -- Se ja chegou paralelo ao lado do cano, recua em linha reta para a zona
+    -- traseira. Evita tentar dar uma volta com a bazuca encostada na maquina.
+    if alignment>0.995 and math.abs(lateral)<0.6 and longitudinal<limiteTraseiro
+        and limiteTraseiro-longitudinal<=50 then
+        local hx,_,hz=localDirectionToWorld(direcao(trator),0,0,1)
+        local back=limiteTraseiro-longitudinal+0.5
+        spec.mensagem="Reposicionando atras; recebimento sera para frente"
+        spec.reposicionando=true
+        TI.dirigir(trator,dt,tx-hx*back,tz-hz*back,TI.CONFIG.velocidadeReposicionar,false)
+        return false
     end
     spec.mensagem="Entrando por tras da colheitadeira"
     -- Ao precisar dar a volta, inicia o giro para fora da colheitadeira.
@@ -522,7 +566,7 @@ function TI.entradaColheitadeira(trator,dt,combine,x,z,dx,dz)
     return false
 end
 
-function TI.alvoDescarregar(trator, carreta, index)
+function TI.alvoDescarregar(trator, carreta, index,somenteAvaliar)
     local spec = trator.spec_transbordoInteligente
     local carga = TI.getCarga(spec.bazuca)
     local px,_,pz=TI.pontoEnchimento(carreta,index)
@@ -530,7 +574,15 @@ function TI.alvoDescarregar(trator, carreta, index)
     local ox, _, oz = localToLocal(carga.node.node, direcao(trator), 0, 0, 0)
     spec.alcanceCano=math.abs(ox)
     local baseX,_,baseZ=localDirectionToWorld(carreta.rootNode,0,0,1)
-    if spec.sentidoDestino==nil then
+    local previous=not somenteAvaliar and spec.caminhaoAlvo==carreta and spec.indiceCarreta==index and spec.sentidoDestino or nil
+    local sentido
+    if previous~=nil and TIProtecao~=nil then
+        local dx,dz=baseX*previous,baseZ*previous
+        local gx,gz=px-dz*ox-dx*oz,pz+dx*ox-dz*oz
+        local ok,inside=pcall(TIProtecao.posicaoNoTalhao,trator,gx,gz,math.atan2(dx,dz))
+        if ok and inside then sentido=previous end
+    end
+    if sentido==nil then
         local tx,ty,tz=getWorldTranslation(direcao(trator))
         local hx,_,hz=localDirectionToWorld(direcao(trator),0,0,1)
         local actualSide=select(1,worldToLocal(carreta.rootNode,tx,ty,tz))
@@ -540,15 +592,22 @@ function TI.alvoDescarregar(trator, carreta, index)
             local gx,gz=px-dz*ox-dx*oz,pz+dx*ox-dz*oz
             local side=select(1,worldToLocal(carreta.rootNode,gx,ty,gz))
             local score=math.sqrt((gx-tx)^2+(gz-tz)^2)+30*(1-hx*dx-hz*dz)
+            if sign==previous then score=score-20 end
             if actualSide*side<0 and math.abs(actualSide)>1 then score=score+80 end
+            local fieldSafe=TIProtecao~=nil and spec.talhao~=nil
             if TIProtecao~=nil then
                 local ok,free=pcall(TIProtecao.posicaoLivre,trator,carreta,gx,gz,math.atan2(dx,dz))
                 if not ok or not free then score=score+500 end
+                local own=TIProtecao.geometria(trator,nil)
+                local okField,inside=pcall(TIProtecao.posicaoNoTalhao,trator,gx,gz,math.atan2(dx,dz),own)
+                fieldSafe=okField and inside
             end
-            if score<best then best=score;spec.sentidoDestino=sign end
+            if fieldSafe and score<best then best=score;sentido=sign end
         end
     end
-    local dx,dz=baseX*spec.sentidoDestino,baseZ*spec.sentidoDestino
+    if sentido==nil then return nil end
+    if not somenteAvaliar then spec.sentidoDestino=sentido end
+    local dx,dz=baseX*sentido,baseZ*sentido
     local nx,nz=dz,-dx
     return px - nx*ox - dx*oz, pz - nz*ox - dz*oz, dx, dz
 end
@@ -585,6 +644,12 @@ local function iniciarSaida(trator, proximoEstado)
             x,z=cx-fx*12,cz-fz*12
         else
             x,z=cx+fx*12+nx*sinal*4,cz+fz*12+nz*sinal*4
+        end
+        if not TITalhao.contem(spec.talhao,x,z,TI.CONFIG.folgaManobraTalhao) and not spec.saidaDeRe then
+            x,z=TITalhao.pontoInterno(spec.talhao,x,z,TI.CONFIG.folgaManobraTalhao)
+        end
+        if x==nil then
+            parar(trator,16);spec.mensagemNavegacao="Sem espaco no talhao para sair da lateral";return
         end
         spec.saidaX, spec.saidaZ, spec.depoisSaida = x, z, proximoEstado
         TI.mudarEstado(trator, E.SAINDO)
@@ -629,7 +694,7 @@ end
 function TI:onLoadFinished()
     if not TI.carregamentoInformado and Logging ~= nil then
         TI.carregamentoInformado = true
-        Logging.info("[Transbordo Inteligente] v0.7.0.0 carregada. Entrada por tras, centro do cano e busca forcada de carreta. Atalhos: Ctrl+Alt+T / Ctrl+Alt+D.")
+        Logging.info("[Transbordo Inteligente] v0.8.0.0 carregada. Restrito ao talhao atual, alinhamento preciso e manobra ate 8 km/h. Atalhos: Ctrl+Alt+T / Ctrl+Alt+D.")
         if InputAction == nil or InputAction.TI_TOGGLE_TRANSBORDO == nil then
             Logging.warning("[Transbordo Inteligente] Acao ausente. Confira modDesc.xml e remova copias antigas do mod.")
         end
@@ -656,7 +721,7 @@ function TI:onRegisterActionEvents(isActiveForInput, isActiveForInputIgnoreSelec
             and FSBaseMission ~= nil then
             TI.atalhoInformado = true
             g_currentMission:addIngameNotification(FSBaseMission.INGAME_NOTIFICATION_INFO,
-                "Transbordo Inteligente 0.7.0.0: Ctrl+Alt+T automatico; Ctrl+Alt+D levar carga a carreta.")
+                "Transbordo Inteligente 0.8.0.0: Ctrl+Alt+T automatico; Ctrl+Alt+D levar carga a carreta.")
         end
     elseif Logging ~= nil then
         Logging.warning("[Transbordo Inteligente] A engine recusou o evento de entrada no veiculo.")
@@ -719,22 +784,10 @@ function TI:actionEventToggleTransbordo(actionName, inputValue)
     spec.descargaAutomaticaOriginal = bazuca.spec_pipe.automaticDischarge
     spec.controleCano = true
     bazuca.spec_pipe.automaticDischarge = false
-    local inicioX, _, inicioZ = getWorldTranslation(self.rootNode)
-    spec.inicioX, spec.inicioZ = inicioX, inicioZ
     spec.talhao = TI.getTalhao(self)
-    if spec.talhao == nil then
-        local menor = TI.CONFIG.raioColheitadeiras
-        for _, v in ipairs(veiculosDaMissao()) do
-            if valido(v) and v.spec_combine ~= nil and mesmaFazenda(self, v) then
-                local d = distancia(self.rootNode, v.rootNode)
-                local talhao = TI.getTalhao(v)
-                if talhao ~= nil and d < menor then spec.talhao, menor = talhao, d end
-            end
-        end
-    end
     TI.mudarEstado(self, TI.getCarga(bazuca).percentual >= TI.CONFIG.cheio and E.BUSCANDO_CARRETA or E.BUSCANDO)
     if TI.getCarga(bazuca).percentual>=TI.CONFIG.cheio then TI.selecionarDestino(self) end
-    if spec.talhao == nil then avisar(self, "Mapa sem contorno disponivel: busca limitada por raio da posicao inicial.") end
+    if spec.talhao == nil then avisar(self, "Talhao nao reconhecido. Entre no campo e reative; automatico aguardando.") end
 end
 
 function TI:actionEventForcarDescarga(actionName,inputValue)
@@ -768,12 +821,15 @@ function TI:onUpdate(dt)
     if self.getIsAIActive ~= nil and self:getIsAIActive() then
         TI.desativar(self); avisar(self, "Transbordo desligado: outro piloto assumiu o trator."); return
     end
+    if spec.talhao==nil then
+        parar(self,dt);spec.mensagemNavegacao="Talhao nao reconhecido; entre no campo e reative";return
+    end
     local carga = TI.getCarga(spec.bazuca)
     if carga == nil then
         setDescarga(spec.bazuca,false);parar(self,dt)
         spec.mensagemNavegacao="Aguardando leitura da carga da bazuca";return
     end
-    spec.centralizando=false
+    spec.centralizando,spec.reposicionando=false,false
     TI.atualizarProgresso(self,dt,carga)
     if spec.estadoAtual==E.RETOMANDO then
         parar(self,dt)
@@ -883,6 +939,9 @@ function TI:onUpdate(dt)
             spec.centralizando=math.abs(lateral)<0.7 and alinhamento>0.97 and math.abs(longitudinal)<10
             if estado~=E.AGUARDANDO_CARGA then
                 spec.mensagem=string.format("Centralizando sob o cano: longitudinal %.2f m | lateral %.2f m",longitudinal,lateral)
+                if math.abs(longitudinal)<TI.CONFIG.toleranciaLongitudinal and math.abs(lateral)<TI.CONFIG.toleranciaLateral then
+                    spec.mensagem=spec.recebimentoConfirmado and "Bazuca centralizada sob o cano" or "Bazuca centralizada; aguardando graos no cano"
+                end
             end
             -- Segue a linha paralela pelo ponto a frente da projecao atual.
             -- Mirar sempre alem do centro final fazia cruzar a linha do cano.
@@ -956,12 +1015,18 @@ function TI:onUpdate(dt)
             prepararRecebimento(carreta, spec.indiceCarreta); spec.receptorPreparado = true
         end
         local x, z, dx, dz = TI.alvoDescarregar(self, carreta, spec.indiceCarreta)
-        if x == nil then retentar(self, "Geometria de descarga indisponivel."); parar(self, dt); return end
+        if x == nil then
+            spec.destinosIgnorados[carreta]=spec.tempoTotal+10000
+            liberarCarreta(self);TI.mudarEstado(self,E.BUSCANDO_CARRETA,"Reposicione a carreta: alinhamento fora do talhao")
+            parar(self,dt);return
+        end
         if estado == E.APROXIMANDO_CARRETA then
-            if TI.podeDescarregar(self) then
+            local longitudinal,lateral,alignment=erroPosicao(self,x,z,dx,dz)
+            spec.mensagem=string.format("Alinhando com a carreta: longitudinal %.2f m | lateral %.2f m",longitudinal,lateral)
+            if TI.podeDescarregar(self) and math.abs(longitudinal)<TI.CONFIG.toleranciaLongitudinal
+                and math.abs(lateral)<TI.CONFIG.toleranciaLateral and alignment>0.97 then
                 TI.mudarEstado(self, E.DESCARREGANDO); parar(self, dt); return
             end
-            local longitudinal,lateral,alignment=erroPosicao(self,x,z,dx,dz)
             local correcaoReta=math.abs(lateral)<0.6 and alignment>0.97 and longitudinal>=-TI.CONFIG.limiteCorrecaoRe
             if math.abs(lateral)<1.5 and alignment>0.9 and longitudinal<TI.CONFIG.distanciaEntradaDireta
                 and (longitudinal>=-TI.CONFIG.toleranciaLongitudinal or correcaoReta) then
@@ -971,14 +1036,15 @@ function TI:onUpdate(dt)
                 local ax, az = x-dx*TI.CONFIG.recuoAproximacao, z-dz*TI.CONFIG.recuoAproximacao
                 if TIProtecao~=nil then
                     local ok,measuredX,measuredZ=pcall(TIProtecao.aproximacao,self,carreta,x,z,dx,dz,TI.CONFIG.recuoAproximacao)
-                    if not ok then parar(self,dt);spec.mensagemNavegacao="Nao foi possivel medir o conjunto do caminhao";return end
+                    if not ok or measuredX==nil then parar(self,dt);spec.mensagemNavegacao="Sem espaco no talhao para alinhar com a carreta";return end
                     ax,az=measuredX,measuredZ
                 end
                 local tx, _, tz = getWorldTranslation(direcao(self))
                 if (tx-ax)^2+(tz-az)^2 < 16 then spec.aproximacaoConcluida = true
                 else TI.dirigir(self, dt, ax, az, TI.CONFIG.velocidadeViagem) end
             else
-                local crawl=math.min(TI.CONFIG.velocidadeManobra,math.max(TI.CONFIG.velocidadeMinima,math.abs(longitudinal)*0.7))
+                spec.centralizando=math.abs(lateral)<0.7 and alignment>0.97 and math.abs(longitudinal)<10
+                local crawl=math.min(TI.CONFIG.velocidadeAlinhamento,math.max(TI.CONFIG.velocidadeMinima,math.abs(longitudinal)*0.7))
                 if longitudinal < -TI.CONFIG.toleranciaLongitudinal and math.abs(longitudinal)<=TI.CONFIG.limiteCorrecaoRe
                     and math.abs(lateral)<0.6 and alignment>0.97 then
                     local tx,_,tz=getWorldTranslation(direcao(self))
@@ -988,7 +1054,9 @@ function TI:onUpdate(dt)
                     spec.aproximacaoConcluida=false
                     parar(self,dt)
                 else
-                    if math.abs(longitudinal)<TI.CONFIG.toleranciaLongitudinal and math.abs(lateral)<TI.CONFIG.toleranciaLateral then crawl=0 end
+                    if math.abs(longitudinal)<TI.CONFIG.toleranciaLongitudinal and math.abs(lateral)<TI.CONFIG.toleranciaLateral then
+                        crawl=0;spec.mensagem="Alinhado; aguardando receptor da carreta sob o cano"
+                    end
                     local mira=TI.CONFIG.pontoMira-longitudinal
                     TI.dirigir(self,dt,x+dx*mira,z+dz*mira,crawl)
                 end

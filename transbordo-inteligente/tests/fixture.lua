@@ -140,10 +140,23 @@ function permitUnload(target,index)
     wagon.raycastIndex=index or 3
     wagon.canDischarge=true
 end
+function alignTrailer()
+    local s=tractor.spec_transbordoInteligente
+    local target=s.caminhaoAlvo or trailer
+    local x,z,dx,dz=TI.alvoDescarregar(tractor,target,s.indiceCarreta or 3)
+    assert(x~=nil)
+    tractor.rootNode.x,tractor.rootNode.z,tractor.rootNode.angle=x,z,math.atan2(dx,dz)
+end
 function makeField(x1,z1,x2,z2)
     local polygon={getVerticesList=function() return {x1,z1,x2,z1,x2,z2,x1,z2} end}
     return {getDensityMapPolygon=function() return polygon end}
 end
+defaultField=makeField(-2000,-2000,2000,2000)
+g_farmlandManager={getFarmlandAtWorldPosition=function(_,x,z)
+    if math.abs(x)<=2000 and math.abs(z)<=2000 then
+        return {getField=function() return defaultField end}
+    end
+end}
 -- Os testes de estados percorrem a zona traseira antes de posicionar sob o cano.
 function enterCombineRear()
     local x,z=TI.alvoReceber(tractor,combine)

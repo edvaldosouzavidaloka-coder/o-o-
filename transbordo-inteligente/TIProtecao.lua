@@ -3,7 +3,7 @@
 TIProtecao = {}
 local P=TIProtecao
 P.CONFIG={margem=0.75,margemPrecisao=0.2,velocidadeRelativaPrecisao=3,reacao=0.7,desaceleracao=2,amostra=0.5,
-    raioGiro=10,velocidadePerto=5,velocidadePrecisao=2,
+    margemTalhao=0.35,antecipacaoGiroTalhao=12,raioGiro=10,velocidadePerto=5,velocidadePrecisao=2,
     larguraPadrao=4,comprimentoPadrao=8,larguraPlataformaPadrao=12,
     comprimentoPlataformaPadrao=3}
 
@@ -104,11 +104,11 @@ local function partes(v,reference,wagon)
     return result
 end
 
-local function corpo(part,p)
+local function corpo(part,p,rigid)
     local a=p.a+part.da
     local x=p.x+math.cos(p.a)*part.ox+math.sin(p.a)*part.oz
     local z=p.z-math.sin(p.a)*part.ox+math.cos(p.a)*part.oz
-    if part.tow then
+    if part.tow and not rigid then
         a=p.t
         x=p.x+math.cos(p.a)*part.hitchX+math.sin(p.a)*part.hitchZ-math.sin(a)*part.drawbar
         z=p.z-math.sin(p.a)*part.hitchX+math.cos(p.a)*part.hitchZ-math.cos(a)*part.drawbar
@@ -132,7 +132,7 @@ function P.geometria(trator,target)
     local x,_,z=getWorldTranslation(reference)
     local spec=trator.spec_transbordoInteligente
     local own=partes(trator,reference,spec.bazuca)
-    local targetRoot=root(target)
+    local targetRoot=target~=nil and root(target) or trator
     local others={}
     local _,ownSet=TransbordoInteligente.getConjunto(trator)
     local headerWidth,estimated=0,false
@@ -155,7 +155,7 @@ function P.geometria(trator,target)
             end
         end
     end
-    local targetSpeed=speed(targetRoot)/3.6
+    local targetSpeed=target~=nil and speed(targetRoot)/3.6 or 0
     local tx,_,tz=localDirectionToWorld(combineRef,0,0,1)
     local sign=targetRoot.movingDirection~=nil and targetRoot.movingDirection<0 and -1 or 1
     local heading=yaw(reference)
@@ -163,12 +163,16 @@ function P.geometria(trator,target)
     for _,part in ipairs(own) do if part.tow then drawbar=part.drawbar end end
     return {own=own,others=others,pose={x=x,z=z,a=heading,t=yaw(spec.bazuca.rootNode)},
         vx=tx*targetSpeed*sign,vz=tz*targetSpeed*sign,velocidadeAlvo=targetSpeed*3.6,drawbar=drawbar,
-        larguraPlataforma=headerWidth,larguraEstimada=estimated}
+        larguraPlataforma=headerWidth,larguraEstimada=estimated,talhao=spec.talhao}
 end
 
 local function livre(g,p,time,margin)
     for _,part in ipairs(g.own) do
         local body=corpo(part,p)
+        if g.talhao~=nil and (TITalhao==nil or not TITalhao.retanguloDentro(g.talhao,body,P.CONFIG.margemTalhao)
+            or (part.tow and not TITalhao.retanguloDentro(g.talhao,corpo(part,p,true),P.CONFIG.margemTalhao))) then
+            return false,"talhao"
+        end
         for _,other in ipairs(g.others) do
             local future={x=other.x+g.vx*time,z=other.z+g.vz*time,a=other.a,hw=other.hw,hl=other.hl}
             if P.sobrepoe(body,future,margin or P.CONFIG.margem) then
@@ -179,9 +183,28 @@ local function livre(g,p,time,margin)
     return true
 end
 
+local function dentroDoTalhao(g,p)
+    if g.talhao==nil then return true end
+    for _,part in ipairs(g.own) do
+        if not TITalhao.retanguloDentro(g.talhao,corpo(part,p),P.CONFIG.margemTalhao) then return false end
+        if part.tow and not TITalhao.retanguloDentro(g.talhao,corpo(part,p,true),P.CONFIG.margemTalhao) then return false end
+    end
+    return true
+end
+
 function P.posicaoLivre(trator,target,x,z,a,margin)
     local g=P.geometria(trator,target)
     return livre(g,{x=x,z=z,a=a or g.pose.a,t=a or g.pose.t},0,margin)
+end
+
+function P.posicaoNoTalhao(trator,x,z,a,g)
+    g=g or P.geometria(trator,nil)
+    if g.talhao==nil or TITalhao==nil then return false end
+    local pose={x=x,z=z,a=a or g.pose.a,t=a or g.pose.t}
+    for _,part in ipairs(g.own) do
+        if not TITalhao.retanguloDentro(g.talhao,corpo(part,pose),P.CONFIG.margemTalhao) then return false end
+    end
+    return true
 end
 
 local function prever(g,x,z,requested,current,dt,moveForwards,margin)
@@ -200,6 +223,22 @@ local function prever(g,x,z,requested,current,dt,moveForwards,margin)
         p=avancar(p,curvature,ds,g.drawbar)
         safe,reason=livre(g,p,v>0 and i*step/v or 0,margin)
         if not safe then return false,reason end
+    end
+    -- Frear a tempo nao basta para dar a volta: olha um pouco alem, somente
+    -- para a borda, e permite escolher um giro interno antes de ficar sem raio.
+    if moveForwards~=false and g.talhao~=nil and dx*dx+dz*dz>100 then
+        local reach=0
+        for _,part in ipairs(g.own) do
+            reach=math.max(reach,math.sqrt(part.ox^2+part.oz^2)+math.sqrt(part.bounds.hw^2+part.bounds.hl^2))
+        end
+        local extra=P.CONFIG.antecipacaoGiroTalhao-horizon
+        if extra>0 and TITalhao.distancia(g.talhao,g.pose.x,g.pose.z)<P.CONFIG.antecipacaoGiroTalhao+reach+P.CONFIG.margemTalhao then
+            local n=math.ceil(extra/P.CONFIG.amostra)
+            for i=1,n do
+                p=avancar(p,curvature,extra/n,g.drawbar)
+                if not dentroDoTalhao(g,p) then return false,"talhao" end
+            end
+        end
     end
     return true
 end
@@ -220,13 +259,14 @@ function P.limitar(trator,dt,x,z,requested,moveForwards)
             spec.larguraPlataformaEstimada=spec.larguraPlataformaEstimada or g.larguraEstimada
         end
     end
-    if #geometries==0 then return requested end
+    if #geometries==0 then geometries[1]=P.geometria(trator,nil) end
     local current=speed(trator)
     local reason
-    local matching=spec.centralizando and spec.colheitadeiraAlvo~=nil and speed(root(spec.colheitadeiraAlvo)) or 0
+    local precision=spec.centralizando or spec.reposicionando
+    local matching=precision and spec.colheitadeiraAlvo~=nil and speed(root(spec.colheitadeiraAlvo)) or 0
     local relativeLimit=math.min(requested,matching+P.CONFIG.velocidadeRelativaPrecisao)
     local limits={requested,math.min(requested,P.CONFIG.velocidadePerto),math.min(requested,P.CONFIG.velocidadePrecisao)}
-    if spec.centralizando then table.insert(limits,2,relativeLimit) end
+    if precision then table.insert(limits,2,relativeLimit) end
     for _,limit in ipairs(limits) do
         local safe,why=true,nil
         for _,g in ipairs(geometries) do
@@ -234,7 +274,7 @@ function P.limitar(trator,dt,x,z,requested,moveForwards)
             -- Uma colheitadeira a 8 km/h pode ser acompanhada a 8 km/h; aproximar
             -- a 15 km/h de uma maquina parada conserva a margem de viagem.
             local margin=P.CONFIG.margem
-            if spec.centralizando and moveForwards~=false
+            if precision
                 and math.abs(current-g.velocidadeAlvo)<=P.CONFIG.velocidadeRelativaPrecisao
                 and math.abs(limit-g.velocidadeAlvo)<=P.CONFIG.velocidadeRelativaPrecisao then margin=P.CONFIG.margemPrecisao end
             safe,why=prever(g,x,z,limit,current,dt,moveForwards,margin)
@@ -245,7 +285,8 @@ function P.limitar(trator,dt,x,z,requested,moveForwards)
         end
         reason=why
     end
-    return 0,reason=="plataforma" and "Freando: limite da plataforma" or "Freando: distancia do veiculo"
+    if reason=="talhao" then return 0,"Freando: limite do talhao","talhao" end
+    return 0,reason=="plataforma" and "Freando: limite da plataforma" or "Freando: distancia do veiculo",reason
 end
 
 -- Apenas desloca o ponto de aproximacao para tras do conjunto medido.
@@ -272,5 +313,15 @@ function P.aproximacao(trator,target,x,z,dx,dz,recuo)
         end
     end
     local behind=math.min(-recuo,minAlong-ownFront-P.CONFIG.margem-2)
-    return x+dx*behind,z+dz*behind
+    local talhao=trator.spec_transbordoInteligente.talhao
+    if talhao==nil then return nil end
+    local minimum=math.min(-18,minAlong-ownFront-P.CONFIG.margem-2)
+    while behind<=minimum+0.01 do
+        local ax,az=x+dx*behind,z+dz*behind
+        if P.posicaoLivre(trator,target,ax,az,math.atan2(dx,dz)) then return ax,az end
+        behind=behind+2
+    end
+    local ax,az=x+dx*minimum,z+dz*minimum
+    if P.posicaoLivre(trator,target,ax,az,math.atan2(dx,dz)) then return ax,az end
+    return nil
 end
