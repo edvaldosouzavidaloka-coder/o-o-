@@ -1,4 +1,4 @@
--- Transbordo Inteligente - FS25, single-player, versao de teste 0.4.0.0.
+-- Transbordo Inteligente - FS25, single-player, versao de teste 0.5.0.0.
 -- A direcao usa AIVehicleUtil; transferencia de graos exclusivamente pela engine.
 -- Direcao direta, sem leitura de cultura ou planejamento de rotas.
 TransbordoInteligente = {}
@@ -187,6 +187,7 @@ local function liberarColheitadeira(trator)
         TI.reservasColheitadeiras[spec.colheitadeiraAlvo] = nil
     end
     spec.colheitadeiraAlvo = nil
+    spec.recebimentoZLocal,spec.recebimentoConfirmado=nil,false
 end
 
 local function liberarCarreta(trator)
@@ -304,8 +305,28 @@ end
 
 -- Conduz pelo controlador nativo; nao escreve rotatedTime nem finge um job GIANTS.
 function TI.dirigir(trator, dt, x, z, velocidadeAlvo)
-    -- O alvo e enviado neste mesmo quadro, sem sensores, fila ou calculo de rota.
-    trator.spec_transbordoInteligente.mensagemNavegacao=nil
+    -- Direcao direta com limite de proximidade dos conjuntos selecionados.
+    -- Nao ha leitura de cultura, busca de rotas ou dependencia de coroutine.
+    local spec=trator.spec_transbordoInteligente
+    if velocidadeAlvo>0 then
+        if TIProtecao==nil then
+            velocidadeAlvo=0
+            spec.mensagemNavegacao="Protecao de proximidade nao carregada"
+        else
+            local ok,limit,reason=pcall(TIProtecao.limitar,trator,dt,x,z,velocidadeAlvo)
+            if ok then
+                velocidadeAlvo=limit
+                spec.mensagemNavegacao=reason
+            else
+                velocidadeAlvo=0
+                spec.mensagemNavegacao="Nao foi possivel medir a proximidade dos veiculos"
+                if Logging~=nil and Logging.warning~=nil and spec.erroProtecao~=tostring(limit) then
+                    Logging.warning("[Transbordo Inteligente] Protecao de proximidade: %s",tostring(limit))
+                end
+                spec.erroProtecao=tostring(limit)
+            end
+        end
+    end
     local steeringNode = trator.getAISteeringNode ~= nil and trator:getAISteeringNode() or direcao(trator)
     local y = select(2, getWorldTranslation(steeringNode))
     local lx, _, lz = worldToLocal(steeringNode, x, y, z)
@@ -343,7 +364,29 @@ function TI.alvoReceber(trator, colheitadeira)
     -- O ponto vem dos nos reais; dimensoes genericas ou largura da plataforma
     -- nao substituem a posicao do cano e do receptor.
     spec.ladoCano = lado
-    return px - nx*rx - dx*rz, pz - nz*rx - dz*rz, dx, dz, receptor
+    spec.alcanceCano=math.abs(canoX)
+    local targetX,targetZ=px-nx*rx-dx*rz,pz-nz*rx-dz*rz
+    local receiver,index
+    if colheitadeira.getDischargeTargetObject~=nil then receiver,index=colheitadeira:getDischargeTargetObject(grao.node) end
+    spec.recebimentoConfirmado=receiver==spec.bazuca and index==carga.index
+        and colheitadeira.getCanDischargeToObject~=nil and colheitadeira:getCanDischargeToObject(grao.node)==true
+    if spec.recebimentoConfirmado and spec.recebimentoZLocal==nil and TIProtecao~=nil then
+        local tx,ty,tz=getWorldTranslation(direcao(trator))
+        local hx,_,hz=localDirectionToWorld(direcao(trator),0,0,1)
+        local safe,free=pcall(TIProtecao.posicaoLivre,trator,colheitadeira,tx,tz)
+        if safe and free and hx*dx+hz*dz>0.9 then
+            -- O raio da descarga confirmou a bazuca nesta posicao. Mantem a
+            -- distancia longitudinal em vez de empurrar a frente ate a plataforma.
+            spec.recebimentoZLocal=select(3,worldToLocal(direcao(colheitadeira),tx,ty,tz))
+        end
+    end
+    local offset=0
+    if spec.recebimentoZLocal~=nil then
+        local _,pipeY=getWorldTranslation(grao.node.node)
+        local targetZLocal=select(3,worldToLocal(direcao(colheitadeira),targetX,pipeY,targetZ))
+        offset=spec.recebimentoZLocal-targetZLocal
+    end
+    return targetX+dx*offset,targetZ+dz*offset,dx,dz,receptor
 end
 
 function TI.alvoDescarregar(trator, carreta, index)
@@ -352,6 +395,7 @@ function TI.alvoDescarregar(trator, carreta, index)
     local receptor = pontoEnchimento(carreta, index)
     if carga == nil or carga.node.node == nil or receptor == nil then return nil end
     local ox, _, oz = localToLocal(carga.node.node, direcao(trator), 0, 0, 0)
+    spec.alcanceCano=math.abs(ox)
     local px, _, pz = getWorldTranslation(receptor)
     local raiz = carreta.getRootVehicle ~= nil and carreta:getRootVehicle() or carreta
     local dx, _, dz = localDirectionToWorld(direcao(raiz), 0, 0, 1)
@@ -427,7 +471,7 @@ end
 function TI:onLoadFinished()
     if not TI.carregamentoInformado and Logging ~= nil then
         TI.carregamentoInformado = true
-        Logging.info("[Transbordo Inteligente] v0.4.0.0 carregada. Direcao direta, sem calculo de rota. Atalho: Ctrl+Alt+T.")
+        Logging.info("[Transbordo Inteligente] v0.5.0.0 carregada. Direcao direta com protecao de proximidade. Atalho: Ctrl+Alt+T.")
         if InputAction == nil or InputAction.TI_TOGGLE_TRANSBORDO == nil then
             Logging.warning("[Transbordo Inteligente] Acao ausente. Confira modDesc.xml e remova copias antigas do mod.")
         end
@@ -454,7 +498,7 @@ function TI:onRegisterActionEvents(isActiveForInput, isActiveForInputIgnoreSelec
             and FSBaseMission ~= nil then
             TI.atalhoInformado = true
             g_currentMission:addIngameNotification(FSBaseMission.INGAME_NOTIFICATION_INFO,
-                "Transbordo Inteligente 0.4.0.0: direcao direta. Atalho padrao: Ctrl+Alt+T.")
+                "Transbordo Inteligente 0.5.0.0: protecao da plataforma e dos veiculos. Atalho: Ctrl+Alt+T.")
         end
     elseif Logging ~= nil then
         Logging.warning("[Transbordo Inteligente] A engine recusou o evento de entrada no veiculo.")
@@ -591,8 +635,14 @@ function TI:onUpdate(dt)
         end
         local x, z, dx, dz = TI.alvoReceber(self, combine)
         if x == nil then pausar(self, "Nao foi possivel localizar o cano ou o receptor da bazuca."); parar(self, dt); return end
+        if spec.recebimentoConfirmado and spec.recebimentoZLocal~=nil then spec.aproximacaoConcluida=true end
         if estado == E.APROXIMANDO and not spec.aproximacaoConcluida then
             local ax, az = x-dx*TI.CONFIG.recuoAproximacao, z-dz*TI.CONFIG.recuoAproximacao
+            if TIProtecao~=nil then
+                local ok,measuredX,measuredZ=pcall(TIProtecao.aproximacao,self,combine,x,z,dx,dz,TI.CONFIG.recuoAproximacao)
+                if not ok then parar(self,dt);spec.mensagemNavegacao="Nao foi possivel medir a plataforma";return end
+                ax,az=measuredX,measuredZ
+            end
             local tx, _, tz = getWorldTranslation(direcao(self))
             if (tx-ax)^2+(tz-az)^2 < 16 then spec.aproximacaoConcluida = true
             else TI.dirigir(self, dt, ax, az, TI.CONFIG.velocidadeViagem) end
@@ -601,6 +651,7 @@ function TI:onUpdate(dt)
             local posX, posY, posZ = getWorldTranslation(direcao(self))
             local ladoAtual = select(1, worldToLocal(direcao(combine), posX, posY, posZ))
             if spec.ladoCano*ladoAtual <= 0 or alinhamento < 0.5 then
+                spec.recebimentoZLocal=nil
                 TI.mudarEstado(self, E.APROXIMANDO)
                 parar(self, dt)
                 return
@@ -674,6 +725,11 @@ function TI:onUpdate(dt)
             end
             if not spec.aproximacaoConcluida then
                 local ax, az = x-dx*TI.CONFIG.recuoAproximacao, z-dz*TI.CONFIG.recuoAproximacao
+                if TIProtecao~=nil then
+                    local ok,measuredX,measuredZ=pcall(TIProtecao.aproximacao,self,carreta,x,z,dx,dz,TI.CONFIG.recuoAproximacao)
+                    if not ok then parar(self,dt);spec.mensagemNavegacao="Nao foi possivel medir o conjunto do caminhao";return end
+                    ax,az=measuredX,measuredZ
+                end
                 local tx, _, tz = getWorldTranslation(direcao(self))
                 if (tx-ax)^2+(tz-az)^2 < 16 then spec.aproximacaoConcluida = true
                 else TI.dirigir(self, dt, ax, az, TI.CONFIG.velocidadeViagem) end
@@ -736,6 +792,10 @@ function TI:onDraw()
         end
     end
     if mensagem ~= nil then renderText(0.5, 0.82, 0.014, mensagem) end
+    if spec.alcanceCano~=nil then
+        renderText(0.5,0.795,0.013,string.format("Plataforma %.1f m%s | Alcance lateral do cano %.1f m",
+            spec.larguraPlataforma or 0,spec.larguraPlataformaEstimada and " (estimada)" or "",spec.alcanceCano))
+    end
     setTextColor(1, 1, 1, 1)
     setTextAlignment(RenderText.ALIGN_LEFT)
     setTextBold(false)
