@@ -1,46 +1,35 @@
 # Mods para Farming Simulator 25
 
-## Transbordo Inteligente — versão de teste 0.3.0.3
+## Transbordo Inteligente — versão de teste 0.4.0.0
 
-[Baixar FS25_TransbordoInteligente.zip](FS25_TransbordoInteligente.zip) · [Instruções de uso](transbordo-inteligente/LEIA-ME.md) · [Código Lua](transbordo-inteligente/TransbordoInteligente.lua)
+[Baixar FS25_TransbordoInteligente.zip](FS25_TransbordoInteligente.zip) · [Instruções](transbordo-inteligente/LEIA-ME.md) · [Código Lua](transbordo-inteligente/TransbordoInteligente.lua)
 
-**Correção 0.3.0.3:** remove a dependência de `coroutine`, ausente no ambiente do FS25 observado no log enviado. Essa dependência causava `TINavegacao.lua:264: attempt to index nil with 'create'` ao iniciar o planejamento. O progresso da busca agora fica em tabelas e avança por chamadas com orçamento limitado por quadro. Criação e avanço da busca são protegidos: uma falha solicita frenagem, limita novas tentativas e registra o diagnóstico sem repetir a mesma exceção a cada quadro. Os testes executam sem a biblioteca `coroutine`.
+Atende colheitadeiras com pelo menos 60% de grãos, com jogador ou funcionário nativo. Identifica a bazuca acoplada e usa a posição real do cano aberto e do receptor para alinhar o conjunto. Ao encher, procura a carreta ou caminhão com caçamba compatível mais próximo da borda do talhão, descarrega quando a engine confirmar o receptor e reinicia o ciclo.
 
-**Correção 0.3.0.2:** resolve o bloqueio `Leitura de cultura indisponivel` causado pela dependência da tabela antiga `g_currentMission.fruits`. A leitura usa `FruitTypeDesc:getDataPlaneInfo()` ou os dados do próprio descritor no FS25. Os estados colhidos são identificados por `getIsCut`/`cutStates`, sem deslocar sua numeração. A proteção continua ativa para cultura em crescimento e pronta para colher; dados ausentes ainda interrompem o movimento com diagnóstico específico.
+**A versão 0.4 usa direção direta.** Foram retirados o planejador, os sensores de cultura/colisão e a espera por cálculo de rota. O comando é enviado diretamente ao controlador nativo do trator. Não há desvio automático de postes, árvores ou outros obstáculos; as colisões normais do jogo permanecem.
 
-**Correção 0.3.0.1:** remove a verificação incorreta que emitia `Especializacao nao encontrada: FS25_TransbordoInteligente.transbordoInteligente` e impedia a instalação da especialização nos veículos. O carregador usa a classe Lua definida pelo `modDesc.xml`, sem tratar os dados do registro como a própria classe. Os testes cobrem o carregamento pelo manifesto, a instalação no veículo e o callback do atalho; a confirmação no jogo continua necessária.
+Para atravessar cultura sem dano de rodas, o módulo usa o bloqueio nativo `getBlockFoliageDestruction` no trator e nos implementos acoplados enquanto estiver ativo. Não ativa nem altera a opção global de destruição de cultura da partida. Ao desligar ou desacoplar, restaura o comportamento anterior. Trabalho de ferramentas, como arar ou colher, é independente desse bloqueio de rodas.
 
-O controlador atende colheitadeiras com pelo menos 60% de grãos, com funcionário nativo ou jogador, e identifica a bazuca acoplada ao trator. Ao encher, procura uma carreta compatível estacionada na borda do talhão. Só aciona a descarga quando o jogo confirma o veículo receptor e seu compartimento. Depois de esvaziar, reinicia a busca.
+Feche o jogo, substitua o ZIP anterior pelo arquivo 0.4.0.0, ative na partida e entre no trator com a bazuca. **Ctrl+Alt+T** liga/desliga; a ação **Ligar/desligar Transbordo Inteligente** aparece em **Opções > Controles** e na ajuda **F1**. O HUD informa o alvo escolhido e sua distância.
 
-A versão 0.3 planeja desvios de cultura em pé, postes, veículos e árvores com colisão. Considera o trator e a bazuca, acompanha o lado do cano aberto e usa direção nativa direta. Se não encontrar passagem ou se os sensores falharem, permanece parada. Vegetação decorativa sem colisão não é reconhecida como mata.
-
-Copie o ZIP, sem descompactar, para a pasta `mods` do FS25 e ative na partida. No trator com a bazuca, **Ctrl+Alt+T** liga/desliga o controlador. Os veículos precisam pertencer à mesma fazenda.
-
-**Atalho corrigido:** a ação agora é `TI_TOGGLE_TRANSBORDO`. Substitua a versão antiga com o jogo fechado e confira **Ligar/desligar Transbordo Inteligente** em **Opções > Controles** e na ajuda **F1**. Se estiver sem tecla, atribua a combinação nessa linha. O mod informa o carregamento e registra diagnósticos no `log.txt`. Veja o [passo a passo do atalho](transbordo-inteligente/LEIA-ME.md#atalho-que-não-aparece-ou-não-responde).
-
-**Versão experimental, single-player.** Validada por testes com contratos simulados da engine em Lua 5.1, incluindo navegação e atalho, mas ainda não executada no FS25. Não planeja marcha à ré nem interpreta ruas. Física, frenagem, desempenho dos sensores, carregamento real do atalho, curvas e alcance dos canos precisam ser validados no jogo. Consulte os limites e o roteiro de teste no manual.
+**Versão experimental, single-player.** Testes simulados verificam direção imediata sem sensores, seleção de alvos, alinhamento dos nós, bloqueio local de dano e ciclo de descarga. Física, carregamento no FS25 e comportamento dos modelos escolhidos ainda precisam de confirmação no jogo.
 
 ### Desenvolvimento
 
-As fontes, o registro da especialização, o manifesto, os testes e o empacotador estão em [`transbordo-inteligente/`](transbordo-inteligente/).
+As fontes, manifesto, registro, testes e empacotador estão em [`transbordo-inteligente/`](transbordo-inteligente/). O antigo `TINavegacao.lua` foi removido; use o ZIP completo atualizado.
 
-Com Python 3 e `lupa==2.6` instalados:
+Com Python 3 e `lupa==2.6`:
 
 ```bash
 cd transbordo-inteligente
 python -m unittest discover -s tests -v
 python package.py
-```
-
-O empacotador gera os ZIPs dentro dessa pasta. Para atualizar o pacote distribuído na raiz do repositório após validar mudanças:
-
-```bash
 cp FS25_TransbordoInteligente.zip ../FS25_TransbordoInteligente.zip
 ```
 
 ## Outros pacotes existentes
 
 - [`FS25_TG_GPS.zip`](FS25_TG_GPS.zip): TG GPS PRO, com monitor e guias dentro do jogo.
-- [`TG_GPS_SIM_Dashboard.zip`](TG_GPS_SIM_Dashboard.zip): referências de configuração dos botões do SIM Dashboard. Não é um preset importável e inclui uma versão anterior do mod GPS.
+- [`TG_GPS_SIM_Dashboard.zip`](TG_GPS_SIM_Dashboard.zip): referências dos botões do SIM Dashboard, sem preset importável e com uma versão anterior do GPS.
 
-Os pacotes existentes de TG GPS foram preservados.
+Os pacotes de TG GPS foram preservados.

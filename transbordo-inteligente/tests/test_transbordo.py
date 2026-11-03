@@ -10,7 +10,6 @@ ROOT = Path(__file__).resolve().parents[1]
 class TransbordoTests(unittest.TestCase):
     def setUp(self):
         self.lua = LuaRuntime(unpack_returned_tuples=True)
-        self.lua.execute((ROOT / 'TINavegacao.lua').read_text())
         self.lua.execute((ROOT / 'TransbordoInteligente.lua').read_text())
         self.lua.execute((ROOT / 'tests' / 'fixture.lua').read_text())
 

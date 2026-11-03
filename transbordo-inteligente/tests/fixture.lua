@@ -112,17 +112,11 @@ trailer=makeTrailer(40,0)
 g_currentMission={vehicleSystem={vehicles={tractor,combine,trailer}},missionDynamicInfo={isMultiplayer=false}}
 g_currentMission.terrainRootNode=node()
 g_currentMission.nodeToObject={}
--- FS25 fornece os layers nos descritores de cultura, nao nesta tabela legada.
+-- A direcao direta nao depende de sensores nem de descritores de cultura.
 g_currentMission.fruits=nil
-g_fruitTypeManager={fruitTypes={}}
-CollisionFlag={DEFAULT=1,TREE=2,DYNAMIC_OBJECT=4,VEHICLE=8,BUILDING=16,STATIC_OBJECT=32}
-DensityMapModifier={new=function() error('Esperado descritor do teste de cultura') end}
-DensityMapFilter={new=function() error('Esperado descritor do teste de cultura') end}
-DensityValueCompareType={BETWEEN=1,NOT_EQUAL=2}
-DensityCoordType={POINT_POINT_POINT=1}
-function getTerrainHeightAtWorldPos() return 0 end
-function getParent(n) return n.parent end
-function overlapBox() end
+g_fruitTypeManager,CollisionFlag=nil,nil
+DensityMapModifier,DensityMapFilter,DensityValueCompareType,DensityCoordType=nil,nil,nil,nil
+overlapBox=nil
 g_farmlandManager=nil
 TI=TransbordoInteligente
 E=TI.ESTADOS
