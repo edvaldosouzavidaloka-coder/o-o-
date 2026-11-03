@@ -9,7 +9,7 @@ ROOT = Path(__file__).resolve().parents[1]
 class AproximacaoMovimentoTests(unittest.TestCase):
     def simulate(self, mode, x, z, angle, field_limits=None):
         lua = LuaRuntime(unpack_returned_tuples=True)
-        for name in ['TITalhao.lua', 'TIProtecao.lua', 'TransbordoInteligente.lua', 'tests/fixture.lua']:
+        for name in ['TITalhao.lua', 'TIProtecao.lua','TIManobraCarreta.lua', 'TransbordoInteligente.lua', 'tests/fixture.lua']:
             lua.execute((ROOT / name).read_text())
         lua.globals().mode = mode
         lua.globals().startx = x
@@ -37,7 +37,10 @@ class AproximacaoMovimentoTests(unittest.TestCase):
             else x,z,dx,dz=TI.alvoDescarregar(tractor,trailer,3) end
             local ex,ez=x-tractor.rootNode.x,z-tractor.rootNode.z
             local c=tractor.command
-            if math.abs(ex*dx+ez*dz)<TI.CONFIG.toleranciaLongitudinal
+            if mode=='truck' and TIManobraCarreta.distanciaCano(tractor,trailer,3)<0.4 then
+                permitUnload()
+                if state()==E.DESCARREGANDO then reached=true;break end
+            elseif math.abs(ex*dx+ez*dz)<TI.CONFIG.toleranciaLongitudinal
                 and math.abs(ex*dz-ez*dx)<TI.CONFIG.toleranciaLateral and not c.allowed then
                 reached=true;break
             end
@@ -45,9 +48,17 @@ class AproximacaoMovimentoTests(unittest.TestCase):
                 local curvature=math.max(-0.1,math.min(0.1,2*c.x/math.max(1,c.x*c.x+c.z*c.z)))
                 local ds=(c.forwards and 1 or -1)*c.speed/3.6*0.1
                 local a=tractor.rootNode.angle
-                tractor.rootNode.x=tractor.rootNode.x+math.sin(a+curvature*ds/2)*ds
-                tractor.rootNode.z=tractor.rootNode.z+math.cos(a+curvature*ds/2)*ds
-                tractor.rootNode.angle=a+curvature*ds
+                if mode=='truck' then
+                    local g=TIProtecao.geometria(tractor,trailer)
+                    local p=TIProtecao.avancarPose(g.pose,curvature,ds,g.drawbar)
+                    tractor.rootNode.x,tractor.rootNode.z,tractor.rootNode.angle=p.x,p.z,p.a
+                    wagon.rootNode.parent=nil
+                    wagon.rootNode.x,wagon.rootNode.z,wagon.rootNode.angle=p.x-math.sin(p.t)*g.drawbar,p.z-math.cos(p.t)*g.drawbar,p.t
+                else
+                    tractor.rootNode.x=tractor.rootNode.x+math.sin(a+curvature*ds/2)*ds
+                    tractor.rootNode.z=tractor.rootNode.z+math.cos(a+curvature*ds/2)*ds
+                    tractor.rootNode.angle=a+curvature*ds
+                end
                 tractor.speed=c.speed
                 tractor.movingDirection=c.forwards and 1 or -1
             else tractor.speed=0 end

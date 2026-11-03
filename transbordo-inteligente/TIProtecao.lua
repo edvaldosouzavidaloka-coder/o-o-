@@ -95,10 +95,18 @@ local function partes(v,reference,wagon)
             local ox,_,oz=localToLocal(object.rootNode,reference,0,0,0)
             local heading=yaw(object.rootNode)
             local drawbar=math.max(2,math.sqrt(ox*ox+oz*oz))
+            local hitchX,hitchZ=ox+math.sin(heading-a)*drawbar,oz+math.cos(heading-a)*drawbar
+            if object==wagon and object.getActiveInputAttacherJoint~=nil then
+                local ok,joint=pcall(object.getActiveInputAttacherJoint,object)
+                if ok and joint~=nil and nodeOk(joint.node) then
+                    local jx,_,jz=localToLocal(joint.node,object.rootNode,0,0,0)
+                    local hx,_,hz=localToLocal(joint.node,reference,0,0,0)
+                    if math.abs(jx)<1 and jz>1 then drawbar,hitchX,hitchZ=jz,hx,hz end
+                end
+            end
             result[#result+1]={bounds=P.medir(object),ox=ox,oz=oz,da=heading-a,
                 heading=heading,tow=object==wagon and object~=v and oz < -2,
-                drawbar=drawbar,hitchX=ox+math.sin(heading-a)*drawbar,
-                hitchZ=oz+math.cos(heading-a)*drawbar}
+                drawbar=drawbar,hitchX=hitchX,hitchZ=hitchZ}
         end
     end
     return result
@@ -163,7 +171,9 @@ function P.geometria(trator,target)
     for _,part in ipairs(own) do if part.tow then drawbar=part.drawbar end end
     return {own=own,others=others,pose={x=x,z=z,a=heading,t=yaw(spec.bazuca.rootNode)},
         vx=tx*targetSpeed*sign,vz=tz*targetSpeed*sign,velocidadeAlvo=targetSpeed*3.6,drawbar=drawbar,
-        larguraPlataforma=headerWidth,larguraEstimada=estimated,talhao=spec.talhao}
+        larguraPlataforma=headerWidth,larguraEstimada=estimated,talhao=spec.talhao,
+        raioGiro=finite(trator.maxTurningRadius) and trator.maxTurningRadius>=3 and trator.maxTurningRadius<=30
+            and trator.maxTurningRadius or P.CONFIG.raioGiro}
 end
 
 local function livre(g,p,time,margin)
@@ -207,11 +217,25 @@ function P.posicaoNoTalhao(trator,x,z,a,g)
     return true
 end
 
+-- Interfaces para ajustes locais de estacionamento, com a mesma geometria
+-- usada na frenagem. Nao consultam ruas, cultura ou obstaculos do mapa.
+P.avancarPose=avancar
+function P.poseLivre(g,p,margin) return livre(g,p,0,margin) end
+function P.poseParte(g,p,object)
+    for _,part in ipairs(g.own) do
+        if part.bounds.object==object then
+            local b=corpo(part,p)
+            return b.x-math.cos(b.a)*part.bounds.cx-math.sin(b.a)*part.bounds.cz,
+                b.z+math.sin(b.a)*part.bounds.cx-math.cos(b.a)*part.bounds.cz,b.a
+        end
+    end
+end
+
 local function prever(g,x,z,requested,current,dt,moveForwards,margin)
     local p=g.pose
     local dx,dz=x-p.x,z-p.z
     local lateral=dx*math.cos(p.a)-dz*math.sin(p.a)
-    local curvature=clamp(2*lateral/math.max(1,dx*dx+dz*dz),-1/P.CONFIG.raioGiro,1/P.CONFIG.raioGiro)
+    local curvature=clamp(2*lateral/math.max(1,dx*dx+dz*dz),-1/g.raioGiro,1/g.raioGiro)
     local v=math.max(current,requested)/3.6
     local horizon=v*(P.CONFIG.reacao+math.min(0.25,dt/1000))+v*v/(2*P.CONFIG.desaceleracao)
     local safe,reason=livre(g,p,0,margin)
@@ -262,7 +286,7 @@ function P.limitar(trator,dt,x,z,requested,moveForwards)
     if #geometries==0 then geometries[1]=P.geometria(trator,nil) end
     local current=speed(trator)
     local reason
-    local precision=spec.centralizando or spec.reposicionando
+    local precision=spec.centralizando or spec.reposicionando or spec.manobraCarretaCurta
     local matching=precision and spec.colheitadeiraAlvo~=nil and speed(root(spec.colheitadeiraAlvo)) or 0
     local relativeLimit=math.min(requested,matching+P.CONFIG.velocidadeRelativaPrecisao)
     local limits={requested,math.min(requested,P.CONFIG.velocidadePerto),math.min(requested,P.CONFIG.velocidadePrecisao)}
