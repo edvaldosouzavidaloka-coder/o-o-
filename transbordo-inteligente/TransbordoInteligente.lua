@@ -1,13 +1,14 @@
--- Transbordo Inteligente - FS25, single-player, versao de teste 0.10.0.0.
+-- Transbordo Inteligente - FS25, single-player, versao de teste 0.11.0.0.
 -- A direcao usa AIVehicleUtil; transferencia de graos exclusivamente pela engine.
 -- Direcao direta e ajustes locais junto da carreta, sem leitura de cultura.
 TransbordoInteligente = {}
 local TI = TransbordoInteligente
-TI.VERSAO="0.10.0.0"
+TI.VERSAO="0.11.0.0"
 
 TI.CONFIG = {
     chamada = 60, cheio = 99.9, vazio = 0.1,
     velocidadeViagem = 15, velocidadeManobra = 8, velocidadeManobraPerto = 5,
+    velocidadeChegadaColheitadeira = 25, distanciaReducaoColheitadeira = 40,
     velocidadeAlinhamento = 4, velocidadeMaxColheita = 15,
     recuoAproximacao = 50, distanciaEntradaDireta = 55, pontoMira = 8, intervaloBusca = 1000,
     tempoSemDescarga = 30000, tempoManobra = 120000,
@@ -329,6 +330,7 @@ local function liberarCarreta(trator)
     spec.fracaoDescarga,spec.manobraCarreta=nil,nil
     spec.pontoDescargaFixo,spec.pontosDescargaTentados=nil,0
     spec.carretaBloqueada,spec.manobraCarretaCurta=false,false
+    spec.mapaCarreta=nil
     setDescarga(spec.bazuca, false)
     if spec.ligadoPeloMod and spec.bazuca ~= nil and spec.bazuca.setIsTurnedOn ~= nil then
         spec.bazuca:setIsTurnedOn(false)
@@ -554,7 +556,7 @@ function TI.dirigir(trator, dt, x, z, velocidadeAlvo, moveForwards,somenteFrente
         else
             local ok,limit,reason,kind=pcall(TIProtecao.limitar,trator,dt,x,z,velocidadeAlvo,moveForwards)
             if ok then
-                if limit==0 and kind=="talhao" and moveForwards and not spec.centralizando then
+                if limit==0 and kind=="talhao" and moveForwards and not spec.centralizando and not spec.manobraCarretaCurta then
                     local best,bestX,bestZ,bestLimit=-math.huge,nil,nil,nil
                     for _,side in ipairs({-1,1}) do
                         local cx,_,cz=localToWorld(steeringNode,side*12,0,12)
@@ -666,6 +668,18 @@ local function erroPosicao(trator, x, z, dx, dz)
     return ex*dx + ez*dz, ex*dz - ez*dx, hx*dx + hz*dz
 end
 
+function TI.velocidadeChegada(trator,combine,x,z)
+    local tx,_,tz=getWorldTranslation(direcao(trator))
+    local speed=TI.CONFIG.velocidadeViagem
+    local dx,dz=heading(direcao(trator))
+    local distance=math.sqrt((x-tx)^2+(z-tz)^2)
+    if distancia(trator.rootNode,combine.rootNode)>TI.CONFIG.distanciaReducaoColheitadeira
+        and distance>20 and ((x-tx)*dx+(z-tz)*dz)/distance>0.94 then
+        speed=TI.CONFIG.velocidadeChegadaColheitadeira
+    end
+    return speed
+end
+
 function TI.entradaColheitadeira(trator,dt,combine,x,z,dx,dz)
     local spec=trator.spec_transbordoInteligente
     if spec.entradaPelaTraseira then return true end
@@ -718,7 +732,7 @@ function TI.entradaColheitadeira(trator,dt,combine,x,z,dx,dz)
         local towardCombine=select(1,worldToLocal(direcao(trator),cx,cy,cz))
         spec.ladoManobra=towardCombine>0 and -1 or 1
     end
-    TI.dirigir(trator,dt,ax,az,TI.CONFIG.velocidadeViagem,true,true)
+    TI.dirigir(trator,dt,ax,az,TI.velocidadeChegada(trator,combine,ax,az),true,true)
     return false
 end
 
@@ -866,7 +880,7 @@ end
 function TI:onLoadFinished()
     if not TI.carregamentoInformado and Logging ~= nil then
         TI.carregamentoInformado = true
-        Logging.info("[Transbordo Inteligente] v0.10.0.0 carregada. Ajustes curtos na carreta, engate medido e limite do talhao ativo. Atalhos: Ctrl+Alt+T / Ctrl+Alt+D.")
+        Logging.info("[Transbordo Inteligente] v0.11.0.0 carregada. Entradas alternativas, carreta mapeada e chegada rapida com limite do talhao ativo. Atalhos: Ctrl+Alt+T / Ctrl+Alt+D.")
         if InputAction == nil or InputAction.TI_TOGGLE_TRANSBORDO == nil then
             Logging.warning("[Transbordo Inteligente] Acao ausente. Confira modDesc.xml e remova copias antigas do mod.")
         end
@@ -893,7 +907,7 @@ function TI:onRegisterActionEvents(isActiveForInput, isActiveForInputIgnoreSelec
             and FSBaseMission ~= nil then
             TI.atalhoInformado = true
             g_currentMission:addIngameNotification(FSBaseMission.INGAME_NOTIFICATION_INFO,
-                "Transbordo Inteligente 0.10.0.0: Ctrl+Alt+T automatico; Ctrl+Alt+D levar carga a carreta.")
+                "Transbordo Inteligente 0.11.0.0: Ctrl+Alt+T automatico; Ctrl+Alt+D levar carga a carreta.")
         end
     elseif Logging ~= nil then
         Logging.warning("[Transbordo Inteligente] A engine recusou o evento de entrada no veiculo.")
@@ -1122,7 +1136,11 @@ function TI:onUpdate(dt)
                 spec.entradaPelaTraseira=false
                 TI.mudarEstado(self,E.APROXIMANDO);parar(self,dt);return
             end
-            local alvo = math.max(0, math.min(TI.CONFIG.velocidadeViagem, base + longitudinal*0.8))
+            local limite=TI.CONFIG.velocidadeViagem
+            if longitudinal>35 and math.abs(lateral)<1.5 and alinhamento>0.97 then
+                limite=TI.velocidadeChegada(self,combine,x,z)
+            end
+            local alvo = math.max(0, math.min(limite, base + longitudinal*0.8))
             if alinhamento < 0.7 then alvo = math.min(alvo, TI.CONFIG.velocidadeManobra) end
             if base < 0.5 and math.abs(longitudinal) < TI.CONFIG.toleranciaLongitudinal
                 and math.abs(lateral) < TI.CONFIG.toleranciaLateral then alvo = 0 end
@@ -1213,6 +1231,7 @@ function TI:onUpdate(dt)
         if TIManobraCarreta==nil then
             parar(self,dt);spec.mensagemNavegacao="Modulo de ajuste curto nao carregado";return
         end
+        TIManobraCarreta.atualizarMapa(self,carreta,spec.indiceCarreta)
         local x, z, dx, dz = TI.alvoDescarregar(self, carreta, spec.indiceCarreta)
         if x == nil then
             spec.destinosIgnorados[carreta]=spec.tempoTotal+10000
@@ -1253,7 +1272,13 @@ function TI:onUpdate(dt)
                 local ax, az = x-dx*TI.CONFIG.recuoCarreta, z-dz*TI.CONFIG.recuoCarreta
                 if TIProtecao~=nil then
                     local ok,measuredX,measuredZ=pcall(TIManobraCarreta.entrada,self,carreta,x,z,dx,dz)
-                    if not ok or measuredX==nil then parar(self,dt);spec.mensagemNavegacao="Sem espaco no talhao para alinhar com a carreta";return end
+                    if not ok or measuredX==nil then
+                        parar(self,dt)
+                        spec.carretaBloqueada=near
+                        spec.mensagemNavegacao=near and "Procurando outra entrada dentro do talhao"
+                            or "Sem entrada direta dentro do talhao para esta carreta"
+                        return
+                    end
                     ax,az=measuredX,measuredZ
                 end
                 local tx, _, tz = getWorldTranslation(direcao(self))
@@ -1356,7 +1381,13 @@ function TI:onDraw()
         end
     end
     if mensagem ~= nil then renderText(0.5, 0.82, 0.014, mensagem) end
-    if spec.alcanceCano~=nil then
+    local map=spec.mapaCarreta
+    if map~=nil and map.target==spec.caminhaoAlvo then
+        renderText(0.5,0.795,0.013,string.format("Cacamba %.1f x %.1f m%s | Bazuca %.1f m | Cano %.1f m",
+            map.largura,map.comprimento,map.estimada and " (estimada)" or "",map.larguraBazuca,map.alcance))
+        renderText(0.5,0.745,0.013,string.format("Posicoes livres no talhao: %d | Folga lateral ate %.2f m",
+            #map.vagas,math.max(0,map.folga or 0)))
+    elseif spec.alcanceCano~=nil then
         renderText(0.5,0.795,0.013,string.format("Plataforma %.1f m%s | Alcance lateral do cano %.1f m",
             spec.larguraPlataforma or 0,spec.larguraPlataformaEstimada and " (estimada)" or "",spec.alcanceCano))
     end

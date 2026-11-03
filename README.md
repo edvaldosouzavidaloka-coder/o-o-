@@ -1,14 +1,16 @@
 # Mods para Farming Simulator 25
 
-## Transbordo Inteligente — versão de teste 0.10.0.0
+## Transbordo Inteligente — versão de teste 0.11.0.0
 
 [Baixar FS25_TransbordoInteligente.zip](FS25_TransbordoInteligente.zip) · [Instruções](transbordo-inteligente/LEIA-ME.md) · [Código Lua](transbordo-inteligente/TransbordoInteligente.lua)
 
 Atende colheitadeiras com pelo menos 60% de grãos, com jogador ou funcionário nativo. Identifica a bazuca acoplada e usa a posição real do cano aberto e do receptor para alinhar o conjunto. Ao encher, procura a carreta ou caminhão com caçamba compatível mais próximo da borda do talhão, descarrega quando a engine confirmar o receptor e reinicia o ciclo.
 
-**A versão 0.10 retira o recuo fixo de 50 m usado na chegada ao caminhão.** A aproximação acompanha a lateral e, perto da carreta, usa movimentos locais de frente e ré em trechos de 1,5 m. Mede o cano em relação à própria bazuca e usa o ponto de engate real, quando informado, evitando que a articulação do trator altere artificialmente o alcance calculado.
+**A versão 0.11 tenta outras entradas quando o ajuste curto não encontra passagem.** Primeiro procura uma sequência pequena de frente e ré. Se ela falhar, amplia a busca de esterço e espaço interno; por último, testa curvas até uma entrada alinhada antes da caçamba. A tentativa maior só ocorre depois de esgotar a menor e confere o conjunto inteiro dentro do mesmo talhão. Não volta ao recuo fixo de 50 m para o caminhão.
 
-O ajuste considera a faixa útil da caçamba informada pelo modelo, com folga das extremidades. Sem essa faixa, usa o ponto de enchimento conhecido. Pode descarregar com o conjunto inclinado em relação ao caminhão parado quando houver folga e o cano estiver numa posição válida; não exige uma volta grande apenas para deixar os dois paralelos. A engine continua precisando confirmar exatamente a carreta e o compartimento corretos. A sequência local é limitada em percurso, área e trocas de marcha; sem espaço, aguarda reposicionamento.
+O mapeamento mede a largura e o comprimento da carreta, a largura da bazuca, o alcance lateral real do cano, o engate e a cabine do caminhão. Compara posições de descarga nos dois sentidos e descarta as que sobrepõem carrocerias ou ultrapassam o talhão. O HUD mostra as medidas, as posições livres e a folga lateral mapeada. Usa a faixa útil da caçamba informada pelo modelo; sem essa faixa, usa somente o ponto de enchimento conhecido. A largura externa não cria uma abertura de carga fictícia. A engine continua precisando confirmar exatamente a carreta e o compartimento corretos.
+
+As tentativas são limitadas em área, percurso, processamento e trocas de marcha. A maior pode precisar de mais espaço interno; se nenhuma tentativa encontrar passagem, permanece freado e ligado. Não sai do campo para completar uma manobra nem amplia artificialmente o cano.
 
 **O limite do talhão continua ativo.** Ative com trator e bazuca dentro do campo: o contorno fica fixo até desligar. A previsão verifica o conjunto inteiro, inclusive a traseira da bazuca em ré, antecipa giros para dentro e solicita frenagem antes da borda. Sem um contorno válido, aguarda parado. Se detectar o conjunto já fora, interrompe a condução e informa para reposicioná-lo dentro; não muda de campo nem tenta voltar pela rodovia.
 
@@ -18,7 +20,7 @@ Durante uma curva da colheitadeira, aguarda a direção estabilizar em vez de pe
 
 **Ctrl+Alt+D solicita levar a carga atual para a carreta**, mesmo parcialmente cheia. A busca se repete a cada 250 ms e só aceita receptores no campo ou na borda alcançável pelo cano, com espaço para manter trator e bazuca dentro. Continua exigindo mesma fazenda, grão aceito, capacidade livre, caminhão parado e confirmação exata do receptor pelo jogo. A descarga local só é liberada com o cano próximo da faixa útil de recebimento.
 
-O acompanhamento da colheitadeira mantém tolerâncias de **10 cm longitudinal e 15 cm lateral**. O ajuste local na carreta usa **1,5 km/h** e permite iniciar a descarga a menos de 45 cm da faixa útil, com confirmação nativa do receptor. Em área livre, manobra até 8 km/h; a viagem continua a até 15 km/h. A proteção pode reduzir mais.
+O acompanhamento da colheitadeira mantém tolerâncias de **10 cm longitudinal e 15 cm lateral**. A chegada permite até **25 km/h** quando o trecho está alinhado, a colheitadeira está a mais de 40 m e a mira a mais de 20 m. Reduz para até 15 km/h ao se aproximar ou mudar de direção; as proteções podem reduzir mais. Na carreta, o ajuste final e a ré usam **1,5 km/h**; uma reentrada para frente distante da carga pode usar **3 km/h**. A descarga exige o cano a menos de 45 cm da faixa útil e confirmação nativa do receptor. A viagem ao caminhão continua limitada a 15 km/h.
 
 Se a colheitadeira esvaziar antes da bazuca, aguarda a próxima carga ou atende outra máquina elegível do mesmo campo. Depois de descarregar no caminhão, libera a lateral e reinicia o ciclo. A recuperação considera falta de progresso. A entrada sob o cano continua sendo por trás e para frente; quando já chega paralelo ao lado da máquina, pode recuar em linha reta a até 3 km/h para se posicionar atrás, respeitando a borda. Não exige reativar entre ciclos.
 
@@ -28,9 +30,9 @@ Não calcula rotas de viagem nem lê cultura. As sequências de estacionamento s
 
 Para atravessar cultura sem dano de rodas, o módulo usa o bloqueio nativo `getBlockFoliageDestruction` no trator e nos implementos acoplados enquanto estiver ativo. Não ativa nem altera a opção global de destruição de cultura da partida. Ao desligar ou desacoplar, restaura o comportamento anterior. Trabalho de ferramentas, como arar ou colher, é independente desse bloqueio de rodas.
 
-Feche o jogo, substitua o ZIP pelo arquivo **0.10.0.0** e remova cópias antigas deste mod. Posicione o conjunto inteiro dentro do talhão e deixe o caminhão em uma borda alcançável por dentro. **Ctrl+Alt+T** liga/desliga; **Ctrl+Alt+D** solicita descarga. As ações aparecem em **Opções > Controles** e na ajuda **F1**. O painel deve mostrar **TRANSBORDO 0.10.0.0**. Desligue e reative ao trocar de campo.
+Feche o jogo, substitua o ZIP pelo arquivo **0.11.0.0** e remova cópias antigas deste mod. Posicione o conjunto inteiro dentro do talhão e deixe o caminhão em uma borda alcançável por dentro. **Ctrl+Alt+T** liga/desliga; **Ctrl+Alt+D** solicita descarga. As ações aparecem em **Opções > Controles** e na ajuda **F1**. O painel deve mostrar **TRANSBORDO 0.11.0.0**. Desligue e reative ao trocar de campo.
 
-**Versão experimental, single-player.** Os 170 testes simulados incluem aproximações com movimento articulado, cano de 4,2 m junto de um semirreboque longo, sequência de frente e ré, movimento lento a 60 quadros por segundo, ausência de contato nas carrocerias medidas, campo apertado, limite de processamento e confirmação nativa de descarga. Mantém os testes anteriores de talhão, plataforma, captura e ciclos. A física, o contorno do seu mapa e os modelos escolhidos ainda precisam de confirmação no FS25.
+**Versão experimental, single-player.** Os 183 testes simulados incluem falha do ajuste curto seguida de chegada por outra entrada dentro do campo, reentrada até um ponto exato sem faixa de carga, canos de 4,2 e 4,7 m, mapeamento de dimensões e cabine, campo sem espaço, orçamento de cálculo, HUD e chegada mais rápida com redução próxima. Mantêm os testes de movimento articulado, pausas a 60 quadros por segundo, talhão, plataforma, captura e ciclos. A física, o contorno do seu mapa e os modelos escolhidos ainda precisam de confirmação no FS25.
 
 ### Desenvolvimento
 

@@ -35,6 +35,36 @@ class AjusteCurtoTests(unittest.TestCase):
         function finishSearch(job)
             while job.status=='buscando' do M.avancar(job,60) end
         end
+        function alternativeScene(exact,x,z)
+            shortPipeScene()
+            wagon.dischargeNode.node.x=-4.7
+            teleport(x or -9,z or -8)
+            tractor.rootNode.angle=math.pi/2
+            if exact then
+                trailer.getFillUnitAutoAimTargetNode=nil
+                trailer.spec_fillUnit.fillUnits[3].autoAimTarget=nil
+            end
+        end
+        function moveParkingFrame(ms)
+            tick(ms)
+            if M.distanciaCano(tractor,trailer,3)<0.4 then permitUnload() end
+            if state()==E.DESCARREGANDO then return true end
+            local c=tractor.command
+            if c.allowed then
+                local g=P.geometria(tractor,trailer)
+                local k=math.max(-1/g.raioGiro,math.min(1/g.raioGiro,2*c.x/math.max(1,c.x^2+c.z^2)))
+                local ds=(c.forwards and 1 or -1)*c.speed/3.6*ms/1000
+                local p=P.avancarPose(g.pose,k,ds,g.drawbar)
+                tractor.rootNode.x,tractor.rootNode.z,tractor.rootNode.angle=p.x,p.z,p.a
+                wagon.rootNode.parent=nil
+                wagon.rootNode.x,wagon.rootNode.z,wagon.rootNode.angle=p.x-math.sin(p.t)*g.drawbar,p.z-math.cos(p.t)*g.drawbar,p.t
+                tractor.speed,tractor.movingDirection=c.speed,c.forwards and 1 or -1
+            else tractor.speed=0 end
+            assert(P.posicaoLivre(tractor,trailer,tractor.rootNode.x,tractor.rootNode.z,nil,0),'Contato com carreta ou cabine')
+            assert(P.posicaoNoTalhao(tractor,tractor.rootNode.x,tractor.rootNode.z),'Saiu do campo')
+            assert(tractor.spec_transbordoInteligente.isAtivo)
+            return false
+        end
         ''')
 
     def check(self,code):
@@ -257,6 +287,186 @@ class AjusteCurtoTests(unittest.TestCase):
             if command.retryTarget then retry=true;break end
         end
         assert(retry and wagon.dischargeState~=Dischargeable.DISCHARGE_STATE_OBJECT)
+        ''')
+
+    def test_mapping_measures_pipe_and_both_bodies_and_only_keeps_safe_parking_poses(self):
+        self.check('''
+        alternativeScene(false)
+        local map=M.atualizarMapa(tractor,trailer,3)
+        assert(map.largura==2.6 and map.comprimento==12 and map.larguraBazuca==3)
+        assert(math.abs(map.alcance-4.7)<0.000001 and #map.vagas>0)
+        for _,vaga in ipairs(map.vagas) do
+            assert(P.poseLivre(map.g,vaga.p,P.CONFIG.margemPrecisao))
+            local x,z,a=P.poseParte(map.g,vaga.p,wagon)
+            local px,pz=x+math.cos(a)*map.pipeX+math.sin(a)*map.pipeZ,z-math.sin(a)*map.pipeX+math.cos(a)*map.pipeZ
+            assert(math.abs(px)<0.000001 and pz>=-4.500001 and pz<=4.500001)
+        end
+        assert(map.folga>0.2)
+        ''')
+
+    def test_mapping_does_not_make_short_pipe_longer_to_fit_the_trailer(self):
+        self.check('''
+        alternativeScene(true)
+        wagon.dischargeNode.node.x,wagon.dischargeNode.node.z=-1,0
+        local map=M.mapear(tractor,trailer,3)
+        assert(map.alcance==1 and #map.vagas==0)
+        assert(wagon.dischargeNode.node.x==-1)
+        ''')
+
+    def test_mapping_excludes_truck_cabin_even_when_trailer_itself_would_fit(self):
+        self.check('''
+        alternativeScene(true)
+        local map=M.mapear(tractor,trailer,3)
+        local before=#map.vagas
+        assert(before>0)
+        truck.size={width=16,length=24}
+        truck.rootNode.z=0
+        map=M.mapear(tractor,trailer,3)
+        assert(#map.vagas==0)
+        ''')
+
+    def test_mapping_updates_after_target_moves_and_is_cleared_on_target_release(self):
+        self.check('''
+        alternativeScene(false)
+        local map=M.atualizarMapa(tractor,trailer,3)
+        trailer.rootNode.x=trailer.rootNode.x+2
+        tractor.spec_transbordoInteligente.tempoTotal=tractor.spec_transbordoInteligente.tempoTotal+500
+        local nextMap=M.atualizarMapa(tractor,trailer,3)
+        assert(nextMap~=map and nextMap.ax==map.ax+2)
+        TI.desativar(tractor)
+        assert(tractor.spec_transbordoInteligente.mapaCarreta==nil)
+        ''')
+
+    def test_failed_short_search_continues_with_another_entry_and_reaches_trailer(self):
+        self.check('''
+        defaultField=makeField(-50,-45,50,40)
+        alternativeScene(false)
+        local short=parkingJob()
+        finishSearch(short)
+        assert(short.status=='semEspaco')
+        local reached,alternative=false,false
+        for i=1,1800 do
+            reached=moveParkingFrame(100)
+            local control=tractor.spec_transbordoInteligente.manobraCarreta
+            alternative=alternative or (control~=nil and control.nivel>1)
+            if reached then break end
+        end
+        local s=tractor.spec_transbordoInteligente
+        assert(reached and alternative and s.manobraCarreta.distance<65)
+        tick(100)
+        assert(wagon.dischargeState==Dischargeable.DISCHARGE_STATE_OBJECT)
+        ''')
+
+    def test_mapped_reentry_reaches_exact_receiver_without_guessing_a_loading_range(self):
+        self.check('''
+        defaultField=makeField(-55,-50,55,45)
+        alternativeScene(true,-5,0)
+        local reached,mapped=false,false
+        for i=1,3000 do
+            reached=moveParkingFrame(100)
+            local c=tractor.spec_transbordoInteligente.manobraCarreta
+            mapped=mapped or (c~=nil and c.job~=nil and c.job.entradaMapeada==true)
+            if reached then break end
+        end
+        assert(reached and mapped)
+        assert(tractor.spec_transbordoInteligente.manobraCarreta.distance<=M.CONFIG.percursoTotal)
+        ''')
+
+    def test_all_alternatives_remain_blocked_in_a_field_with_no_manoeuvring_space(self):
+        self.check('''
+        alternativeScene(false,-5,0)
+        local s=tractor.spec_transbordoInteligente
+        s.talhao=TITalhao.criar({}, {-17,-2,-2,-2,-2,2,-17,2})
+        local command
+        for i=1,300 do command=M.comandar(tractor,100,trailer,3,0,-1) end
+        assert(s.manobraCarreta.nivel==#M.ALTERNATIVAS)
+        assert(s.manobraCarreta.job.status=='semEspaco')
+        assert(command.speed==0 and s.isAtivo)
+        assert(tractor.rootNode.x==-5 and tractor.rootNode.z==0)
+        ''')
+
+    def test_reentry_checks_a_limited_number_of_curve_samples_each_update(self):
+        self.check('''
+        alternativeScene(true,-5,0)
+        local _,_,dx,dz=TI.alvoDescarregar(tractor,trailer,3)
+        local job=M.iniciar(tractor,trailer,3,dx,dz,3)
+        local calls=0
+        local free=P.poseLivre
+        P.poseLivre=function(...) calls=calls+1;return free(...) end
+        M.prepararCurvas(job);job.curvesStarted=true
+        assert(#job.curves>0 and #job.curves<=M.CONFIG.maxCurvas)
+        calls=0
+        M.avancar(job,3)
+        assert(calls<=3 and job.status=='buscando')
+        finishSearch(job)
+        assert(job.status=='pronto' and job.entradaMapeada)
+        ''')
+
+    def test_unavailable_direct_entry_starts_local_alternatives_instead_of_holding_forever(self):
+        self.check('''
+        wagon.units[2].level,wagon.units[2].kind=20000,1
+        teleport(35,-20)
+        activate();tick()
+        M.entrada=function() return nil end
+        tick(100)
+        local s=tractor.spec_transbordoInteligente
+        assert(s.carretaBloqueada and not tractor.command.allowed)
+        tick(100)
+        assert(s.manobraCarreta~=nil and s.manobraCarreta.job~=nil)
+        assert(s.caminhaoAlvo==trailer and s.isAtivo)
+        ''')
+
+    def test_already_aligned_pipe_never_starts_a_large_reentry(self):
+        self.check('''
+        wagon.units[2].level,wagon.units[2].kind=20000,1
+        activate();tick();alignTrailer()
+        local _,_,dx,dz=TI.alvoDescarregar(tractor,trailer,3)
+        local job=M.iniciar(tractor,trailer,3,dx,dz,3)
+        M.avancar(job,1)
+        assert(job.status=='pronto' and #job.path==0 and job.curves==nil)
+        assert(not TI.podeDescarregar(tractor))
+        ''')
+
+    def test_hud_reports_measured_trailer_pipe_and_parking_clearance(self):
+        self.check('''
+        alternativeScene(false)
+        M.atualizarMapa(tractor,trailer,3)
+        RenderText={ALIGN_CENTER=1,ALIGN_LEFT=0}
+        function setTextColor() end
+        function setTextAlignment() end
+        function setTextBold() end
+        function tractor:getIsEntered() return true end
+        local lines={}
+        function renderText(x,y,size,text) lines[#lines+1]=text end
+        TI.onDraw(tractor)
+        local dimensions,clearance=false,false
+        for _,line in ipairs(lines) do
+            dimensions=dimensions or (line:find('Cacamba 2.6 x 12.0 m') and line:find('Cano 4.7 m'))
+            clearance=clearance or line:find('Posicoes livres no talhao:')
+        end
+        assert(dimensions and clearance)
+        ''')
+
+    def test_combine_arrival_is_faster_on_a_straight_open_stretch(self):
+        self.check('''
+        teleport(-6,-80)
+        activate();tick();tick(100)
+        assert(tractor.command.allowed and tractor.command.speed==25)
+        assert(TI.velocidadeChegada(tractor,combine,-6,50)==25)
+        assert(TI.velocidadeChegada(tractor,combine,80,0)==15)
+        ''')
+
+    def test_faster_combine_arrival_still_slows_down_near_combine_and_field_edge(self):
+        self.check('''
+        teleport(-6,75)
+        activate();tick();tick(100)
+        assert(tractor.command.speed<=TI.CONFIG.velocidadeViagem)
+        assert(TI.velocidadeChegada(tractor,combine,-6,105)==15)
+        local s=tractor.spec_transbordoInteligente
+        s.talhao=TITalhao.criar({}, {-25,40,25,40,25,90,-25,90})
+        TI.dirigir(tractor,100,-6,120,25,true,true)
+        assert(tractor.command.speed<25)
+        assert(P.posicaoNoTalhao(tractor,-6,75))
         ''')
 
 
