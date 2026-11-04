@@ -64,9 +64,32 @@ python package.py
 cp FS25_TransbordoInteligente.zip ../FS25_TransbordoInteligente.zip
 ```
 
+## TG GPS PRO — versão de teste 0.6.0.0
+
+[Baixar FS25_TG_GPS.zip](FS25_TG_GPS.zip) · [Instruções](tg-gps/LEIA-ME.txt) · [Fontes e testes](tg-gps/)
+
+Inclui monitor 3D na cabine, pintura da faixa trabalhada e destaque de sobreposições. Os três scripts de monitor enviados pelo usuário foram adaptados para o TG GPS e usam um único histórico de cobertura no painel e na tela física. O modelo do monitor, as peças da tela e as letras estão incluídos; não exige o CurveGPS instalado.
+
+Gere o talhão ou finalize uma reta A/B/curva, baixe/ligue o implemento e avance. A pintura também funciona com direção manual e painel fechado. A medição usa as áreas de trabalho ativas do implemento; ferramentas sem esses dados usam uma posição e largura estimadas. A pintura e os hectares valem apenas para a sessão atual e zeram ao recarregar a partida.
+
+**Ctrl+Alt+M** abre o painel. **Shift direito+M**, com o trator parado, abre o ajuste do monitor físico. Setas movem, PageUp/PageDown alteram a altura, Q/E giram, R/F inclinam e +/- mudam o tamanho. Enter salva por modelo de veículo; Esc cancela. As instruções completas estão no arquivo LEIA-ME.
+
+Feche o FS25, faça backup do ZIP anterior e substitua `FS25_TG_GPS.zip` na pasta `mods`, sem descompactar nem manter cópias duplicadas. Ative o mod em uma partida single-player.
+
+**23 testes simulados passaram**, cobrindo registro de trabalho, sobreposição, telas, ancoragem, troca de veículo, ajustes, limpeza e as funções existentes de A/B e cabeceira. A renderização, a posição em cada cabine e o comportamento dentro do FS25 ainda precisam de validação no jogo.
+
+Para desenvolver, use Python com `lupa==2.6`:
+
+```bash
+cd tg-gps
+python tools/test.py
+python tools/package.py
+```
+
+O empacotador gera `FS25_TG_GPS.zip` na raiz do repositório e verifica XML, dependências, ações, versão e integridade dos arquivos.
+
 ## Outros pacotes existentes
 
-- [`FS25_TG_GPS.zip`](FS25_TG_GPS.zip): TG GPS PRO, com monitor e guias dentro do jogo.
 - [`TG_GPS_SIM_Dashboard.zip`](TG_GPS_SIM_Dashboard.zip): referências dos botões do SIM Dashboard, sem preset importável e com uma versão anterior do GPS.
 
-Os pacotes de TG GPS foram preservados.
+O pacote de referências do SIM Dashboard foi preservado.

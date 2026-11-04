@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8" standalone="no" ?>
+<modDesc descVersion="105">
+    <author>Top Gamers</author>
+    <version>0.6.0.0</version>
+    <title>
+        <en>TG GPS PRO - Cab Monitor and Coverage</en>
+        <pt>TG GPS PRO - Monitor na Cabine e Pintura</pt>
+        <br>TG GPS PRO - Monitor na Cabine e Pintura</br>
+    </title>
+    <description>
+        <en>Ctrl+Alt+M opens the GPS map and headland monitor. Optional headland mode raises compatible implements, turns and lowers again. Configure it in the HEADLAND tab. Ctrl+Alt+F generates straight guidance lanes across the mapped field in the current tractor direction. Ctrl+Alt+P follows the nearest lane automatically. A/B and recorded curves are also supported. Normal lane speed remains under player control; maneuver speed is automatic when headland mode is enabled.</en>
+        <pt>Ctrl+Alt+M abre o mapa e o monitor do GPS. O modo opcional de cabeceira levanta implementos compatíveis, faz a curva e baixa novamente. Configure na aba CABECEIRA. Ctrl+Alt+F gera as passadas retas de todo o talhão na direção do trator. Ctrl+Alt+P segue automaticamente a linha mais próxima. Também aceita A/B e curvas gravadas. A velocidade nas passadas fica com o jogador; durante a manobra de cabeceira o sistema controla velocidade e freios.</pt>
+        <br>Ctrl+Alt+M abre o mapa e o monitor do GPS. O modo opcional de cabeceira levanta implementos compatíveis, faz a curva e baixa novamente. Configure na aba CABECEIRA. Ctrl+Alt+F gera as passadas retas de todo o talhão na direção do trator. Ctrl+Alt+P segue automaticamente a linha mais próxima. Também aceita A/B e curvas gravadas. A velocidade nas passadas fica com o jogador; durante a manobra de cabeceira o sistema controla velocidade e freios.</br>
+    </description>
+    <iconFilename>icon.dds</iconFilename>
+    <multiplayer supported="false" />
+
+    <extraSourceFiles>
+        <sourceFile filename="scripts/TGGuidanceController.lua" />
+        <sourceFile filename="scripts/TGFieldBoundary.lua" />
+        <sourceFile filename="scripts/TGHeadlandGeometry.lua" />
+        <sourceFile filename="scripts/TGTurnPlanner.lua" />
+        <sourceFile filename="scripts/TGImplementControl.lua" />
+        <sourceFile filename="scripts/TGHeadlandControl.lua" />
+        <sourceFile filename="scripts/HUDMonitor.lua" />
+        <sourceFile filename="scripts/TGGPSMap.lua" />
+        <sourceFile filename="scripts/TGGPSHud.lua" />
+        <sourceFile filename="scripts/CurveGPSMonitorScreen.lua" />
+        <sourceFile filename="scripts/CurveGPSMonitorManager.lua" />
+        <sourceFile filename="scripts/TGGPS.lua" />
+    </extraSourceFiles>
+
+    <specializations>
+        <specialization name="tgGpsVehicle" className="TGGPSVehicle" filename="scripts/TGGPSVehicle.lua" />
+    </specializations>
+
+    <actions>
+        <action name="TG_GPS_MONITOR_EDIT" category="VEHICLE" axisType="HALF" ignoreComboMask="false" />
+        <action name="TG_GPS_HUD" category="VEHICLE" axisType="HALF" ignoreComboMask="false" />
+        <action name="TG_GPS_ENABLE" category="VEHICLE" axisType="HALF" ignoreComboMask="false" />
+        <action name="TG_GPS_DISABLE" category="VEHICLE" axisType="HALF" ignoreComboMask="false" />
+        <action name="TG_GPS_AUTO_LANE_ENABLE" category="VEHICLE" axisType="HALF" ignoreComboMask="false" />
+        <action name="TG_GPS_FIELD" category="VEHICLE" axisType="HALF" ignoreComboMask="false" />
+        <action name="TG_GPS_AUTOSTEER" category="VEHICLE" axisType="HALF" ignoreComboMask="false" />
+        <action name="TG_GPS_AUTO_LANE" category="VEHICLE" axisType="HALF" ignoreComboMask="false" />
+        <action name="TG_GPS_MARK_AB" category="VEHICLE" axisType="HALF" ignoreComboMask="false" />
+        <action name="TG_GPS_RECORD_CURVE" category="VEHICLE" axisType="HALF" ignoreComboMask="false" />
+        <action name="TG_GPS_TOGGLE_LINES" category="VEHICLE" axisType="HALF" ignoreComboMask="false" />
+        <action name="TG_GPS_LANE_PREV" category="VEHICLE" axisType="HALF" ignoreComboMask="false" />
+        <action name="TG_GPS_LANE_NEXT" category="VEHICLE" axisType="HALF" ignoreComboMask="false" />
+        <action name="TG_GPS_WIDTH_DOWN" category="VEHICLE" axisType="HALF" ignoreComboMask="false" />
+        <action name="TG_GPS_WIDTH_UP" category="VEHICLE" axisType="HALF" ignoreComboMask="false" />
+        <action name="TG_GPS_DETECT_WIDTH" category="VEHICLE" axisType="HALF" ignoreComboMask="false" />
+        <action name="TG_GPS_SAVE" category="VEHICLE" axisType="HALF" ignoreComboMask="false" />
+        <action name="TG_GPS_CLEAR" category="VEHICLE" axisType="HALF" ignoreComboMask="false" />
+    </actions>
+
+    <inputBinding>
+        <actionBinding action="TG_GPS_MONITOR_EDIT"><binding device="KB_MOUSE_DEFAULT" input="KEY_rshift KEY_m" /></actionBinding>
+        <actionBinding action="TG_GPS_HUD"><binding device="KB_MOUSE_DEFAULT" input="KEY_lctrl KEY_lalt KEY_m" /></actionBinding>
+        <actionBinding action="TG_GPS_ENABLE"><binding device="KB_MOUSE_DEFAULT" input="KEY_lctrl KEY_lalt KEY_1" /></actionBinding>
+        <actionBinding action="TG_GPS_DISABLE"><binding device="KB_MOUSE_DEFAULT" input="KEY_lctrl KEY_lalt KEY_0" /></actionBinding>
+        <actionBinding action="TG_GPS_AUTO_LANE_ENABLE"><binding device="KB_MOUSE_DEFAULT" input="KEY_lctrl KEY_lalt KEY_2" /></actionBinding>
+        <actionBinding action="TG_GPS_FIELD"><binding device="KB_MOUSE_DEFAULT" input="KEY_lctrl KEY_lalt KEY_f" /></actionBinding>
+        <actionBinding action="TG_GPS_AUTOSTEER"><binding device="KB_MOUSE_DEFAULT" input="KEY_lctrl KEY_lalt KEY_p" /></actionBinding>
+        <actionBinding action="TG_GPS_AUTO_LANE"><binding device="KB_MOUSE_DEFAULT" input="KEY_lctrl KEY_lalt KEY_l" /></actionBinding>
+        <actionBinding action="TG_GPS_MARK_AB"><binding device="KB_MOUSE_DEFAULT" input="KEY_lctrl KEY_lalt KEY_a" /></actionBinding>
+        <actionBinding action="TG_GPS_RECORD_CURVE"><binding device="KB_MOUSE_DEFAULT" input="KEY_lctrl KEY_lalt KEY_r" /></actionBinding>
+        <actionBinding action="TG_GPS_TOGGLE_LINES"><binding device="KB_MOUSE_DEFAULT" input="KEY_lctrl KEY_lalt KEY_g" /></actionBinding>
+        <actionBinding action="TG_GPS_LANE_PREV"><binding device="KB_MOUSE_DEFAULT" input="KEY_lctrl KEY_lalt KEY_left" /></actionBinding>
+        <actionBinding action="TG_GPS_LANE_NEXT"><binding device="KB_MOUSE_DEFAULT" input="KEY_lctrl KEY_lalt KEY_right" /></actionBinding>
+        <actionBinding action="TG_GPS_WIDTH_DOWN"><binding device="KB_MOUSE_DEFAULT" input="KEY_lctrl KEY_lalt KEY_down" /></actionBinding>
+        <actionBinding action="TG_GPS_WIDTH_UP"><binding device="KB_MOUSE_DEFAULT" input="KEY_lctrl KEY_lalt KEY_up" /></actionBinding>
+        <actionBinding action="TG_GPS_DETECT_WIDTH"><binding device="KB_MOUSE_DEFAULT" input="KEY_lctrl KEY_lalt KEY_w" /></actionBinding>
+        <actionBinding action="TG_GPS_SAVE"><binding device="KB_MOUSE_DEFAULT" input="KEY_lctrl KEY_lalt KEY_s" /></actionBinding>
+        <actionBinding action="TG_GPS_CLEAR"><binding device="KB_MOUSE_DEFAULT" input="KEY_lctrl KEY_lalt KEY_x" /></actionBinding>
+    </inputBinding>
+
+    <l10n>
+        <text name="input_TG_GPS_MONITOR_EDIT"><en>Adjust cab GPS monitor</en><pt>Ajustar monitor GPS da cabine</pt><br>Ajustar monitor GPS da cabine</br></text>
+        <text name="input_TG_GPS_HUD"><en>Open / close GPS monitor</en><pt>Abrir/fechar monitor GPS</pt><br>Abrir/fechar monitor GPS</br></text>
+        <text name="input_TG_GPS_ENABLE"><en>Enable GPS steering</en><pt>Ligar piloto GPS</pt><br>Ligar piloto GPS</br></text>
+        <text name="input_TG_GPS_DISABLE"><en>Disable GPS steering</en><pt>Desligar piloto GPS</pt><br>Desligar piloto GPS</br></text>
+        <text name="input_TG_GPS_AUTO_LANE_ENABLE"><en>Enable automatic GPS lane selection</en><pt>Usar passada automática</pt><br>Usar passada automática</br></text>
+        <text name="input_TG_GPS_FIELD"><en>Generate all field lanes</en><pt>Gerar linhas do talhão</pt><br>Gerar linhas do talhão</br></text>
+        <text name="input_TG_GPS_AUTOSTEER"><en>Toggle GPS automatic steering</en><pt>Piloto automático GPS</pt><br>Piloto automático GPS</br></text>
+        <text name="input_TG_GPS_AUTO_LANE"><en>Automatic / manual GPS lane</en><pt>Passada automática/manual</pt><br>Passada automática/manual</br></text>
+        <text name="input_TG_GPS_MARK_AB"><en>Mark GPS point A / B</en><pt>Marcar ponto A/B</pt><br>Marcar ponto A/B</br></text>
+        <text name="input_TG_GPS_RECORD_CURVE"><en>Start / stop curved path recording</en><pt>Gravar/finalizar curva</pt><br>Gravar/finalizar curva</br></text>
+        <text name="input_TG_GPS_TOGGLE_LINES"><en>Show / hide GPS lines</en><pt>Mostrar/ocultar linhas</pt><br>Mostrar/ocultar linhas</br></text>
+        <text name="input_TG_GPS_LANE_PREV"><en>Previous GPS lane</en><pt>Passada anterior</pt><br>Passada anterior</br></text>
+        <text name="input_TG_GPS_LANE_NEXT"><en>Next GPS lane</en><pt>Próxima passada</pt><br>Próxima passada</br></text>
+        <text name="input_TG_GPS_WIDTH_DOWN"><en>Decrease implement width</en><pt>Diminuir largura</pt><br>Diminuir largura</br></text>
+        <text name="input_TG_GPS_WIDTH_UP"><en>Increase implement width</en><pt>Aumentar largura</pt><br>Aumentar largura</br></text>
+        <text name="input_TG_GPS_DETECT_WIDTH"><en>Detect implement width</en><pt>Detectar largura</pt><br>Detectar largura</br></text>
+        <text name="input_TG_GPS_SAVE"><en>Save GPS route</en><pt>Salvar trajeto</pt><br>Salvar trajeto</br></text>
+        <text name="input_TG_GPS_CLEAR"><en>Clear GPS route</en><pt>Limpar trajeto</pt><br>Limpar trajeto</br></text>
+    </l10n>
+</modDesc>

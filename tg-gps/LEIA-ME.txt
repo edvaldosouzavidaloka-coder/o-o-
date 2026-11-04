@@ -1,0 +1,131 @@
+TG GPS PRO 0.6.0.0 - MONITOR NA CABINE E PINTURA - FS25 - single-player
+
+VERSAO PARA TESTE
+Logica, geometria, interface e manobra simulada testadas fora do jogo.
+O FS25 nao esta instalado neste ambiente; valide com seu trator e implemento.
+
+NOVO NESTA ATUALIZACAO
+Monitor 3D dentro da cabine usando o curveGPSMonitor.i3d enviado pelo usuario.
+HUDMonitor.lua foi adaptado para medir e desenhar a cobertura no TG GPS.
+CurveGPSMonitorScreen.lua e CurveGPSMonitorManager.lua foram adaptados para
+o TG GPS, sem exigir o CurveGPS instalado e sem alterar seus controles de piloto.
+Os modelos da tela e as letras estao incluidos; nao exigem downloads extras.
+O painel 2D e a tela da cabine usam o MESMO historico de trabalho.
+
+PINTURA DA AREA TRABALHADA
+Gere o talhao ou finalize uma reta A/B/curva. Baixe/ligue o implemento e avance.
+Azul claro: faixa trabalhada. Azul escuro: passagem sobre area ja registrada.
+O contorno verde mostra a area ativa do implemento quando seus dados existem.
+A pintura continua com direcao manual e com o painel 2D fechado.
+Levantar/desligar o implemento interrompe a faixa; retornar reinicia o registro.
+A leitura do trabalho ocorre a cada 100 ms; a tela fisica atualiza a cada 250 ms.
+Hectares sao estimados em uma grade de 0,75 m, nao estatisticas nativas do jogo.
+A geometria usa o conjunto das areas de trabalho ativas; equipamentos com
+secoes separadas podem ter os intervalos internos incluidos na faixa combinada.
+Mods sem workAreas acessiveis usam a largura configurada e uma posicao estimada;
+o painel identifica esse modo como ESTIMADO. Confira com seu implemento.
+A pintura e os hectares valem SOMENTE para a sessao atual e zeram ao recarregar
+a partida. Trocar de trator ou limpar o trajeto nao apaga a pintura da sessao.
+AJUSTES > ZERAR PINTURA pede confirmacao e limpa pintura e hectares da sessao.
+O mod nao pinta o terreno do jogo e nao detecta o resultado agricola real.
+
+AJUSTAR O MONITOR DENTRO DA CABINE
+Entre em um trator e aguarde meio segundo. Ligue o motor para acender a tela.
+O modelo fica preso ao veiculo/cabine, sem acompanhar o giro do olhar.
+Como cada cabine e diferente, a posicao inicial pode precisar de ajuste.
+Pare o trator e pressione SHIFT DIREITO + M (remapeavel nos controles).
+Enquanto ajusta, o piloto desliga e os comandos de movimento ficam bloqueados.
+Setas esquerda/direita: mover para os lados. Cima/baixo: aproximar/afastar.
+PageUp/PageDown: subir/descer. Q/E: girar para os lados. R/F: inclinar.
++/-: aumentar/diminuir. Home: restaurar posicao inicial.
+Enter: salvar. Esc: cancelar. SHIFT DIREITO + M novamente tambem salva.
+Posicao, rotacao e tamanho sao salvos por modelo de veiculo em
+modSettings/FS25_TG_GPS/monitors.xml. Nao precisa comprar acessorio CurveGPS.
+O painel antigo continua disponivel pelo atalho Ctrl+Alt+M.
+
+INSTALAR E ABRIR
+Substitua o antigo FS25_TG_GPS.zip na pasta mods, sem descompactar.
+Ative TG GPS PRO ao carregar uma partida single-player.
+Entre no trator e pressione Ctrl+Alt+M para abrir/fechar o monitor.
+Arraste a barra superior para mover. AJUSTES muda o tamanho do painel.
+Posicao e tamanho ficam em modSettings/FS25_TG_GPS/hud.xml.
+
+PREPARAR O TALHAO
+1. Na aba GUIA, ajuste/detecte a largura real do implemento.
+2. Dentro do talhao, aponte o trator na direcao das passadas e use GERAR TALHAO.
+3. MAPA mostra o campo e as passadas. Nao exige gravacao anterior.
+4. Alinhe o trator com uma passada e ligue o motor.
+
+CABECEIRA AUTOMATICA
+Na aba CABECEIRA, ative CABECEIRA AUTOMATICA. Ela inicia desligada.
+Configure margem, velocidade na curva, raio minimo e lado da proxima passada.
+Valores iniciais: margem 18 m, velocidade 6 km/h, raio 6 m. O + e - no lado
+referem-se aos indices das linhas, nao ao lado fisico fixo do trator.
+A margem reserva uma faixa interna ao contorno, encurtando as passadas de
+trabalho. Se nao sobrar area, o monitor recusa a configuracao.
+Use SALVAR TRAJETO na aba GUIA para guardar o campo e as configuracoes.
+
+Baixe o implemento que vai trabalhar e pressione LIGAR PILOTO.
+Nas passadas, controle a velocidade ou use o cruzeiro nativo, ate 25 km/h.
+Ao chegar perto do fim da passada, o sistema:
+- Suspende o cruzeiro, freia e levanta os implementos que estavam baixados.
+- Calcula e percorre uma curva para frente, respeitando o raio configurado.
+- Alinha com outra passada e freia para baixar os implementos capturados.
+- Aguarda o estado de descida e retoma a passada no sentido contrario.
+Se o cruzeiro estava ligado antes, restaura seu estado na conclusao normal.
+Equipamentos que ja estavam levantados continuam levantados.
+O sistema nao liga/desliga tomada de potencia ou ferramentas de trabalho.
+
+O planejador admite curvas omega quando duas passadas ficam proximas.
+Pode escolher uma passada mais distante se a primeira curva nao couber.
+O trajeto deve caber no poligono do campo e na folga minima do trator.
+Se nao houver uma curva valida ou terminarem as passadas da sequencia,
+o sistema levanta quando possivel, freia e pede controle manual.
+Solte o acelerador apos a parada para liberar a retencao do freio.
+
+CANCELAR
+Virar o volante, frear ou clicar DESLIGAR cancela a manobra. Marcha a re,
+motor desligado e troca/saida do veiculo tambem cancelam o piloto.
+Apos cancelar, o cruzeiro continua desligado e os implementos levantados
+na manobra permanecem levantados. Baixe-os manualmente quando desejar.
+Fechar o monitor apenas fecha a interface; nao desliga o piloto.
+Alterar largura, passada ou configuracoes de cabeceira desengata o piloto.
+
+LER O MAPA
+Azul: interior do talhao. Laranja: faixa reservada para cabeceira.
+Linhas claras: passadas. Amarelo: passada selecionada. Branco: curva planejada.
+Marcador verde: posicao e orientacao atuais do trator.
+O azul de fundo representa a geometria; a pintura azul-clara sobre ele indica
+a cobertura estimada do implemento e o azul escuro indica sobreposicao.
+A faixa laranja fica reservada para manobra; esta versao nao automatiza
+voltas de trabalho ao redor do perimetro do campo.
+
+LIMITES
+A cabeceira automatica e para passadas retas geradas no modo TALHAO.
+A/B e curvas gravadas continuam disponiveis, com retorno manual.
+O contorno e o cadastrado no mapa: nao detecta ampliacoes com arado, campos
+unidos, ilhas internas, arvores, postes, valetas ou outros obstaculos.
+O raio e os parametros de direcao precisam corresponder ao seu veiculo.
+O modelo usa entre-eixos 3 m/esterco 35 graus, sem calibracao automatica.
+A verificacao espacial usa a trajetoria do trator; nao calcula toda a
+varredura de implementos compridos. Articulados, esteiras, direcao traseira
+e equipamentos especiais ainda precisam de compatibilidade especifica.
+O levantamento usa o estado informado pelas funcoes do implemento; nao ha
+uma garantia universal sobre a duracao de todas as animacoes do jogo.
+Faca a primeira validacao devagar em um talhao aberto e observe o implemento.
+
+ATALHOS
+Ctrl+Alt+M: painel. Shift direito+M: ajustar monitor fisico.
+Ctrl+Alt+F: gerar talhao. Ctrl+Alt+P: alternar piloto.
+Ctrl+Alt+1: ligar piloto. Ctrl+Alt+0: desligar piloto.
+Ctrl+Alt+2: selecionar passada automaticamente. Ctrl+Alt+L: auto/manual.
+Ctrl+Alt+Esquerda/Direita: passada manual. Ctrl+Alt+Cima/Baixo: largura.
+Ctrl+Alt+W: detectar largura. Ctrl+Alt+A: marcar A/B.
+Ctrl+Alt+R: iniciar/finalizar curva. Ctrl+Alt+G: mostrar/ocultar linhas.
+Ctrl+Alt+S: salvar trajeto. Ctrl+Alt+X: limpar da tela, mantendo arquivo salvo.
+As teclas podem ser alteradas nas opcoes de controles do jogo.
+Um trajeto e salvo por mapa em modSettings/FS25_TG_GPS.
+
+DESENVOLVIMENTO
+Testes: python3 tools/test.py (Lua 5.1+ ou pacote Python lupa==2.6).
+Pacote: python3 tools/package.py.
