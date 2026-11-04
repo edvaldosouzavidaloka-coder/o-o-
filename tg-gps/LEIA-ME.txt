@@ -1,8 +1,20 @@
-TG GPS PRO 0.9.1.0 - TERMINAL, MINIMAPA PDA E TRAJETOS - FS25 - single-player
+TG GPS PRO 0.9.2.0 - TERMINAL, MINIMAPA PDA E TRAJETOS - FS25 - single-player
 
 VERSAO PARA TESTE
 Logica, geometria, interface e manobra simulada testadas fora do jogo.
 O FS25 nao esta instalado neste ambiente; valide com seu trator e implemento.
+
+NITIDEZ 0.9.2
+Novos desenhos de trator, colheitadeira e colheitadeira com plataforma.
+O painel usa icones de 1024 px com niveis de reducao completos; a cabine usa
+o mesmo desenho como geometria vetorial, com pneus e detalhes arredondados.
+As cores da geometria ficam no mesmo plano, sem superficies ocultas sobrepostas.
+A pintura recente segue as bordas continuas da area de trabalho. O desenho
+usa ate 384 x 192 amostras, juntando faixas iguais antes de reduzir a resolucao.
+O historico visual e a sobreposicao usam celulas de 0,75 m, em vez de 1,75 m.
+Os hectares, a grade de medicao e as larguras salvas permanecem preservados.
+O limite de desenho inclui as partes dos novos icones. O terreno continua
+limitado a imagem PDA fornecida pelo mapa; nao e criada uma imagem de satelite.
 
 CORRECAO 0.9.1 - TEXTURA DO PDA
 Corrige o falso bloqueio "Textura do PDA indisponivel" para overview.png.
@@ -32,7 +44,7 @@ Os icones de trator e colheitadeira acompanham o zoom com limites de tamanho.
 O implemento levantado continua desenhado, usando sua posicao como referencia,
 sem produzir pintura. A area real ativa tem prioridade quando estiver trabalhando.
 A base do LCD foi escurecida e a area util ampliada para reduzir a borda clara.
-Foram aprovados 82 testes simulados; a renderizacao e o desempenho no FS25
+Foram aprovados 88 testes simulados; a renderizacao e o desempenho no FS25
 ainda precisam de confirmacao com o mapa e a cabine escolhidos.
 
 TERMINAL E PDA

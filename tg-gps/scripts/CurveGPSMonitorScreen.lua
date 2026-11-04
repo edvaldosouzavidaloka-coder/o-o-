@@ -12,6 +12,16 @@ TGGPSMonitorScreen.WIDTH, TGGPSMonitorScreen.HEIGHT = 0.258, 0.156
 TGGPSMonitorScreen.MAX_PRIMITIVES = 650
 
 local function valid(node) return node ~= nil and node ~= 0 end
+local function drawCost(node)
+    if getNumOfChildren(node)==0 then return 1 end
+    local count=0
+    for i=0,getNumOfChildren(node)-1 do count=count+drawCost(getChildAt(node,i)) end
+    return count
+end
+local function clearBrightness(cache,node)
+    cache[node]=nil
+    for i=0,getNumOfChildren(node)-1 do clearBrightness(cache,getChildAt(node,i)) end
+end
 local function find(node, name, depth)
     if not valid(node) or (depth or 0) > 32 then return nil end
     if getName(node) == name then return node end
@@ -49,6 +59,17 @@ function TGGPSMonitorScreen:attach(monitorNode, vehicle)
         self.templates["text_" .. code] = find(templates, "text_" .. code)
         self.templates["textWhite_" .. code] = find(templates,"textWhite_"..code)
     end
+    local symbols=loadI3DFile(self.modDirectory..'models/tgGPSVehicleSymbols.i3d',false,false,false)
+    if not valid(symbols) then self:detach();return false end
+    self.symbolTemplateRoot=symbols
+    link(root,symbols);setVisibility(symbols,false)
+    self.templateCosts={}
+    for _,kind in ipairs({'tractor','combine','combine_cutter'}) do
+        local name='symbol_'..kind
+        self.templates[name]=find(symbols,name)
+        if not valid(self.templates[name]) then self:detach();return false end
+        self.templateCosts[name]=drawCost(self.templates[name])
+    end
     self.elapsed = 250
     self:refresh()
     return true
@@ -57,6 +78,8 @@ end
 function TGGPSMonitorScreen:detach()
     if valid(self.contentRoot) then delete(self.contentRoot) end
     if valid(self.templateRoot) then delete(self.templateRoot) end
+    if valid(self.symbolTemplateRoot) then delete(self.symbolTemplateRoot) end
+    self.symbolTemplateRoot=nil
     self.contentRoot, self.templateRoot, self.monitorRoot, self.vehicle = nil, nil, nil, nil
     self.nativeNode,self.nativeShape,self.nativeKey,self.failedNativeFilename=nil,nil,nil,nil
     self.nodeBrightness={}
@@ -73,7 +96,7 @@ function TGGPSMonitorScreen:finishFrame()
         local used = self.used[style] or 0
         for i = #pool, used + 1, -1 do
             if i > used + 4 then
-                delete(pool[i]); pool[i] = nil; self.count = self.count - 1
+                delete(pool[i]); pool[i] = nil; self.count = self.count - ((self.templateCosts or {})[style] or 1)
             else setVisibility(pool[i], false) end
         end
     end
@@ -86,12 +109,13 @@ function TGGPSMonitorScreen:quad(style, x, y, w, h, rotation, layer)
     local index = (self.used[style] or 0) + 1
     local node = pool[index]
     if not valid(node) then
-        if self.count >= self.MAX_PRIMITIVES then return false end
+        local cost=(self.templateCosts or {})[style] or 1
+        if self.count+cost > self.MAX_PRIMITIVES then return false end
         node = clone(self.templates[style], false, false, false)
         if not valid(node) then return false end
         link(self.contentRoot, node)
-        pool[index], self.count = node, self.count + 1
-        self.nodeBrightness=self.nodeBrightness or {};self.nodeBrightness[node]=nil
+        pool[index], self.count = node, self.count + cost
+        self.nodeBrightness=self.nodeBrightness or {};clearBrightness(self.nodeBrightness,node)
     end
     self.used[style] = index
     self:applyBrightness(node)
@@ -105,9 +129,11 @@ end
 function TGGPSMonitorScreen:applyBrightness(node)
     local value=self.owner.monitorBrightness or 0.20
     self.nodeBrightness=self.nodeBrightness or {}
-    if self.nodeBrightness[node]~=value and getHasShaderParameter and setShaderParameter
-        and getHasShaderParameter(node,"lcdBrightness") then
-        setShaderParameter(node,"lcdBrightness",value*0.25,0,0,0,false)
+    if self.nodeBrightness[node]~=value and getHasShaderParameter and setShaderParameter then
+        if getHasShaderParameter(node,"lcdBrightness") then
+            setShaderParameter(node,"lcdBrightness",value*0.25,0,0,0,false)
+        end
+        for i=0,getNumOfChildren(node)-1 do self:applyBrightness(getChildAt(node,i)) end
         self.nodeBrightness[node]=value
     end
 end
@@ -190,6 +216,9 @@ function TGGPSMonitorScreen:refresh()
                 self:quad(style, (command.x + command.w / 2 - 0.5) * self.WIDTH,
                     (command.y + command.h / 2 - 0.5) * self.HEIGHT,
                     command.w * self.WIDTH, command.h * self.HEIGHT, 0, layer)
+            elseif command.type=='symbol' then
+                self:quad('symbol_'..command.symbol,(command.cx-0.5)*self.WIDTH,(command.cy-0.5)*self.HEIGHT,
+                    command.w*self.WIDTH,command.h*self.HEIGHT,command.rotation,7)
             elseif command.type == "line" then
                 local x1, y1 = (command.x1 - 0.5) * self.WIDTH, (command.y1 - 0.5) * self.HEIGHT
                 local x2, y2 = (command.x2 - 0.5) * self.WIDTH, (command.y2 - 0.5) * self.HEIGHT

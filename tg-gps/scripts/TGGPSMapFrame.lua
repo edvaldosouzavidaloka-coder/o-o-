@@ -92,11 +92,35 @@ local function slice(polygon,y,above)
     return result
 end
 
+-- Merge equal spans vertically before lowering resolution. A long straight
+-- worked strip is one rectangle, rather than one primitive per screen row.
+function TGGPSMapFrame.mergeGrid(grid,columns,rows)
+    local result,previous={},{}
+    for row=0,rows-1 do
+        local values,active,first,current=grid[row] or {},nil,0,{}
+        for col=0,columns do
+            local value=col<columns and values[col] or nil
+            if value~=active then
+                if active then
+                    local key=first..':'..col..':'..active
+                    local rect=previous[key]
+                    if rect then rect.h=rect.h+1/rows
+                    else rect={x=first/columns,y=row/rows,w=(col-first)/columns,h=1/rows,value=active};result[#result+1]=rect end
+                    current[key]=rect
+                end
+                active,first=value,col
+            end
+        end
+        previous=current
+    end
+    return result
+end
+
 -- Rasterize rotated WORLD rectangles into clipped horizontal LCD strips. The
 -- stored paint stays in world coordinates; only this bounded display is sampled.
 -- Shared edges touch, and no rotated quad can protrude into the terminal cards.
 function TGGPSMapFrame:rasterize(cells,budget,fieldColors)
-    local columns,rows=96,48
+    local columns,rows=384,192
     local result
     budget=math.max(4,budget or 1200)
     local cacheKey=tostring(budget)..(fieldColors and ':field' or ':paint')
@@ -110,8 +134,10 @@ function TGGPSMapFrame:rasterize(cells,budget,fieldColors)
         for _,cell in ipairs(cells) do
             local polygon={}
             local lo,hi=math.huge,-math.huge
-            for _,p in ipairs({{cell.x,cell.z},{cell.x+cell.w,cell.z},{cell.x+cell.w,cell.z+cell.h},{cell.x,cell.z+cell.h}}) do
-                local u,v=self:localAt(p[1],p[2])
+            local points=cell.points or {{x=cell.x,z=cell.z},{x=cell.x+cell.w,z=cell.z},
+                {x=cell.x+cell.w,z=cell.z+cell.h},{x=cell.x,z=cell.z+cell.h}}
+            for _,p in ipairs(points) do
+                local u,v=self:localAt(p.x,p.z)
                 local y=v*rows
                 polygon[#polygon+1]={x=u*columns,y=y};lo=math.min(lo,y);hi=math.max(hi,y)
             end
@@ -127,19 +153,10 @@ function TGGPSMapFrame:rasterize(cells,budget,fieldColors)
                 end
             end
         end
-        result={}
-        for row=0,rows-1 do
-            local values,active,first=grid[row] or {},nil,0
-            for col=0,columns do
-                local role=col<columns and values[col] or nil
-                if role~=active then
-                    if active then result[#result+1]={x=first/columns,
-                        y=row/rows,w=(col-first)/columns,h=1/rows,
-                        role=fieldColors and (active==2 and 'headland' or 'field') or (active==2 and 'coverage_overlap' or 'coverage')}
-                    end
-                    active,first=role,col
-                end
-            end
+        result=TGGPSMapFrame.mergeGrid(grid,columns,rows)
+        for _,rect in ipairs(result) do
+            rect.role=fieldColors and (rect.value==2 and 'headland' or 'field')
+                or (rect.value==2 and 'coverage_overlap' or 'coverage')
         end
         columns,rows=math.max(1,math.floor(columns/2)),math.max(1,math.floor(rows/2))
     until #result<=budget

@@ -122,7 +122,7 @@ class RepairTests(unittest.TestCase):
         assert(math.abs(screen.nativeShape.lcdIntensity-0.0375)<0.00001)
         TGGPS.monitorBrightness=1;TGGPS:loadHudSettings()
         assert(math.abs(TGGPS.monitorBrightness-0.15)<0.00001)
-        local body=screen.pools.tractor[1]
+        local body=screen.pools.symbol_tractor[1]
         assert(body.z>screen.nativeNode.z+0.0005)
         ''')
 

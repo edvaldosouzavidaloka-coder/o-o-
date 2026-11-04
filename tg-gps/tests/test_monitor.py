@@ -215,8 +215,9 @@ class MonitorTests(unittest.TestCase):
         TGGPS:update(100);TGGPS:update(450)
         local screen=TGGPS.monitor.screenRenderer
         assert(screen.owner.coverage==TGGPS.coverage)
-        assert((screen.used.coverage or 0)>0 and (screen.used.tractor or 0)>0)
-        assert((screen.used.vehicleCab or 0)>0 and (screen.used.vehicleWheel or 0)>0)
+        assert((screen.used.coverage or 0)>0 and (screen.used.symbol_tractor or 0)>0)
+        local icon=screen.pools.symbol_tractor[1]
+        assert(#icon.children>=10 and screen.templateCosts.symbol_tractor==#icon.children)
         tractor.motorOn=false;TGGPS:update(250)
         assert(screen.used.off==1 and screen.used.coverage==0)
         tractor.motorOn=true;TGGPS:update(250)

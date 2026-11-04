@@ -21,7 +21,8 @@ function TGGPSHUDMonitor:reset()
     self.coverageRuns, self.coverageGrid = {}, {}
     self.coverageDisplayGrid, self.coverageDisplayList, self.coverageDisplayBuckets = {}, {}, {}
     self.coverageOverlapList = {}
-    self.coverageCellSize, self.coverageDisplayCellSize, self.coverageDisplayBucketCells = 0.75, 1.75, 20
+    self.coverageCellSize, self.coverageDisplayCellSize, self.coverageDisplayBucketCells = 0.75, 0.75, 20
+    self.coverageGeometryPruned,self.visualCache=false,nil
     self.coverageUniqueCells, self.coverageOverlapCells = 0, 0
     self.coveragePointCount, self.coverageRunSerial, self.coverageSegmentSerial = 0, 0, 0
     self.coverageMaxPoints, self.coverageSameRunReentryGap = 3500, 6
@@ -84,8 +85,8 @@ function TGGPSHUDMonitor:getMapCells(minX, minZ, maxX, maxZ, budget)
         and old.maxX == maxX and old.maxZ == maxZ and old.budget == budget then return old.cells end
     local cellSize, bucketCells = self.coverageDisplayCellSize, self.coverageDisplayBucketCells
     local bucketSize = cellSize * bucketCells
-    local columns = math.max(1, math.min(96, math.ceil((maxX - minX) / cellSize)))
-    local rows = math.max(1, math.min(48, math.ceil((maxZ - minZ) / cellSize)))
+    local columns = math.max(1, math.min(384, math.ceil((maxX - minX) / cellSize)))
+    local rows = math.max(1, math.min(192, math.ceil((maxZ - minZ) / cellSize)))
     local result
     repeat
         local grid = {}
@@ -110,25 +111,51 @@ function TGGPSHUDMonitor:getMapCells(minX, minZ, maxX, maxZ, budget)
                 end
             end
         end
-        result = {}
-        for r = 0, rows - 1 do
-            local row, first, active = grid[r] or {}, 0, nil
-            for c = 0, columns do
-                local role = c < columns and row[c] or nil
-                if role ~= active then
-                    if active ~= nil then
-                        result[#result + 1] = {x = minX + first * dx, z = minZ + r * dz,
-                            w = (c - first) * dx, h = dz, overlap = active == 2}
-                    end
-                    first, active = c, role
-                end
-            end
+        result=TGGPSMapFrame.mergeGrid(grid,columns,rows)
+        for _,rect in ipairs(result) do
+            rect.x,rect.z=minX+rect.x*(maxX-minX),minZ+rect.y*(maxZ-minZ)
+            rect.w,rect.h=rect.w*(maxX-minX),rect.h*(maxZ-minZ)
+            rect.overlap=rect.value==2
         end
         columns, rows = math.max(1, math.floor(columns / 2)), math.max(1, math.floor(rows / 2))
     until #result <= budget
     self.mapCache = {revision = self.revision, minX = minX, minZ = minZ,
         maxX = maxX, maxZ = maxZ, budget = budget, cells = result}
     return result
+end
+
+-- Recent passes are drawn from their continuous work-area edges, rather than
+-- enlarging measurement cells when zooming in. Yellow overlap and archived
+-- history keep using the measurement display; hectares are never modified.
+function TGGPSHUDMonitor:getMapVisuals(minX,minZ,maxX,maxZ)
+    local cells=self:getMapCells(minX,minZ,maxX,maxZ,2400)
+    local old=self.visualCache
+    if old and old.cells==cells and old.serial==self.coverageSegmentSerial
+        and old.count==self.coveragePointCount then return old.shapes end
+    local shapes={}
+    local hasRuns=#self.coverageRuns>0
+    for _,cell in ipairs(cells) do
+        if cell.overlap or not hasRuns or self.coverageGeometryPruned then shapes[#shapes+1]=cell end
+    end
+    local function add(a,b,c)
+        if math.max(a.x,b.x,c.x)>=minX and math.min(a.x,b.x,c.x)<=maxX
+            and math.max(a.z,b.z,c.z)>=minZ and math.min(a.z,b.z,c.z)<=maxZ then
+            shapes[#shapes+1]={points={a,b,c}}
+        end
+    end
+    for _,run in ipairs(self.coverageRuns) do
+        for i=2,#run do
+            local a,b=run[i-1],run[i]
+            local arx,arz=a.rx or 1,a.rz or 0
+            local brx,brz=b.rx or arx,b.rz or arz
+            local ah,bh=(a.width or 6)/2,(b.width or 6)/2
+            local al={x=a.x-arx*ah,z=a.z-arz*ah};local ar={x=a.x+arx*ah,z=a.z+arz*ah}
+            local bl={x=b.x-brx*bh,z=b.z-brz*bh};local br={x=b.x+brx*bh,z=b.z+brz*bh}
+            add(al,ar,br);add(al,br,bl)
+        end
+    end
+    self.visualCache={cells=cells,serial=self.coverageSegmentSerial,count=self.coveragePointCount,shapes=shapes}
+    return shapes
 end
 
 function TGGPSHUDMonitor:getCoverageCellKey(ix,iz)
@@ -679,6 +706,7 @@ function TGGPSHUDMonitor:recordCoveragePoint(owner,vehicle,footprint)
         local removed=table.remove(self.coverageRuns,1)
         self.coveragePointCount=self.coveragePointCount-#removed
         removedCoverageRun=true
+        self.coverageGeometryPruned=true
     end
     if removedCoverageRun and self.rebuildCoverageRenderBuckets~=nil then
         self:rebuildCoverageRenderBuckets()

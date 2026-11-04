@@ -206,7 +206,7 @@ function TGGPSMap.getDrawCommands(owner, bounds, options)
     end
     if owner.coverage ~= nil then
         local wb=frame.worldBounds
-        local cells=owner.coverage:getMapCells(wb[1],wb[2],wb[3],wb[4],1200)
+        local cells=owner.coverage:getMapVisuals(wb[1],wb[2],wb[3],wb[4])
         raster(cells,options.coverageBudget or 1200,false)
     end
     local selected
@@ -282,37 +282,18 @@ function TGGPSMap.getDrawCommands(owner, bounds, options)
         local length = math.sqrt(dx * dx + dz * dz)
         if not outside and finite(length) and length > 0.000001 then
             dx, dz = dx / length, dz / length
-            local iconPixels=math.max(8,math.min(22,(owner.width or 6)*pixelsPerMetre*0.28))
-            local unit = iconPixels / pixelsPerMetre
-            local function part(ax, az, bx, bz, role, width, name)
-                local a={x=pose.x+(dz*ax+dx*az)*unit,z=pose.z+(-dx*ax+dz*az)*unit}
-                local b={x=pose.x+(dz*bx+dx*bz)*unit,z=pose.z+(-dx*bx+dz*bz)*unit}
-                local before=#commands
-                line(a,b,COLORS[role],role,width*iconPixels/15)
-                if #commands>before then
-                    commands[#commands].machineType=context.kind
-                    commands[#commands].part=name
-                end
-            end
-            if context.kind=="combine" then
-                part(0,-0.65,0,0.65,"combine",15,"body")
-                part(-0.65,-0.45,-0.65,-0.12,"vehicleWheel",5,"rearWheel")
-                part(0.65,-0.45,0.65,-0.12,"vehicleWheel",5,"rearWheel")
-                part(-0.70,0.22,-0.70,0.67,"vehicleWheel",6,"frontWheel")
-                part(0.70,0.22,0.70,0.67,"vehicleWheel",6,"frontWheel")
-                part(0,0.25,0,0.65,"vehicleCab",8,"cab")
-                if context.implement and context.implement.spec_cutter then
-                    part(-1.1,0.95,1.1,0.95,"implement",5,"header")
-                    part(0,0.67,0,0.95,"implement",3,"feeder")
-                end
-            else
-                part(0,-0.6,0,0.65,"tractor",9,"body")
-                part(-0.50,-0.55,-0.50,-0.13,"vehicleWheel",6,"rearWheel")
-                part(0.50,-0.55,0.50,-0.13,"vehicleWheel",6,"rearWheel")
-                part(-0.43,0.45,-0.43,0.70,"vehicleWheel",4,"frontWheel")
-                part(0.43,0.45,0.43,0.70,"vehicleWheel",4,"frontWheel")
-                part(0,-0.18,0,0.20,"vehicleCab",8,"cab")
-            end
+            local side=math.max(28,math.min(72,(owner.width or 6)*pixelsPerMetre*0.72))
+            side=math.min(side,box.w*sw*0.7,box.h*sh*0.7)
+            local symbol=context.kind=='combine' and 'combine' or 'tractor'
+            if symbol=='combine' and context.implement and context.implement.spec_cutter then symbol='combine_cutter' end
+            local right,forward=dx*frame.rx+dz*frame.rz,dx*frame.fx+dz*frame.fz
+            local rotation=-math.atan2(right,forward)
+            local radius=side/math.sqrt(2)
+            local cx=math.max(box.x+radius/sw,math.min(box.x+box.w-radius/sw,x))
+            local cy=math.max(box.y+radius/sh,math.min(box.y+box.h-radius/sh,y))
+            commands[#commands+1]={type='symbol',role=context.kind,part='body',machineType=context.kind,
+                symbol=symbol,filename=TGGPS.MOD_DIRECTORY..'models/textures/'..symbol..'.dds',
+                x=cx-side/sw/2,y=cy-side/sh/2,w=side/sw,h=side/sh,cx=cx,cy=cy,rotation=rotation}
         end
     end
     label(outside and "MAQUINA FORA DO MAPA" or (nativeMap and "PDA DO JOGO | VERDE: TRABALHADO | AMARELO: SOBREPOSICAO"

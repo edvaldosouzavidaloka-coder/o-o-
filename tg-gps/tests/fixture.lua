@@ -23,7 +23,11 @@ function setRotation(n,x,y,z) n.rx,n.ry,n.rz=x,y,z end
 function setScale(n,x,y,z) n.sx,n.sy,n.sz=x,y,z end
 function setVisibility(n,v) n.visible=v end
 function createTransformGroup(name) return makeNode(name) end
-function clone(n) return makeNode(n.name) end
+function clone(n)
+    local result=makeNode(n.name)
+    for _,child in ipairs(n.children) do link(result,clone(child)) end
+    return result
+end
 function delete(n)
     if n.xml then n.closed=true; return end
     if n.deleted then return end

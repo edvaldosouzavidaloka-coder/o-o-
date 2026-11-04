@@ -163,13 +163,14 @@ class TerminalTests(unittest.TestCase):
         TGGPS.monitorContext=nil;TGGPS:update(100)
         assert(TGGPS:getMonitorContext().kind=='combine')
         assert(TGGPS.coverage.footprint.z==8 and TGGPS.coverage:getWorkedHa()>0)
-        local header,cab,body=false,false,false
+        local header,body=false,false
         for _,c in ipairs(TGGPSMap.getDrawCommands(TGGPS,{x=0,y=0,w=1,h=1})) do
-            if c.part=='header' then header=true end
-            if c.part=='cab' then cab=true end
-            if c.part=='body' then assert(c.machineType=='combine');body=true end
+            if c.part=='body' then
+                assert(c.type=='symbol' and c.machineType=='combine');body=true
+                header=c.symbol=='combine_cutter'
+            end
         end
-        assert(header and cab and body)
+        assert(header and body)
         tractor.spec_combine=nil;TGGPS.monitorContext=nil
         local tractorBody=false
         for _,c in ipairs(TGGPSMap.getDrawCommands(TGGPS,{x=0,y=0,w=1,h=1})) do

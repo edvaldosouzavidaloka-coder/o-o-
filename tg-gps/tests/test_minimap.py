@@ -17,7 +17,7 @@ class MinimapTests(unittest.TestCase):
             if c.role=='selected_lane' then line=c end
         end
         assert(image and body and line)
-        assert(math.abs(body.x1-body.x2)<0.000001 and body.y2>body.y1)
+        assert(body.type=='symbol' and math.abs(body.rotation)<0.000001)
         assert(math.abs(line.y1-line.y2)<0.000001 and math.abs(line.x1-line.x2)>0.01)
         -- The old north-facing reference is left/right of an east-facing tractor.
         -- Interpolate the real PDA UVs at a known world landmark on that line.
@@ -99,7 +99,7 @@ class MinimapTests(unittest.TestCase):
         TGGPS.mapVehicleUp=true;TGGPS:loadHudSettings();assert(TGGPS.mapVehicleUp==false)
         local body
         for _,c in ipairs(TGGPSMap.getDrawCommands(TGGPS,{x=0,y=0,w=1,h=1})) do if c.part=='body' then body=c end end
-        assert(body.x2>body.x1 and math.abs(body.y2-body.y1)<0.000001)
+        assert(body.type=='symbol' and math.abs(body.rotation+math.pi/2)<0.000001)
         local xml=xmlFiles[getUserProfileAppPath()..TGGPS.SAVE_FOLDER..'/hud.xml']
         xml['tgGpsHud#vehicleUp']=nil;TGGPS:loadHudSettings();assert(TGGPS.mapVehicleUp==true)
         ''')
@@ -128,7 +128,7 @@ class MinimapTests(unittest.TestCase):
         end
         TGGPS:update(100);TGGPS:update(450)
         local screen=TGGPS.monitor.screenRenderer
-        assert(screen.count<=screen.MAX_PRIMITIVES and screen.used.tractor>0)
+        assert(screen.count<=screen.MAX_PRIMITIVES and screen.used.symbol_tractor>0)
         assert(screen.used.selected_lane>0)
         ''')
 
@@ -148,9 +148,9 @@ class MinimapTests(unittest.TestCase):
             for _,c in ipairs(TGGPSMap.getDrawCommands(TGGPS,{x=0.1,y=0.2,w=0.3,h=0.4})) do if c.part=='body' then return c end end
         end
         local first=body();TGGPS:onZoomIn();local zoomed=body()
-        assert(zoomed.y2-zoomed.y1>first.y2-first.y1)
+        assert(zoomed.h>first.h)
         for i=1,40 do TGGPS:onZoomIn() end
-        local close=body();assert(close.width<=20/1080)
+        local close=body();assert(close.h<=72/1080)
         ''')
 
     def test_idle_heading_jitter_does_not_reload_cab_pda(self):

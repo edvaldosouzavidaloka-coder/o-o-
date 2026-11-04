@@ -64,11 +64,15 @@ python package.py
 cp FS25_TransbordoInteligente.zip ../FS25_TransbordoInteligente.zip
 ```
 
-## TG GPS PRO — versão de teste 0.9.1.0
+## TG GPS PRO — versão de teste 0.9.2.0
 
 [Baixar FS25_TG_GPS.zip](FS25_TG_GPS.zip) · [Instruções](tg-gps/LEIA-ME.txt) · [Fontes e testes](tg-gps/)
 
 Inclui monitor 3D na cabine, pintura da faixa trabalhada e destaque de sobreposições. Mantém o terminal verde e bege escolhido pelo usuário. O painel e a tela física usam o mesmo histórico do implemento e talhão selecionados. O modelo do monitor, as peças da tela e as letras estão incluídos; não exige o CurveGPS instalado.
+
+**A versão 0.9.2 melhora a nitidez do mapa.** Trator, colheitadeira e colheitadeira com plataforma receberam desenhos próprios, com pneus arredondados, cabine, capô e detalhes. No painel, usam texturas DDS de 1024 px com todos os níveis de redução; na cabine, o mesmo desenho usa geometria vetorial plana, com as superfícies ocultas recortadas para evitar disputa de profundidade. O brilho continua ajustável.
+
+A pintura recente é desenhada a partir das bordas contínuas das áreas de trabalho. A composição visual passa de 96 × 48 para 384 × 192 amostras e junta faixas iguais antes de reduzir a resolução. A grade visual de sobreposição e histórico passa de 1,75 m para 0,75 m; a grade de medição e os hectares permanecem iguais. O orçamento de desenho continua limitado. Os detalhes do terreno continuam sendo os da imagem PDA fornecida pelo mapa.
 
 O terminal agora mostra fazenda, proprietário do terreno, talhão, máquina e implemento, usando os dados disponíveis no jogo. O ícone muda entre trator e colheitadeira e representa a plataforma acoplada. O fundo usa **um recorte local do PDA nativo, que acompanha a máquina**, com zoom compartilhado entre painel e cabine. Não mostra o PDA inteiro. A imagem é a fornecida pelo mapa, sem captura ao vivo do terreno nem serviço externo; se estiver indisponível, o terminal informa isso e usa um fundo neutro.
 
@@ -92,7 +96,7 @@ Gere o talhão ou finalize uma reta A/B/curva, baixe/ligue o implemento e avance
 
 Feche o FS25, faça backup do ZIP anterior e substitua `FS25_TG_GPS.zip` na pasta `mods`, sem descompactar nem manter cópias duplicadas. Ative o mod em uma partida single-player.
 
-**82 testes simulados passaram**, incluindo PNG com DDS correspondente, arquivos virtuais do jogo, mapa personalizado com imagem já carregada e recuperação quando somente o DDS aparece. Também cobrem rotação e coordenadas da textura, igualdade do recorte na cabine e no painel, pintura fixa no mundo durante curvas, limites de desenho, ícones, preferência de orientação, implemento levantado, brilho, atalhos, perfis, biblioteca, direção e cabeceira. Renderização, brilho, posicionamento, desempenho e física ainda precisam de validação no FS25. A cabeceira automática exige passadas geradas no modo TALHÃO; em A/B e curva gravada sem gerar o campo, o retorno continua manual.
+**88 testes simulados passaram**, incluindo os ícones de alta definição, seus arquivos DDS completos, geometria plana, rotação pelo centro, largura fracionada da pintura e histórico preservado. Mantêm as verificações de PNG/DDS, arquivos virtuais, recorte e rotação do PDA, limites de desenho, brilho, perfis, biblioteca, direção e cabeceira. Renderização, brilho, posicionamento, desempenho e física ainda precisam de validação no FS25. A cabeceira automática exige passadas geradas no modo TALHÃO; em A/B e curva gravada sem gerar o campo, o retorno continua manual.
 
 Para desenvolver, use Python com `lupa==2.6`:
 
@@ -103,6 +107,8 @@ python tools/package.py
 ```
 
 O empacotador gera `FS25_TG_GPS.zip` na raiz do repositório e verifica XML, dependências, ações, versão e integridade dos arquivos.
+
+Os ícones e a geometria correspondente podem ser regenerados com `python tools/generate_vehicle_icons.py`, usando Pillow 13. Os arquivos prontos acompanham o ZIP.
 
 ## Outros pacotes existentes
 

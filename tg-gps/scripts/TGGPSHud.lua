@@ -436,6 +436,21 @@ function TGGPSHud:draw()
                 self.nativeOverlay:setUVs(command.uvs)
                 self.nativeOverlay:render()
             end
+        elseif command.type=='symbol' and createImageOverlay and setOverlayRotation and renderOverlay then
+            self.symbolOverlays=self.symbolOverlays or {}
+            local id=self.symbolOverlays[command.filename]
+            if not id then id=createImageOverlay(command.filename);self.symbolOverlays[command.filename]=id end
+            if id and id~=0 then
+                local aspect=(g_screenWidth or 1920)/(g_screenHeight or 1080)
+                local angle=command.rotation
+                local halfX,halfY=command.w/2,command.h/2
+                local ox=command.cx-halfX*math.cos(angle)+halfY/aspect*math.sin(angle)
+                local oy=command.cy-halfX*aspect*math.sin(angle)-halfY*math.cos(angle)
+                setOverlayColor(id,1,1,1,1)
+                setOverlayRotation(id,-angle,0,0)
+                renderOverlay(id,ox,oy,command.w,command.h)
+                setOverlayRotation(id,0,0,0)
+            end
         elseif command.type == "line" then
             self:_drawLine(command)
         elseif command.type == "text" and renderText ~= nil and setTextColor ~= nil then
@@ -459,6 +474,8 @@ function TGGPSHud:draw()
 end
 
 function TGGPSHud:delete()
+    for _,id in pairs(self.symbolOverlays or {}) do if id and id~=0 then delete(id) end end
+    self.symbolOverlays=nil
     if self.nativeOverlay~=nil then self.nativeOverlay:delete();self.nativeOverlay=nil end
     self.nativeFilename=nil
     self:setOpen(false)
