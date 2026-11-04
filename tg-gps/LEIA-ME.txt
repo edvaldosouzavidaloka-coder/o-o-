@@ -1,8 +1,27 @@
-TG GPS PRO 0.8.0.0 - TERMINAL, MINIMAPA PDA E TRAJETOS - FS25 - single-player
+TG GPS PRO 0.9.0.0 - TERMINAL, MINIMAPA PDA E TRAJETOS - FS25 - single-player
 
 VERSAO PARA TESTE
 Logica, geometria, interface e manobra simulada testadas fora do jogo.
 O FS25 nao esta instalado neste ambiente; valide com seu trator e implemento.
+
+NOVO NA VERSAO 0.9 - MONITOR E MINIMAPA
+Adaptacao da organizacao visual do Curve GPS 1.29.3.21, de Andre Girotto,
+enviado pelo usuario, mantendo nosso terminal verde e bege.
+Por padrao, a maquina aponta para cima e o PDA gira junto com linhas e pintura.
+MONITOR > MAPA alterna entre MAQUINA PARA CIMA e NORTE PARA CIMA.
+A escolha fica salva em hud.xml. Alterar a orientacao e apenas visual;
+nao desloca as linhas de trabalho nem a pintura gravada.
+Painel e tela fisica usam o mesmo enquadramento local, orientacao e zoom.
+As margens se ajustam ao formato de cada tela para preservar as proporcoes.
+O enquadramento acompanha a maquina em intervalos de 250 ms. Pequenas vibracoes
+quando parado nao recarregam o PDA. O desenho da pintura reaproveita calculos
+e tem limite de faixas visuais; os dados medidos continuam separados e intactos.
+Os icones de trator e colheitadeira acompanham o zoom com limites de tamanho.
+O implemento levantado continua desenhado, usando sua posicao como referencia,
+sem produzir pintura. A area real ativa tem prioridade quando estiver trabalhando.
+A base do LCD foi escurecida e a area util ampliada para reduzir a borda clara.
+Foram aprovados 77 testes simulados; a renderizacao e o desempenho no FS25
+ainda precisam de confirmacao com o mapa e a cabine escolhidos.
 
 TERMINAL E PDA
 Terminal com faixa verde, dados da fazenda/proprietario/talhao e identificacao
@@ -138,7 +157,8 @@ Substitua o antigo FS25_TG_GPS.zip na pasta mods, sem descompactar.
 Ative TG GPS PRO ao carregar uma partida single-player.
 Entre no trator e pressione Ctrl+Alt+M para abrir/fechar o monitor.
 Arraste a barra superior para mover. MONITOR muda o tamanho do painel.
-Posicao, tamanho, brilho e zoom ficam em modSettings/FS25_TG_GPS/hud.xml.
+Posicao, tamanho, brilho, zoom e orientacao do mapa ficam em
+modSettings/FS25_TG_GPS/hud.xml.
 Os arquivos de configuracao e a biblioteca anteriores sao preservados.
 
 PREPARAR O TALHAO

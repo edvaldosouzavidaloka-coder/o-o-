@@ -10,7 +10,7 @@
 
 
   <Materials>
-    <Material name="CurveGPSScreen" materialId="5" diffuseColor="0.84 0.85 0.82 1" specularColor="0.04 0.04 0.04">
+    <Material name="CurveGPSScreen" materialId="5" diffuseColor="0.012 0.018 0.012 1" specularColor="0 0 0">
     </Material>
     <Material name="default" materialId="6" diffuseColor="0.501961 0.501961 0.501961 1">
     </Material>

@@ -64,13 +64,17 @@ python package.py
 cp FS25_TransbordoInteligente.zip ../FS25_TransbordoInteligente.zip
 ```
 
-## TG GPS PRO — versão de teste 0.8.0.0
+## TG GPS PRO — versão de teste 0.9.0.0
 
 [Baixar FS25_TG_GPS.zip](FS25_TG_GPS.zip) · [Instruções](tg-gps/LEIA-ME.txt) · [Fontes e testes](tg-gps/)
 
 Inclui monitor 3D na cabine, pintura da faixa trabalhada e destaque de sobreposições. Mantém o terminal verde e bege escolhido pelo usuário. O painel e a tela física usam o mesmo histórico do implemento e talhão selecionados. O modelo do monitor, as peças da tela e as letras estão incluídos; não exige o CurveGPS instalado.
 
 O terminal agora mostra fazenda, proprietário do terreno, talhão, máquina e implemento, usando os dados disponíveis no jogo. O ícone muda entre trator e colheitadeira e representa a plataforma acoplada. O fundo usa **um recorte local do PDA nativo, que acompanha a máquina**, com zoom compartilhado entre painel e cabine. Não mostra o PDA inteiro. A imagem é a fornecida pelo mapa, sem captura ao vivo do terreno nem serviço externo; se estiver indisponível, o terminal informa isso e usa um fundo neutro.
+
+A versão 0.9 adapta a organização do **monitor e minimapa** do `FS25_CurveGPS.zip` 1.29.3.21 enviado pelo usuário. Por padrão, a máquina aponta para cima: PDA, linhas e pintura giram juntos pela mesma projeção, sem mover os dados gravados. **MONITOR > MAPA** alterna para norte para cima e salva a preferência. Painel e cabine mostram a mesma região e escala do mundo, ajustando as margens ao formato de cada tela. O enquadramento acompanha a máquina a cada 250 ms; vibrações pequenas não recarregam o fundo.
+
+Os ícones acompanham o zoom com limites de legibilidade. O implemento continua representado enquanto está levantado, sem registrar pintura; quando trabalha, a área ativa real tem prioridade. A pintura é recortada dentro do mapa, com orçamento de desenho e reaproveitamento do cálculo entre quadros. A superfície base do LCD ficou escura e a área útil foi ampliada para reduzir a borda clara; o ajuste de brilho continua na aba MONITOR. A comparação com o mod de referência está em [REFERENCIA-MONITOR.md](tg-gps/REFERENCIA-MONITOR.md).
 
 Corrige o caminho do PDA identificado no log: imagens `data/maps/...` passam a ser referenciadas como `$data/maps/...` no modelo 3D, sem procurar a imagem dentro de `modSettings`. Uma imagem ausente gera um aviso por textura; o monitor tenta novamente quando o arquivo fica disponível. O brilho da tela física inicia em 20% e pode ser ajustado na aba **MONITOR**.
 
@@ -86,7 +90,7 @@ Gere o talhão ou finalize uma reta A/B/curva, baixe/ligue o implemento e avance
 
 Feche o FS25, faça backup do ZIP anterior e substitua `FS25_TG_GPS.zip` na pasta `mods`, sem descompactar nem manter cópias duplicadas. Ative o mod em uma partida single-player.
 
-**68 testes simulados** cobrem o caminho do PDA do log, recuperação de imagem ausente, brilho e atalhos, curvas e recortes, separação de dados por implemento/talhão, reaproveitamento da linha, larguras e salvamento nativo, liberação imediata da direção, botões e sequência de cabeceira com plataforma de colheitadeira. A renderização, a textura, o brilho e o posicionamento em cada cabine e a física dos veículos ainda precisam de validação no FS25. A cabeceira automática exige passadas geradas no modo TALHÃO; em A/B e curva gravada sem gerar o campo, o retorno continua manual.
+**77 testes simulados passaram**, incluindo rotação e coordenadas da textura do PDA, igualdade do recorte na cabine e no painel, pintura fixa no mundo durante curvas, limites de desenho, tamanho dos ícones, preferência de orientação e implemento levantado. Mantêm as verificações anteriores de brilho, atalhos, curvas, perfis por implemento/talhão, biblioteca, direção e cabeceira. Renderização, brilho, posicionamento, desempenho e física ainda precisam de validação no FS25. A cabeceira automática exige passadas geradas no modo TALHÃO; em A/B e curva gravada sem gerar o campo, o retorno continua manual.
 
 Para desenvolver, use Python com `lupa==2.6`:
 

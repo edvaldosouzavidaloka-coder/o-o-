@@ -49,6 +49,26 @@ function TGGPSPDA.command(map,filename,box,minX,minZ,maxX,maxZ)
         uvs={left,bottom,left,top,right,bottom,right,top},worldBounds={minX,minZ,maxX,maxZ}}
 end
 
+-- Rotate the texture's four UV corners in exactly the frame used by guidance
+-- and paint. The overlay/model itself stays inside the rectangular LCD.
+function TGGPSPDA.commandForFrame(map,filename,frame)
+    local bounds,box=frame.worldBounds,frame.box
+    if math.abs(frame.fx)<0.0000001 and frame.fz>0.9999999 then
+        return TGGPSPDA.command(map,filename,box,unpack(bounds))
+    end
+    local uvs={}
+    local minU,minV,maxU,maxV=math.huge,math.huge,-math.huge,-math.huge
+    for _,p in ipairs({{0,0},{0,1},{1,0},{1,1}}) do
+        local x,z=frame:worldAt(p[1],p[2])
+        local u,v=TGGPSPDA.uv(map,x,z)
+        minU,minV,maxU,maxV=math.min(minU,u),math.min(minV,v),math.max(maxU,u),math.max(maxV,v)
+        uvs[#uvs+1]=math.max(0,math.min(1,u));uvs[#uvs+1]=math.max(0,math.min(1,v))
+    end
+    if maxU<=0 or maxV<=0 or minU>=1 or minV>=1 then return nil end
+    return {type='pda',role='native_pda',filename=filename,x=box.x,y=box.y,w=box.w,h=box.h,
+        uvs=uvs,worldBounds=bounds}
+end
+
 -- Runtime I3D uses the same PDA texture and four cropped UVs. No terrain capture,
 -- external imagery, guessed map size or private engine texture setter is needed.
 function TGGPSPDA.createCabBackground(command,parent,width,height)

@@ -6,7 +6,7 @@ TGGPS = {}
 TGGPS.MOD_NAME = g_currentModName
 TGGPS.MOD_DIRECTORY = g_currentModDirectory
 
-TGGPS.VERSION = "0.8.0.0"
+TGGPS.VERSION = "0.9.0.0"
 TGGPS.DEFAULT_WIDTH = 6.0
 TGGPS.MIN_WIDTH = 1.0
 TGGPS.MAX_WIDTH = 50.0
@@ -167,6 +167,7 @@ function TGGPS:loadMap()
     self.trackOffset, self.activeCourseName, self.libraryFilter, self.libraryPage = 0, nil, "", 1
     self.mapZoom, self.contextTimer, self.monitorContext, self.dialogBusy = 1, 0, nil, false
     self.monitorBrightness=0.20
+    self.mapVehicleUp,self.mapViewport,self.mapTime=true,nil,nil
     self.activeImplementId,self.activeSessionKey,self.activeWorkAreaId,self.implementSessions,self.coverageSessions=nil,nil,nil,{},{}
     self.currentLane = 0
     self.showLines = true
@@ -418,6 +419,11 @@ end
 function TGGPS:onZoomIn() self.mapZoom=math.min(12,TGGPSMap.getZoom(self)+0.5);self:saveHudSettings() end
 function TGGPS:onZoomOut() self.mapZoom=math.max(1,TGGPSMap.getZoom(self)-0.5);self:saveHudSettings() end
 function TGGPS:onZoomFit() self.mapZoom=1;self:saveHudSettings() end
+function TGGPS:onToggleMapOrientation()
+    self.mapVehicleUp=not self.mapVehicleUp
+    self.mapViewport=nil
+    self:saveHudSettings()
+end
 function TGGPS:onOpenMonitorSettings()
     if self.hud then self.hud.page="settings" end
     self:openHud()
@@ -557,6 +563,7 @@ function TGGPS:saveHudSettings()
     setXMLFloat(xml, "tgGpsHud#scale", settings.scale)
     setXMLFloat(xml, "tgGpsHud#zoom", self.mapZoom or 1)
     setXMLFloat(xml,"tgGpsHud#brightness",self.monitorBrightness or 0.20)
+    setXMLInt(xml,"tgGpsHud#vehicleUp",self.mapVehicleUp~=false and 1 or 0)
     saveXMLFile(xml)
     delete(xml)
     return true
@@ -576,6 +583,8 @@ function TGGPS:loadHudSettings()
     self.mapZoom=finite(zoom) and math.max(1,math.min(12,zoom)) or 1
     local brightness=getXMLFloat(xml,"tgGpsHud#brightness")
     self.monitorBrightness=finite(brightness) and math.max(0.05,math.min(1,brightness)) or 0.20
+    self.mapVehicleUp=getXMLInt(xml,'tgGpsHud#vehicleUp')~=0
+    self.mapViewport=nil
     delete(xml)
     return true
 end
@@ -1291,6 +1300,7 @@ function TGGPS:applyDriveControl(vehicle, axisForward, axisSide, doHandbrake, dt
 end
 
 function TGGPS:update(dt)
+    self.mapTime=(self.mapTime or 0)+math.max(0,dt or 0)
     self:syncWorkingWidth()
     self.contextTimer=(self.contextTimer or 0)+math.max(0,dt or 0)
     if self.contextTimer>=500 then self.monitorContext=nil;self.contextTimer=0 end
@@ -1579,6 +1589,7 @@ function TGGPS:draw()
 end
 
 function TGGPS:deleteMap()
+    self.mapViewport,self.mapTime=nil,nil
     if self.monitor ~= nil then self.monitor:delete(); self.monitor = nil end
     self.coverage = nil
     self:closeHud()

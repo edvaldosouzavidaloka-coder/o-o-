@@ -173,22 +173,17 @@ function TGGPSMap.getDrawCommands(owner, bounds, options)
         label("GERE O TALHAO OU GRAVE UMA LINHA PARA VER O MAPA", "empty_map")
         return commands
     end
-    -- The PDA is a local moving window, never a fit of the entire field/map.
-    local localSpan=math.max(80,math.min(180,(owner.width or 6)*14))
-    local spanX, spanZ = localSpan,localSpan
-    local zoom = TGGPSMap.getZoom(owner)
-    local pixelsPerMetre = math.min(box.w * sw / spanX, box.h * sh / spanZ) * zoom
     local centerX, centerZ = (extent.minX + extent.maxX) / 2, (extent.minZ + extent.maxZ) / 2
-    if pose ~= nil then centerX, centerZ = pose.x, pose.z end
-    if options.centerX~=nil then centerX,centerZ=options.centerX,options.centerZ end
+    local frame=TGGPSMapFrame.new(owner,box,sw,sh,pose,centerX,centerZ)
+    box=frame.box
+    local pixelsPerMetre=frame.pixelsPerMetre
     local nativeMap,filename=TGGPSPDA.get()
     if nativeMap then
-        local halfX,halfZ=box.w*sw/(2*pixelsPerMetre),box.h*sh/(2*pixelsPerMetre)
-        commands[#commands+1]=TGGPSPDA.command(nativeMap,filename,box,centerX-halfX,centerZ-halfZ,centerX+halfX,centerZ+halfZ)
+        local image=TGGPSPDA.commandForFrame(nativeMap,filename,frame)
+        if image then commands[#commands+1]=image end
     end
     local function project(point)
-        return box.x + box.w / 2 + (point.x - centerX) * pixelsPerMetre / sw,
-            box.y + box.h / 2 + (point.z - centerZ) * pixelsPerMetre / sh
+        return frame:project(point)
     end
     local function line(a, b, color, role, width, lane, section)
         if #commands >= MAX_COMMANDS - 2 or not validPoint(a) or not validPoint(b) then return end
@@ -200,34 +195,19 @@ function TGGPSMap.getDrawCommands(owner, bounds, options)
                 color = color, role = role, width = (width or 1.2) / sh, lane = lane, section = section}
         end
     end
-    if boundary ~= nil and options.drawField ~= false and nativeMap==nil then
-        for _, cell in ipairs(fieldRaster(owner, boundary, extent)) do
-            if #commands >= 1000 then break end
-            local x, y = project({x = cell.x, z = cell.z})
-            local right = math.min(box.x + box.w, x + cell.w * pixelsPerMetre / sw)
-            local top = math.min(box.y + box.h, y + cell.h * pixelsPerMetre / sh)
-            x, y = math.max(box.x, x), math.max(box.y, y)
-            if right > x and top > y then
-                commands[#commands + 1] = {type = "rect", x = x, y = y, w = right - x, h = top - y,
-                    color = COLORS[cell.role], role = cell.role}
-            end
+    local function raster(cells,budget,fieldColors)
+        for _,r in ipairs(frame:rasterize(cells,budget,fieldColors)) do
+            commands[#commands+1]={type='rect',x=r.x,y=r.y,w=r.w,h=r.h,role=r.role,
+                color=r.role=='coverage_overlap' and COLORS.overlap or COLORS[r.role]}
         end
     end
+    if boundary ~= nil and options.drawField ~= false and nativeMap==nil then
+        raster(fieldRaster(owner,boundary,extent),900,true)
+    end
     if owner.coverage ~= nil then
-        local halfX, halfZ = box.w * sw / (2 * pixelsPerMetre), box.h * sh / (2 * pixelsPerMetre)
-        local cells = owner.coverage:getMapCells(centerX - halfX, centerZ - halfZ,
-            centerX + halfX, centerZ + halfZ, options.coverageBudget)
-        for _, cell in ipairs(cells) do
-            local x, y = project(cell)
-            local right = math.min(box.x + box.w, x + cell.w * pixelsPerMetre / sw)
-            local top = math.min(box.y + box.h, y + cell.h * pixelsPerMetre / sh)
-            x, y = math.max(box.x, x), math.max(box.y, y)
-            if right > x and top > y then
-                commands[#commands + 1] = {type = "rect", x = x, y = y, w = right - x, h = top - y,
-                    color = cell.overlap and COLORS.overlap or COLORS.coverage,
-                    role = cell.overlap and "coverage_overlap" or "coverage"}
-            end
-        end
+        local wb=frame.worldBounds
+        local cells=owner.coverage:getMapCells(wb[1],wb[2],wb[3],wb[4],1200)
+        raster(cells,options.coverageBudget or 1200,false)
     end
     local selected
     -- Reserve room for the selected route, turn, implement and vehicle marker.
@@ -270,6 +250,18 @@ function TGGPSMap.getDrawCommands(owner, bounds, options)
     local outside = false
     local context = owner.getMonitorContext and owner:getMonitorContext() or {kind="tractor"}
     local footprint = owner.coverage ~= nil and owner.coverage.footprint or nil
+    -- The implement remains visible while lifted. This preview does not create
+    -- coverage or change work state; real active workAreas still take precedence.
+    if footprint==nil and context.implement and context.implement.rootNode and getWorldTranslation and localDirectionToWorld then
+        local tool=context.implement
+        local x,_,z=getWorldTranslation(tool.rootNode)
+        local fx,_,fz=localDirectionToWorld(tool.rootNode,0,0,1)
+        local length=math.sqrt(fx*fx+fz*fz)
+        if length>0.000001 then
+            fx,fz=fx/length,fz/length
+            footprint={x=x,z=z,fx=fx,fz=fz,rx=fz,rz=-fx,width=owner.width or 6,length=0.25}
+        end
+    end
     if footprint ~= nil then
         local points = {}
         for _, corner in ipairs({{-1, -1}, {1, -1}, {1, 1}, {-1, 1}}) do
@@ -290,12 +282,13 @@ function TGGPSMap.getDrawCommands(owner, bounds, options)
         local length = math.sqrt(dx * dx + dz * dz)
         if not outside and finite(length) and length > 0.000001 then
             dx, dz = dx / length, dz / length
-            local unit = 15 / pixelsPerMetre
+            local iconPixels=math.max(8,math.min(22,(owner.width or 6)*pixelsPerMetre*0.28))
+            local unit = iconPixels / pixelsPerMetre
             local function part(ax, az, bx, bz, role, width, name)
                 local a={x=pose.x+(dz*ax+dx*az)*unit,z=pose.z+(-dx*ax+dz*az)*unit}
                 local b={x=pose.x+(dz*bx+dx*bz)*unit,z=pose.z+(-dx*bx+dz*bz)*unit}
                 local before=#commands
-                line(a,b,COLORS[role],role,width)
+                line(a,b,COLORS[role],role,width*iconPixels/15)
                 if #commands>before then
                     commands[#commands].machineType=context.kind
                     commands[#commands].part=name

@@ -8,7 +8,7 @@ TGGPSMonitorScreen.STYLES = {
     "planned_turn", "tractor", "implement", "coverage", "coverage_overlap", "off", "green",
     "combine", "vehicleWheel", "vehicleCab", "panelHeader", "panelCard"
 }
-TGGPSMonitorScreen.WIDTH, TGGPSMonitorScreen.HEIGHT = 0.254, 0.150
+TGGPSMonitorScreen.WIDTH, TGGPSMonitorScreen.HEIGHT = 0.258, 0.156
 TGGPSMonitorScreen.MAX_PRIMITIVES = 650
 
 local function valid(node) return node ~= nil and node ~= 0 end
@@ -58,7 +58,7 @@ function TGGPSMonitorScreen:detach()
     if valid(self.contentRoot) then delete(self.contentRoot) end
     if valid(self.templateRoot) then delete(self.templateRoot) end
     self.contentRoot, self.templateRoot, self.monitorRoot, self.vehicle = nil, nil, nil, nil
-    self.nativeNode,self.nativeShape,self.nativeKey,self.failedNativeFilename,self.viewport,self.viewportElapsed=nil,nil,nil,nil,nil,1000
+    self.nativeNode,self.nativeShape,self.nativeKey,self.failedNativeFilename=nil,nil,nil,nil
     self.nodeBrightness={}
     self.templates, self.pools, self.used, self.count = {}, {}, {}, 0
 end
@@ -152,17 +152,9 @@ function TGGPSMonitorScreen:refresh()
         self:text(string.format("ZOOM %.1fx",TGGPSMap.getZoom(self.owner)),0.085,-0.015,0.0045)
         self:text("CABECEIRA",0.085,-0.032,0.0045)
         self:text(self.owner.headlandEnabled and "LIGADA" or "MANUAL",0.085,-0.043,0.0055)
-        local options = {screenWidth = 480, screenHeight = 290, drawField = false,
+        local options = {screenWidth = 516, screenHeight = 312, drawField = false,
             coverageBudget = 130, laneBudget = 70, boundaryBudget = 40,
             selectedBudget = 55, turnBudget = 45}
-        local zoom=TGGPSMap.getZoom(self.owner)
-        if self.vehicle~=nil then
-            if self.viewport==nil or self.viewport.zoom~=zoom or (self.viewportElapsed or 1000)>=1000 then
-                local pose=self.owner:getVehiclePose(self.vehicle)
-                if pose then self.viewport={x=math.floor(pose.x/2+0.5)*2,z=math.floor(pose.z/2+0.5)*2,zoom=zoom};self.viewportElapsed=0 end
-            end
-            if self.viewport then options.centerX,options.centerZ=self.viewport.x,self.viewport.z end
-        else self.viewport=nil end
         local commands = TGGPSMap.getDrawCommands(self.owner, {x = 0.255, y = 0.15, w = 0.56, h = 0.70}, options)
         local nativeCommand
         for _,command in ipairs(commands) do if command.type=="pda" then nativeCommand=command end end
@@ -228,6 +220,5 @@ end
 function TGGPSMonitorScreen:update(dt)
     if not valid(self.contentRoot) then return end
     self.elapsed = self.elapsed + math.max(0, dt or 0)
-    self.viewportElapsed=(self.viewportElapsed or 0)+math.max(0,dt or 0)
     if self.elapsed >= 250 then self.elapsed = self.elapsed % 250; self:refresh() end
 end
