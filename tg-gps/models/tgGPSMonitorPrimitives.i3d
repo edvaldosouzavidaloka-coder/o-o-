@@ -12,11 +12,16 @@
     <Material name="planned_turn" materialId="7" diffuseColor="1 1 1 1" emissiveColor="1 1 1" specularColor="0 0 0" />
     <Material name="tractor" materialId="8" diffuseColor="0.2 1 0.61 1" emissiveColor="0.2 1 0.61" specularColor="0 0 0" />
     <Material name="implement" materialId="9" diffuseColor="0.25 0.92 0.45 1" emissiveColor="0.25 0.92 0.45" specularColor="0 0 0" />
-    <Material name="coverage" materialId="10" diffuseColor="0.17 0.7 0.91 1" emissiveColor="0.17 0.7 0.91" specularColor="0 0 0" />
-    <Material name="coverage_overlap" materialId="11" diffuseColor="0.07 0.34 0.55 1" emissiveColor="0.07 0.34 0.55" specularColor="0 0 0" />
+    <Material name="coverage" materialId="10" diffuseColor="0.20 0.82 0.30 0.46" emissiveColor="0.20 0.82 0.30" specularColor="0 0 0" alphaBlending="true" />
+    <Material name="coverage_overlap" materialId="11" diffuseColor="1 0.67 0.10 0.58" emissiveColor="1 0.67 0.10" specularColor="0 0 0" alphaBlending="true" />
     <Material name="off" materialId="12" diffuseColor="0.005 0.005 0.005 1" emissiveColor="0.005 0.005 0.005" specularColor="0 0 0" />
     <Material name="green" materialId="13" diffuseColor="0.2 0.88 0.62 1" emissiveColor="0.2 0.88 0.62" specularColor="0 0 0" />
     <Material name="text" materialId="14" diffuseColor="0.94 0.97 0.98 1" emissiveColor="0.94 0.97 0.98" specularColor="0 0 0" />
+    <Material name="combine" materialId="15" diffuseColor="0.29 0.88 0.36 1" emissiveColor="0.29 0.88 0.36" specularColor="0 0 0" />
+    <Material name="vehicleWheel" materialId="16" diffuseColor="0.025 0.03 0.03 1" emissiveColor="0.025 0.03 0.03" specularColor="0 0 0" />
+    <Material name="vehicleCab" materialId="17" diffuseColor="0.4 0.85 0.96 1" emissiveColor="0.4 0.85 0.96" specularColor="0 0 0" />
+    <Material name="panelHeader" materialId="18" diffuseColor="0.025 0.36 0.16 1" emissiveColor="0.025 0.36 0.16" specularColor="0 0 0" />
+    <Material name="panelCard" materialId="19" diffuseColor="0.07 0.11 0.08 1" emissiveColor="0.07 0.11 0.08" specularColor="0 0 0" />
   </Materials>
   <Shapes>
     <IndexedTriangleSet name="plane" shapeId="1" meshUsage="0" bvCenter="0.00000000 0.00000000 0" bvRadius="0.70710678" isOptimized="true">
@@ -17778,6 +17783,11 @@
       <Shape name="text_124" shapeId="124" nodeId="106" materialIds="14" castsShadows="false" receiveShadows="false" />
       <Shape name="text_125" shapeId="125" nodeId="107" materialIds="14" castsShadows="false" receiveShadows="false" />
       <Shape name="text_126" shapeId="126" nodeId="108" materialIds="14" castsShadows="false" receiveShadows="false" />
+      <Shape name="combine" shapeId="1" nodeId="109" materialIds="15" castsShadows="false" receiveShadows="false" />
+      <Shape name="vehicleWheel" shapeId="1" nodeId="110" materialIds="16" castsShadows="false" receiveShadows="false" />
+      <Shape name="vehicleCab" shapeId="1" nodeId="111" materialIds="17" castsShadows="false" receiveShadows="false" />
+      <Shape name="panelHeader" shapeId="1" nodeId="112" materialIds="18" castsShadows="false" receiveShadows="false" />
+      <Shape name="panelCard" shapeId="1" nodeId="113" materialIds="19" castsShadows="false" receiveShadows="false" />
     </TransformGroup>
   </Scene>
 </i3D>

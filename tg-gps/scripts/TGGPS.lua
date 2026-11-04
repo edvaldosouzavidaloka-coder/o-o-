@@ -6,7 +6,7 @@ TGGPS = {}
 TGGPS.MOD_NAME = g_currentModName
 TGGPS.MOD_DIRECTORY = g_currentModDirectory
 
-TGGPS.VERSION = "0.6.0.0"
+TGGPS.VERSION = "0.7.0.0"
 TGGPS.DEFAULT_WIDTH = 6.0
 TGGPS.MIN_WIDTH = 1.0
 TGGPS.MAX_WIDTH = 50.0
@@ -18,7 +18,7 @@ TGGPS.MAX_DYNAMIC_LANE = 1000
 TGGPS.DRAW_LANE_RADIUS = 5
 TGGPS.SAVE_FOLDER = "modSettings/FS25_TG_GPS"
 TGGPS.MAX_AUTOSTEER_SPEED = 25 -- km/h
-TGGPS.MANUAL_STEERING_THRESHOLD = 0.15
+TGGPS.MANUAL_STEERING_THRESHOLD = 0 -- any nonzero manual steering input releases GPS
 TGGPS.MAX_CAPTURE_DISTANCE = 8 -- metros
 TGGPS.MAX_CAPTURE_ANGLE = math.rad(60)
 
@@ -164,6 +164,8 @@ function TGGPS:loadMap()
         self.hud = nil
     end
     self.width = TGGPS.DEFAULT_WIDTH
+    self.trackOffset, self.activeCourseName, self.libraryFilter, self.libraryPage = 0, nil, "", 1
+    self.mapZoom, self.contextTimer, self.monitorContext, self.dialogBusy = 1, 0, nil, false
     self.currentLane = 0
     self.showLines = true
     self.isRecording = false
@@ -197,9 +199,11 @@ function TGGPS:loadMap()
     self.hudSavedCursor = nil
 
     self.coverage = TGGPSHUDMonitor.new(self)
+    self.widthProfiles = TGGPSWidthProfiles.new(self)
     self.monitor = TGGPSMonitorManager.new(self, TGGPS.MOD_DIRECTORY)
 
     self:loadCourse()
+    self.library = TGGPSCourseLibrary.new(self)
     if TGGPSHud ~= nil then
         self.hud = TGGPSHud.new(self)
         self:loadHudSettings()
@@ -271,6 +275,102 @@ function TGGPS:notify(message)
         Logging.info("[TG GPS PRO] " .. tostring(message))
     end
 end
+
+function TGGPS:getMonitorContext()
+    local vehicle = self:getControlledVehicle()
+    if self.monitorContext == nil or self.monitorContext.vehicle ~= vehicle then
+        self.monitorContext = TGGPSContext.read(self)
+    end
+    return self.monitorContext
+end
+
+function TGGPS:syncWorkingWidth()
+    if self.widthProfiles then return self.widthProfiles:select(self:getControlledVehicle()) end
+    return false
+end
+
+function TGGPS:requestText(title, default, callback)
+    if self.dialogBusy then return end
+    if g_gui == nil or g_gui.showTextInputDialog == nil then
+        self:notify("A entrada de texto do jogo esta indisponivel")
+        return
+    end
+    self:stopAutosteer()
+    self.dialogBusy = true
+    self:closeHud()
+    g_gui:showTextInputDialog({title=title, text=title, defaultText=default or "", maxCharacters=48,
+        target=self, callback=function(target,text,ok)
+            target.dialogBusy=false
+            if ok and type(text)=="string" then callback(text) end
+            target.pendingHudOpen=true
+        end})
+end
+
+function TGGPS:onSaveNamedCourse()
+    self:syncWorkingWidth()
+    if self.library == nil or #self.sourcePoints < 2 then self:notify("Crie uma linha antes de salvar"); return end
+    local context = self:getMonitorContext()
+    local snapshot = self.library:snapshot(self.activeCourseName or context.fieldName)
+    self:requestText("Nome do trajeto (ex.: Talhao 3 - Norte)", snapshot.name, function(name)
+        local ok, result = self.library:saveSnapshot(snapshot, name)
+        if ok then
+            self.activeCourseName=result.name
+            self:saveCourse()
+            self:notify("Trajeto salvo: " .. result.name)
+        else self:notify(result) end
+    end)
+end
+
+function TGGPS:onSearchCourses()
+    self:requestText("Buscar nome, talhao ou orientacao", self.libraryFilter, function(text)
+        self.libraryFilter, self.libraryPage = text, 1
+        if self.hud then self.hud.page="library" end
+    end)
+end
+
+function TGGPS:loadNamedCourse(id)
+    local ok, result = self.library:load(id)
+    if ok then
+        self:notify(string.format("Carregado: %s | %.1f graus | largura deste conjunto %.1f m. Alinhe e ligue o piloto.", result.name, result.heading, self.width))
+        if self.hud then self.hud.page="map" end
+    else self:notify(result) end
+end
+
+function TGGPS:changeTrackOffset(delta)
+    if #self.sourcePoints < 2 then self:notify("Crie ou carregue uma linha primeiro"); return false end
+    self:stopAutosteer()
+    local old = self.trackOffset or 0
+    self.trackOffset=math.max(-1000,math.min(1000,old+delta))
+    if not self:rebuildGuidance() then self.trackOffset=old;self:rebuildGuidance();return false end
+    self.autoLaneSelection, self.completedSections = false, {}
+    self:notify(string.format("Linha deslocada %.2f m | piloto desligado; confira o alinhamento", self.trackOffset))
+    return true
+end
+function TGGPS:onNudgeLineLeft() self:changeTrackOffset(-0.10) end
+function TGGPS:onNudgeLineRight() self:changeTrackOffset(0.10) end
+function TGGPS:onResetTrackOffset() self:changeTrackOffset(-(self.trackOffset or 0)) end
+function TGGPS:onSnapLine()
+    local path=self:getLanePath(self.currentLane,self.currentSection)
+    local pose=self:getVehiclePose(self:getControlledVehicle())
+    if path==nil or pose==nil then self:notify("Selecione uma linha e entre na maquina");return end
+    local distance, offset=math.huge,0
+    for i=1,#path-1 do
+        local a,b=path[i],path[i+1]
+        local dx,dz=b.x-a.x,b.z-a.z
+        local length=math.sqrt(dx*dx+dz*dz)
+        if length>0.00001 then
+            local t=math.max(0,math.min(1,((pose.x-a.x)*dx+(pose.z-a.z)*dz)/(length*length)))
+            local ex,ez=pose.x-a.x-dx*t,pose.z-a.z-dz*t
+            local squared=ex*ex+ez*ez
+            if squared<distance then distance,offset=squared,(-dz*ex+dx*ez)/length end
+        end
+    end
+    self:changeTrackOffset(offset)
+end
+
+function TGGPS:onZoomIn() self.mapZoom=math.min(12,TGGPSMap.getZoom(self)+0.5);self:saveHudSettings() end
+function TGGPS:onZoomOut() self.mapZoom=math.max(1,TGGPSMap.getZoom(self)-0.5);self:saveHudSettings() end
+function TGGPS:onZoomFit() self.mapZoom=1;self:saveHudSettings() end
 
 local function isGameMenuVisible()
     return g_gui ~= nil and g_gui.getIsGuiVisible ~= nil and g_gui:getIsGuiVisible()
@@ -385,6 +485,7 @@ function TGGPS:saveHudSettings()
     setXMLFloat(xml, "tgGpsHud#x", settings.x)
     setXMLFloat(xml, "tgGpsHud#y", settings.y)
     setXMLFloat(xml, "tgGpsHud#scale", settings.scale)
+    setXMLFloat(xml, "tgGpsHud#zoom", self.mapZoom or 1)
     saveXMLFile(xml)
     delete(xml)
     return true
@@ -400,6 +501,8 @@ function TGGPS:loadHudSettings()
         x = getXMLFloat(xml, "tgGpsHud#x"), y = getXMLFloat(xml, "tgGpsHud#y"),
         scale = getXMLFloat(xml, "tgGpsHud#scale")
     })
+    local zoom=getXMLFloat(xml,"tgGpsHud#zoom")
+    self.mapZoom=finite(zoom) and math.max(1,math.min(12,zoom)) or 1
     delete(xml)
     return true
 end
@@ -410,7 +513,14 @@ function TGGPS:rebuildGuidance()
     self.basePath = {}
 
     if self.mode == "field" and self.fieldBoundary ~= nil then
-        local data, reason = TGFieldBoundary.generateLanes(self.fieldBoundary, self.fieldOrigin, self.fieldDirection, self.width)
+        local d, origin = self.fieldDirection, self.fieldOrigin
+        if d==nil or origin==nil or not finite(d.dx) or not finite(d.dz)
+            or d.dx*d.dx+d.dz*d.dz<0.000001 then
+            self:notify("Direcao de talhao invalida"); return false
+        end
+        local length=math.sqrt(d.dx*d.dx+d.dz*d.dz)
+        local shifted={x=origin.x-d.dz/length*(self.trackOffset or 0),z=origin.z+d.dx/length*(self.trackOffset or 0)}
+        local data, reason = TGFieldBoundary.generateLanes(self.fieldBoundary, shifted, d, self.width)
         if data == nil then
             self:notify("Nao foi possivel gerar as passadas: " .. fieldError(reason))
             return false
@@ -449,7 +559,7 @@ function TGGPS:rebuildGuidance()
     end
 
     for lane = -TGGPS.MAX_LANE, TGGPS.MAX_LANE do
-        self.guidanceLines[lane] = self:offsetPath(self.basePath, lane * self.width)
+        self.guidanceLines[lane] = self:offsetPath(self.basePath, lane * self.width + (self.trackOffset or 0))
     end
 
     self.minLane, self.maxLane = nil, nil
@@ -510,7 +620,7 @@ function TGGPS:ensureLane(lane)
     if self.mode == "field" or #self.basePath < 2 or math.abs(lane) > TGGPS.MAX_DYNAMIC_LANE then
         return nil
     end
-    self.guidanceLines[lane] = self:offsetPath(self.basePath, lane * self.width)
+    self.guidanceLines[lane] = self:offsetPath(self.basePath, lane * self.width + (self.trackOffset or 0))
     return self.guidanceLines[lane]
 end
 
@@ -527,6 +637,7 @@ function TGGPS:getLanePath(lane, section)
 end
 
 function TGGPS:onMarkAB(actionName, inputValue)
+    self:syncWorkingWidth()
     local position = self:getCurrentPosition()
     if position == nil then
         self:notify("Entre em um trator para marcar A/B")
@@ -552,6 +663,7 @@ function TGGPS:onMarkAB(actionName, inputValue)
     end
 
     self.sourcePoints = path
+    self.trackOffset, self.activeCourseName = 0, nil
     self.headlandEnabled = false
     self.fieldBoundary = nil
     self.mode = "straight"
@@ -603,6 +715,7 @@ function TGGPS:onRecordCurve(actionName, inputValue)
     end
 
     self.sourcePoints = self.recordedPoints
+    self.trackOffset, self.activeCourseName = 0, nil
     self.recordedPoints = {}
     self.mode = "curve"
     self.headlandEnabled = false
@@ -665,6 +778,7 @@ function TGGPS:onEnableAutoLane(actionName, inputValue)
 end
 
 function TGGPS:onGenerateField()
+    self:syncWorkingWidth()
     self:stopAutosteer()
     local vehicle = self:getControlledVehicle()
     local pose = vehicle ~= nil and self:getVehiclePose(vehicle) or nil
@@ -692,6 +806,7 @@ function TGGPS:onGenerateField()
     self.isRecording, self.recordingVehicle = false, nil
     self.recordedPoints, self.pointA = {}, nil
     self.fieldBoundary = vertices
+    self.trackOffset, self.activeCourseName = 0, nil
     self.fieldOrigin = {x = pose.x, z = pose.z}
     self.fieldDirection = {dx = pose.dx, dz = pose.dz}
     self.mode, self.currentLane, self.currentSection = "field", 0, 1
@@ -702,26 +817,32 @@ function TGGPS:onGenerateField()
 end
 
 function TGGPS:onWidthDown(actionName, inputValue)
+    self:syncWorkingWidth()
     self:stopAutosteer()
     self.width = math.max(TGGPS.MIN_WIDTH, self.width - TGGPS.WIDTH_STEP)
+    self.widthProfiles:remember(self.width)
     self:rebuildGuidance()
     self:notify(string.format("Largura do implemento: %.1f m", self.width))
 end
 
 function TGGPS:onWidthUp(actionName, inputValue)
+    self:syncWorkingWidth()
     self:stopAutosteer()
     self.width = math.min(TGGPS.MAX_WIDTH, self.width + TGGPS.WIDTH_STEP)
+    self.widthProfiles:remember(self.width)
     self:rebuildGuidance()
     self:notify(string.format("Largura do implemento: %.1f m", self.width))
 end
 
 function TGGPS:onDetectWidth(actionName, inputValue)
+    self:syncWorkingWidth()
     self:stopAutosteer()
     local vehicle = self:getControlledVehicle()
-    if vehicle ~= nil and vehicle.getAttacherToolWorkingWidth ~= nil then
-        local detectedWidth = vehicle:getAttacherToolWorkingWidth()
-        if detectedWidth ~= nil and detectedWidth > 0.5 then
+    if vehicle ~= nil then
+        local detectedWidth = TGGPSWidthProfiles.detect(vehicle)
+        if finite(detectedWidth) and detectedWidth > 0.5 then
             self.width = math.max(TGGPS.MIN_WIDTH, math.min(TGGPS.MAX_WIDTH, detectedWidth))
+            self.widthProfiles:remember(self.width)
             self:rebuildGuidance()
             self:notify(string.format("Largura detectada: %.2f m", self.width))
             return
@@ -731,10 +852,11 @@ function TGGPS:onDetectWidth(actionName, inputValue)
 end
 
 function TGGPS:onSave(actionName, inputValue)
-    self:saveCourse()
+    self:onSaveNamedCourse()
 end
 
 function TGGPS:onClear(actionName, inputValue)
+    self.trackOffset, self.activeCourseName = 0, nil
     self:stopAutosteer()
     self.isRecording = false
     self.recordingVehicle = nil
@@ -937,6 +1059,7 @@ function TGGPS:onToggleAutosteer(actionName, inputValue)
         self:stopAutosteer("Piloto desligado - direcao manual")
         return
     end
+    self:syncWorkingWidth()
     local vehicle = self:getControlledVehicle()
     local problem = self:getAutosteerProblem(vehicle)
     if problem ~= nil then
@@ -984,11 +1107,13 @@ function TGGPS:applySteering(vehicle, axisForward, axisSide, doHandbrake, dt)
         return axisSide
     end
     local rawInputs = vehicle.spec_drivable and vehicle.spec_drivable.lastInputValues
-    local manual = rawInputs and rawInputs.axisSteer or axisSide or 0
+    local manual = rawInputs and rawInputs.axisSteer or 0
+    if math.abs(manual)>0 or math.abs(axisSide or 0)>0 then
+        self:stopAutosteer("Piloto desligado: direcao manual")
+        return axisSide
+    end
     local problem = self:getAutosteerProblem(vehicle)
-    if math.abs(manual) > TGGPS.MANUAL_STEERING_THRESHOLD then
-        problem = "Piloto desligado: direcao manual"
-    elseif self.turnState ~= nil and (axisForward or 0) < -0.15 then
+    if self.turnState ~= nil and (axisForward or 0) < -0.15 then
         problem = "Piloto desligado: freio manual"
     end
     if problem ~= nil then
@@ -1022,14 +1147,16 @@ function TGGPS:applySteering(vehicle, axisForward, axisSide, doHandbrake, dt)
 end
 
 function TGGPS:applyDriveControl(vehicle, axisForward, axisSide, doHandbrake, dt)
+    if vehicle==self:getControlledVehicle() then self:syncWorkingWidth() end
     if self.monitor ~= nil and self.monitor.editing and self.monitor.vehicle == vehicle then
         return 0, 0, true
     end
     local steering = self:applySteering(vehicle, axisForward, axisSide, doHandbrake, dt)
     if self.headlandBrakeHoldVehicle == vehicle then
         local inputs = vehicle.spec_drivable and vehicle.spec_drivable.lastInputValues
-        local manualSteer = inputs and inputs.axisSteer or axisSide or 0
+        local manualSteer = inputs and inputs.axisSteer or 0
         if self:getControlledVehicle() ~= vehicle or math.abs(manualSteer) > TGGPS.MANUAL_STEERING_THRESHOLD
+            or math.abs(axisSide or 0)>0
             or (axisForward or 0) < -0.15 then
             self.headlandBrakeHoldVehicle = nil
         else
@@ -1045,6 +1172,10 @@ function TGGPS:applyDriveControl(vehicle, axisForward, axisSide, doHandbrake, dt
 end
 
 function TGGPS:update(dt)
+    self:syncWorkingWidth()
+    self.contextTimer=(self.contextTimer or 0)+math.max(0,dt or 0)
+    if self.contextTimer>=500 then self.monitorContext=nil;self.contextTimer=0 end
+    if self.pendingHudOpen and not isGameMenuVisible() then self.pendingHudOpen=false;self:openHud() end
     if self.coverage ~= nil then self.coverage:update(dt) end
     if self.monitor ~= nil then self.monitor:update(dt) end
     if self.hud ~= nil and self.hud.isOpen and (self:getControlledVehicle() ~= self.hudVehicle or isGameMenuVisible()) then
@@ -1123,6 +1254,7 @@ function TGGPS:saveCourse()
     setXMLFloat(xmlFile, "tgGps#headlandDepth", self.headlandDepth or 18)
     setXMLFloat(xmlFile, "tgGps#turnSpeed", self.turnSpeed or 6)
     setXMLFloat(xmlFile, "tgGps#turnRadius", self.turnRadius or 6)
+    setXMLFloat(xmlFile, "tgGps#trackOffset", self.trackOffset or 0)
     setXMLInt(xmlFile, "tgGps#turnSide", self.turnSide or 1)
     local boundary = self.mode == "field" and self.fieldBoundary or nil
     setXMLInt(xmlFile, "tgGps#boundaryCount", boundary ~= nil and #boundary or 0)
@@ -1161,6 +1293,8 @@ function TGGPS:loadCourse()
     end
 
     local pointCount = getXMLInt(xmlFile, "tgGps#pointCount") or 0
+    local offset=getXMLFloat(xmlFile,"tgGps#trackOffset")
+    self.trackOffset=finite(offset) and math.max(-1000,math.min(1000,offset)) or 0
     if pointCount >= 2 and pointCount <= 10000 then
         self.mode = getXMLString(xmlFile, "tgGps#mode") or "curve"
         if self.mode ~= "field" and self.mode ~= "straight" and self.mode ~= "curve" then

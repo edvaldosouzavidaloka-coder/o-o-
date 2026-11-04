@@ -106,3 +106,17 @@ function route(owner)
     owner.guidanceSections={}
     owner.fieldBoundary={{x=-30,z=-30},{x=30,z=-30},{x=30,z=120},{x=-30,z=120}}
 end
+
+function metadata()
+    local farms={[1]={name='Fazenda Vidal'},[2]={name='Proprietario do campo'}}
+    g_farmManager={getFarmById=function(_,id) return farms[id] end}
+    function tractor:getOwnerFarmId() return 1 end
+    local field={name='Talhao 3',getId=function() return 3 end,
+        getDensityMapPolygon=function() return {getVerticesList=function() return {-30,-30,30,-30,30,120,-30,120} end} end}
+    local land={id=3,farmId=2,getField=function() return field end}
+    g_farmlandManager={getFarmlandAtWorldPosition=function() return land end}
+    g_currentMission.hud={ingameMap={worldSizeX=2048,worldSizeZ=2048,
+        worldCenterOffsetX=1024,worldCenterOffsetZ=1024,mapOverlay={filename='/maps/native_pda.dds'}}}
+    tractor.name='Trator de teste';tool.name='Semeadora de teste'
+    TGGPS.monitorContext=nil
+end

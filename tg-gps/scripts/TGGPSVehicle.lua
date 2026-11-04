@@ -2,6 +2,18 @@
 -- The route and controller live in TGGPS; this specialization owns only vehicle
 -- lifecycle, input registration and the physics hook.
 TGGPSVehicle = {}
+TGGPSVehicle.NAMESPACE=(g_currentModName or 'FS25_TG_GPS')..'.tgGpsVehicle'
+
+function TGGPSVehicle.initSpecialization()
+    if not TGGPSVehicle.schemaRegistered and TGGPSWidthProfiles and Vehicle and Vehicle.xmlSchemaSavegame then
+        TGGPSWidthProfiles.register(Vehicle.xmlSchemaSavegame,TGGPSVehicle.NAMESPACE)
+        TGGPSVehicle.schemaRegistered=true
+    end
+end
+
+function TGGPSVehicle:saveToXMLFile(xml,key,usedModNames)
+    TGGPSWidthProfiles.save(self,xml,key)
+end
 
 function TGGPSVehicle.prerequisitesPresent(specializations)
     return SpecializationUtil.hasSpecialization(Drivable, specializations)
@@ -24,6 +36,8 @@ function TGGPSVehicle.registerOverwrittenFunctions(vehicleType)
 end
 
 function TGGPSVehicle:onLoad(savegame)
+    TGGPSVehicle.initSpecialization()
+    TGGPSWidthProfiles.load(self,savegame,TGGPSVehicle.NAMESPACE)
     self.tgGpsSupported = true
     self.tgGpsActionEvents = {}
 end

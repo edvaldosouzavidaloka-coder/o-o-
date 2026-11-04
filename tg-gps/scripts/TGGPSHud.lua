@@ -3,20 +3,17 @@
 TGGPSHud = {}
 TGGPSHud.__index = TGGPSHud
 
-local WIDTH, HEIGHT = 720, 690
+local WIDTH, HEIGHT = 1040, 660
 local MIN_SCALE, MAX_SCALE = 0.75, 1.25
-local DEFAULT_X, DEFAULT_Y = 0.55, 0.18
+local DEFAULT_X, DEFAULT_Y = 0.42, 0.18
 local MARGIN = 0.01
 local COLORS = {
-    shadow = {0, 0, 0, 0.48}, frame = {0.035, 0.055, 0.065, 0.98},
-    background = {0.055, 0.080, 0.092, 0.98}, header = {0.080, 0.118, 0.135, 1},
-    card = {0.085, 0.125, 0.143, 1}, border = {0.17, 0.23, 0.26, 1},
-    white = {0.94, 0.97, 0.98, 1}, muted = {0.59, 0.69, 0.73, 1},
-    green = {0.20, 0.88, 0.62, 1}, red = {1, 0.36, 0.40, 1},
-    blue = {0.27, 0.75, 0.96, 1}, amber = {1, 0.77, 0.30, 1},
-    button = {0.11, 0.17, 0.20, 1}, hover = {0.16, 0.25, 0.29, 1},
-    pressed = {0.20, 0.33, 0.37, 1}, active = {0.10, 0.27, 0.23, 1},
-    danger = {0.29, 0.11, 0.13, 1}, disabled = {0.08, 0.105, 0.115, 1}
+    shadow={0,0,0,0.48},frame={0.025,0.06,0.04,1},background={0.89,0.90,0.85,1},
+    header={0.025,0.36,0.16,1},card={0.97,0.97,0.93,1},border={0.66,0.70,0.62,1},
+    ink={0.06,0.11,0.08,1},white={1,1,1,1},muted={0.34,0.40,0.35,1},
+    green={0.02,0.42,0.18,1},red={0.65,0.08,0.07,1},blue={0.1,0.34,0.5,1},
+    button={0.88,0.90,0.84,1},hover={0.72,0.83,0.67,1},pressed={0.55,0.74,0.50,1},
+    active={0.65,0.82,0.54,1},danger={0.95,0.75,0.69,1},disabled={0.82,0.83,0.79,1}
 }
 
 local function finite(value)
@@ -140,81 +137,96 @@ end
 function TGGPSHud:getButtons()
     if not self:_available() then return {} end
     self:_layout()
-    local owner, buttons = self.owner, {}
-    local hasRoute = type(owner.sourcePoints) == "table" and #owner.sourcePoints >= 2
-    local function button(id, label, x, y, w, h, action, enabled, active, tone)
-        local rect = self:_rect(x, y, w, h)
-        rect.id, rect.label, rect.action = id, label, action
-        rect.enabled, rect.active, rect.tone = enabled ~= false, active == true, tone
-        buttons[#buttons + 1] = rect
+    local o, buttons = self.owner, {}
+    local route = type(o.sourcePoints)=="table" and #o.sourcePoints>=2
+    local function b(id,label,x,y,w,h,action,enabled,active,tone)
+        local v=self:_rect(x,y,w,h)
+        v.id,v.label,v.action,v.enabled,v.active,v.tone=id,label,action,enabled~=false,active==true,tone
+        buttons[#buttons+1]=v
     end
-    button("close", "X", 666, 13, 34, 30, "close")
-    button("tab_map", "MAPA", 20, 136, 166, 36, "map", true, self.page == "map")
-    button("tab_guide", "GUIA", 194, 136, 166, 36, "guide", true, self.page == "guide")
-    button("tab_headland", "CABECEIRA", 368, 136, 166, 36, "headland", true, self.page == "headland")
-    button("tab_settings", "AJUSTES", 542, 136, 158, 36, "settings", true, self.page == "settings")
-    if self.page == "map" then
-        local zoom = TGGPSMap ~= nil and TGGPSMap.getZoom(owner) or (owner.mapZoom or 1)
-        button("map_fit", "TUDO", 536, 192, 62, 26, "map_fit")
-        button("map_zoom_out", "-", 606, 192, 40, 26, "map_zoom_out", zoom > 1.001)
-        button("map_zoom_in", "+", 654, 192, 36, 26, "map_zoom_in", zoom < 3.999)
-        button("enable", "LIGAR PILOTO", 20, 500, 218, 36, "onEnableAutosteer", not owner.autosteerEnabled, owner.autosteerEnabled, "green")
-        button("disable", "DESLIGAR", 250, 500, 218, 36, "onDisableAutosteer", owner.autosteerEnabled, false, "red")
-        button("generate_field", "GERAR TALHAO", 480, 500, 220, 36, "onGenerateField", true, false, "blue")
-    elseif self.page == "guide" then
-        button("enable", "LIGAR PILOTO", 20, 264, 218, 44, "onEnableAutosteer", not owner.autosteerEnabled, owner.autosteerEnabled, "green")
-        button("disable", "DESLIGAR", 250, 264, 218, 44, "onDisableAutosteer", owner.autosteerEnabled, false, "red")
-        button("generate_field", "GERAR TALHAO", 480, 264, 220, 44, "onGenerateField", true, false, "blue")
-        button("mark_ab", owner.pointA ~= nil and "MARCAR PONTO B" or "MARCAR A/B", 20, 320, 218, 44, "onMarkAB")
-        button("record_curve", owner.isRecording and "FINALIZAR CURVA" or "GRAVAR CURVA", 250, 320, 218, 44, "onRecordCurve", true, owner.isRecording)
-        button("toggle_lines", owner.showLines and "LINHAS: VISIVEIS" or "LINHAS: OCULTAS", 480, 320, 220, 44, "onToggleLines", true, owner.showLines)
-        button("lane_prev", "< PASSADA", 20, 376, 218, 44, "onLanePrevious", hasRoute)
-        button("auto_lane", owner.autoLaneSelection and "SELECAO: AUTO" or "SELECAO: MANUAL", 250, 376, 218, 44, "onToggleAutoLane", true, owner.autoLaneSelection)
-        button("lane_next", "PASSADA >", 480, 376, 220, 44, "onLaneNext", hasRoute)
-        button("width_down", "- LARGURA", 20, 432, 218, 44, "onWidthDown", (owner.width or 6) > (owner.MIN_WIDTH or 1))
-        button("detect_width", "DETECTAR LARGURA", 250, 432, 218, 44, "onDetectWidth")
-        button("width_up", "LARGURA +", 480, 432, 220, 44, "onWidthUp", (owner.width or 6) < (owner.MAX_WIDTH or 50))
-        button("save", "SALVAR TRAJETO", 20, 488, 334, 40, "onSave", hasRoute)
-        button("clear", "LIMPAR DA TELA", 366, 488, 334, 40, "onClear", hasRoute or owner.pointA ~= nil or owner.isRecording, false, "red")
-    elseif self.page == "headland" then
-        button("headland_toggle", owner.headlandEnabled and "CABECEIRA AUTOMATICA: LIGADA" or "CABECEIRA AUTOMATICA: DESLIGADA", 20, 194, 680, 40, "onToggleHeadland", true, owner.headlandEnabled, "blue")
-        button("headland_depth_down", "-", 516, 254, 74, 42, "onHeadlandDepthDown")
-        button("headland_depth_up", "+", 602, 254, 74, 42, "onHeadlandDepthUp")
-        button("headland_speed_down", "-", 516, 324, 74, 42, "onTurnSpeedDown")
-        button("headland_speed_up", "+", 602, 324, 74, 42, "onTurnSpeedUp")
-        button("headland_radius_down", "-", 516, 394, 74, 42, "onTurnRadiusDown")
-        button("headland_radius_up", "+", 602, 394, 74, 42, "onTurnRadiusUp")
-        button("headland_direction", (owner.turnSide or 1) > 0 and "PROXIMA PASSADA +" or "PROXIMA PASSADA -", 448, 464, 228, 42, "onToggleTurnDirection")
+    b("close","X",1000,10,26,26,"close")
+    for i,item in ipairs({{"map","MAPA"},{"guide","LINHAS"},{"headland","CABECEIRA"},{"library","TRAJETOS"},{"settings","MONITOR"}}) do
+        b("tab_"..item[1],item[2],20+(i-1)*204,546,196,36,item[1],true,self.page==item[1])
+    end
+    if self.page=="map" then
+        b("lane_prev","< PASSADA",820,110,94,32,"onLanePrevious",route)
+        b("lane_next","PASSADA >",922,110,90,32,"onLaneNext",route)
+        b("nudge_left","- 10 cm",820,187,94,32,"onNudgeLineLeft",route)
+        b("nudge_right","+ 10 cm",922,187,90,32,"onNudgeLineRight",route)
+        b("snap_line","PUXAR ATE A MAQUINA",820,229,192,34,"onSnapLine",route)
+        b("reset_shift","ZERAR DESLOCAMENTO",820,273,192,30,"onResetTrackOffset",route)
+        b("map_zoom_out","-",820,345,52,32,"onZoomOut",TGGPSMap.getZoom(o)>1)
+        b("map_fit","PADRAO",880,345,72,32,"onZoomFit")
+        b("map_zoom_in","+",960,345,52,32,"onZoomIn",TGGPSMap.getZoom(o)<12)
+        b("headland_toggle",o.headlandEnabled and "CABECEIRA: LIGADA" or "CABECEIRA: DESLIGADA",820,402,192,34,"onToggleHeadland",o.mode=="field",o.headlandEnabled)
+        b("save","SALVAR LINHA",820,446,192,32,"onSaveNamedCourse",route)
+        b("load","BUSCAR TRAJETO",820,488,192,32,"library")
+        b("enable","LIGAR PILOTO",214,486,184,36,"onEnableAutosteer",route and not o.autosteerEnabled,o.autosteerEnabled,"green")
+        b("disable","DESLIGAR",408,486,184,36,"onDisableAutosteer",o.autosteerEnabled,false,"red")
+        b("generate_field","GERAR TALHAO",602,486,197,36,"onGenerateField",true,false,"blue")
+    elseif self.page=="guide" then
+        for i,v in ipairs({{"mark_ab",o.pointA and "MARCAR PONTO B" or "MARCAR A/B","onMarkAB"},
+            {"record_curve",o.isRecording and "FINALIZAR CURVA" or "GRAVAR CURVA","onRecordCurve"},
+            {"toggle_lines",o.showLines and "LINHAS VISIVEIS" or "LINHAS OCULTAS","onToggleLines"}}) do
+            b(v[1],v[2],214+(i-1)*274,174,258,40,v[3])
+        end
+        b("width_down","- LARGURA",214,236,190,38,"onWidthDown",o.width>1)
+        b("detect_width","DETECTAR IMPLEMENTO",418,236,398,38,"onDetectWidth")
+        b("width_up","LARGURA +",830,236,190,38,"onWidthUp",o.width<50)
+        b("lane_prev","< PASSADA",214,298,258,38,"onLanePrevious",route)
+        b("auto_lane",o.autoLaneSelection and "SELECAO AUTOMATICA" or "SELECAO MANUAL",488,298,258,38,"onToggleAutoLane",true,o.autoLaneSelection)
+        b("lane_next","PASSADA >",762,298,258,38,"onLaneNext",route)
+        b("nudge_left","LINHA - 10 cm",214,360,258,38,"onNudgeLineLeft",route)
+        b("snap_line","PUXAR ATE A MAQUINA",488,360,258,38,"onSnapLine",route)
+        b("nudge_right","LINHA + 10 cm",762,360,258,38,"onNudgeLineRight",route)
+        b("save","SALVAR COM NOME",214,432,392,40,"onSaveNamedCourse",route)
+        b("clear","LIMPAR TRAJETO DA TELA",622,432,398,40,"onClear",route or o.pointA~=nil,false,"red")
+    elseif self.page=="headland" then
+        b("headland_toggle",o.headlandEnabled and "CABECEIRA AUTOMATICA LIGADA" or "ATIVAR CABECEIRA AUTOMATICA",214,120,806,40,"onToggleHeadland",o.mode=="field",o.headlandEnabled)
+        for i,v in ipairs({{"headland_depth","onHeadlandDepthDown","onHeadlandDepthUp"},{"headland_speed","onTurnSpeedDown","onTurnSpeedUp"},{"headland_radius","onTurnRadiusDown","onTurnRadiusUp"}}) do
+            b(v[1].."_down","-",814,190+(i-1)*82,90,44,v[2])
+            b(v[1].."_up","+",918,190+(i-1)*82,90,44,v[3])
+        end
+        b("headland_direction","INVERTER LADO DA PROXIMA PASSADA",214,454,806,40,"onToggleTurnDirection")
+    elseif self.page=="library" then
+        b("save_named","SALVAR ATUAL",214,76,252,34,"onSaveNamedCourse",route)
+        b("search_courses","BUSCAR NOME / TALHAO",480,76,330,34,"onSearchCourses")
+        b("clear_search","VER TODOS",824,76,196,34,"clear_search")
+        local records=o.library:list(o.libraryFilter)
+        local pages=math.max(1,math.ceil(#records/4))
+        o.libraryPage=math.max(1,math.min(pages,o.libraryPage or 1))
+        for row=1,4 do
+            local r=records[(o.libraryPage-1)*4+row]
+            if r then b("load_course_"..r.id,"CARREGAR",874,142+(row-1)*82,134,36,"load_course:"..r.id) end
+        end
+        b("library_prev","< ANTERIOR",214,488,190,34,"library_prev",o.libraryPage>1)
+        b("library_next","PROXIMA >",830,488,190,34,"library_next",o.libraryPage<pages)
     else
-        button("scale_down", "-", 516, 238, 74, 42, "scale_down", self.scale > MIN_SCALE + 0.001)
-        button("scale_up", "+", 602, 238, 74, 42, "scale_up", self.scale < MAX_SCALE - 0.001)
-        button("reset_position", "RESTAURAR POSICAO", 448, 332, 228, 42, "reset_position")
-        button("auto_lane", owner.autoLaneSelection and "AUTOMATICA" or "MANUAL", 448, 426, 228, 42, "onToggleAutoLane", true, owner.autoLaneSelection)
-        button("reset_coverage", "ZERAR PINTURA", 448, 500, 228, 32, "onResetCoverage", owner.coverage ~= nil, false, "red")
+        b("scale_down","-",814,120,90,42,"scale_down",self.scale>MIN_SCALE+0.001)
+        b("scale_up","+",918,120,90,42,"scale_up",self.scale<MAX_SCALE-0.001)
+        b("reset_position","CENTRALIZAR PAINEL",714,200,294,42,"reset_position")
+        b("edit_cab","AJUSTAR POSICAO DO MONITOR NA CABINE",214,298,806,44,"onEditMonitor")
+        b("map_zoom_out","ZOOM -",214,378,252,38,"onZoomOut",TGGPSMap.getZoom(o)>1)
+        b("map_fit","ZOOM PADRAO / SEGUIR MAQUINA",480,378,330,38,"onZoomFit")
+        b("map_zoom_in","ZOOM +",824,378,196,38,"onZoomIn",TGGPSMap.getZoom(o)<12)
+        b("reset_coverage","ZERAR PINTURA DESTA SESSAO",214,468,806,40,"onResetCoverage",true,false,"red")
     end
     return buttons
 end
 
 function TGGPSHud:_run(button)
-    local action = button.action
-    if action == "close" then
-        if type(self.owner.closeHud) == "function" then self.owner:closeHud() else self:setOpen(false) end
-    elseif action == "map" or action == "guide" or action == "headland" or action == "settings" then
-        self.page = action
-    elseif action == "scale_down" or action == "scale_up" then
-        self.scale = clamp(self.scale + (action == "scale_up" and 0.1 or -0.1), MIN_SCALE, MAX_SCALE)
-        self:_layout()
-        self:_saveSettings()
-    elseif action == "reset_position" then
-        self:resetPosition()
-    elseif action == "map_fit" then
-        self.owner.mapZoom = 1
-    elseif action == "map_zoom_in" or action == "map_zoom_out" then
-        local zoom = TGGPSMap ~= nil and TGGPSMap.getZoom(self.owner) or (self.owner.mapZoom or 1)
-        self.owner.mapZoom = clamp(zoom + (action == "map_zoom_in" and 0.5 or -0.5), 1, 4)
-    elseif type(self.owner[action]) == "function" then
-        self.owner[action](self.owner, nil, 1)
-    end
+    local a=button.action
+    if a=="close" then self.owner:closeHud()
+    elseif a=="map" or a=="guide" or a=="headland" or a=="library" or a=="settings" then self.page=a
+    elseif a=="scale_down" or a=="scale_up" then
+        self.scale=clamp(self.scale+(a=="scale_up" and 0.1 or -0.1),MIN_SCALE,MAX_SCALE)
+        self:_layout();self:_saveSettings()
+    elseif a=="reset_position" then self:resetPosition()
+    elseif a=="clear_search" then self.owner.libraryFilter,self.owner.libraryPage="",1
+    elseif a=="library_prev" then self.owner.libraryPage=math.max(1,self.owner.libraryPage-1)
+    elseif a=="library_next" then self.owner.libraryPage=self.owner.libraryPage+1
+    elseif a:match("^load_course:%d+$") then self.owner:loadNamedCourse(tonumber(a:match("(%d+)$")))
+    elseif type(self.owner[a])=="function" then self.owner[a](self.owner,nil,1) end
 end
 
 function TGGPSHud:mouseEvent(posX, posY, isDown, isUp, button)
@@ -271,120 +283,92 @@ end
 function TGGPSHud:getDrawCommands()
     if not self:_available() then return {} end
     self:_layout()
-    local owner, commands = self.owner, {}
-    local function rect(x, y, w, h, color)
-        local entry = self:_rect(x, y, w, h)
-        entry.type, entry.color = "rect", color
-        commands[#commands + 1] = entry
+    local o,c,commands=self.owner,self.owner:getMonitorContext(),{}
+    local function rect(x,y,w,h,color)
+        local e=self:_rect(x,y,w,h);e.type,e.color="rect",color;commands[#commands+1]=e
     end
-    local function text(value, x, y, size, color, bold, align)
-        commands[#commands + 1] = {type = "text", text = tostring(value),
-            x = self.x + x * self.unitX, y = self.y + (HEIGHT - y) * self.unitY,
-            size = size * self.unitY, color = color or COLORS.white,
-            bold = bold == true, align = align or "left"}
+    local function short(value,n)
+        local chars={}
+        for ch in tostring(value or ""):gmatch("[%z\1-\127\194-\244][\128-\191]*") do chars[#chars+1]=ch end
+        if #chars>(n or 30) then return table.concat(chars,"",1,(n or 30)-3).."..." end
+        return table.concat(chars)
     end
-    rect(6, 6, WIDTH, HEIGHT, COLORS.shadow)
-    rect(0, 0, WIDTH, HEIGHT, COLORS.frame)
-    rect(3, 3, WIDTH - 6, HEIGHT - 6, COLORS.background)
-    rect(3, 3, WIDTH - 6, 51, COLORS.header)
-    rect(20, 19, 5, 23, COLORS.green)
-    text("TG GPS PRO", 36, 38, 25, COLORS.white, true)
-    text("MONITOR DE ORIENTACAO", 236, 36, 12, COLORS.muted)
-
-    rect(20, 66, 680, 58, COLORS.card)
-    rect(20, 66, 5, 58, owner.autosteerEnabled and COLORS.green or COLORS.muted)
-    text(owner.autosteerEnabled and "PILOTO LIGADO" or "PILOTO DESLIGADO", 39, 91, 18,
-        owner.autosteerEnabled and COLORS.green or COLORS.white, true)
-    local mode = owner.mode == "field" and "TALHAO INTEIRO" or (owner.mode == "curve" and "CURVA GRAVADA" or (owner.mode == "straight" and "RETA A/B" or "SEM TRAJETO"))
-    local phases = {tracking = "SEGUINDO LINHA", approach = "APROXIMANDO", planning = "CALCULANDO CURVA", braking = "REDUZINDO",
-        lifting = "LEVANTANDO IMPLEMENTO", turning = "FAZENDO CURVA", aligning = "ALINHANDO", lowering = "BAIXANDO IMPLEMENTO",
-        stopped = "PARADO", stopping = "PARANDO", error = "CONTROLE MANUAL"}
-    local phase = owner.turnState and phases[owner.turnState.phase] or nil
-    local subtitle = mode .. (owner.isRecording and "  /  GRAVANDO" or "")
-    if phase ~= nil then subtitle = subtitle .. "  /  " .. phase end
-    text(subtitle, 39, 113, 12, owner.isRecording and COLORS.amber or COLORS.muted)
-    text("Ctrl+Alt+M abre / fecha", 681, 92, 12, COLORS.muted, false, "right")
-
-    if self.page == "map" then
-        if TGGPSMap ~= nil and type(TGGPSMap.getDrawCommands) == "function" then
-            for _, command in ipairs(TGGPSMap.getDrawCommands(owner, self:_rect(20, 184, 680, 280))) do
-                commands[#commands + 1] = command
+    local function text(value,x,y,size,color,bold)
+        commands[#commands+1]={type="text",text=tostring(value),x=self.x+x*self.unitX,
+            y=self.y+(HEIGHT-y)*self.unitY,size=size*self.unitY,color=color or COLORS.ink,bold=bold==true,align="left"}
+    end
+    rect(6,6,WIDTH,HEIGHT,COLORS.shadow);rect(0,0,WIDTH,HEIGHT,COLORS.frame)
+    rect(3,3,WIDTH-6,HEIGHT-6,COLORS.background);rect(3,3,WIDTH-6,43,COLORS.header)
+    text("TG GPS PRO  |  "..c.operation,20,31,19,{1,1,1,1},true)
+    text(o.autosteerEnabled and "PILOTO LIGADO" or "DIRECAO MANUAL",740,30,14,{1,1,1,1},true)
+    rect(20,64,180,462,COLORS.card)
+    local rows={{"FAZENDA",c.farmName},{"PROPRIETARIO",c.ownerName},{"TALHAO",c.fieldName},
+        {c.kind=="combine" and "COLHEITADEIRA" or "TRATOR",c.machineName},{c.implementKind,c.implementName}}
+    for i,v in ipairs(rows) do
+        local y=88+(i-1)*65
+        text(v[1],32,y,10,COLORS.muted,true);text(short(v[2],21),32,y+23,13,COLORS.ink,true)
+        rect(32,y+37,156,1,COLORS.border)
+    end
+    text("AREA DA SESSAO",32,431,10,COLORS.muted,true)
+    text(string.format("%.2f ha",o.coverage:getWorkedHa()),32,459,24,COLORS.green,true)
+    text(string.format("Repetida %.2f ha",o.coverage:getOverlapHa()),32,484,11,COLORS.muted)
+    text(o.coverage.working and "TRABALHANDO" or "EM ESPERA",32,510,12,o.coverage.working and COLORS.green or COLORS.muted,true)
+    if self.page=="map" then
+        for _,command in ipairs(TGGPSMap.getDrawCommands(o,self:_rect(214,64,585,400))) do commands[#commands+1]=command end
+        rect(812,64,208,462,COLORS.card)
+        text("PASSADA "..tostring(o.currentLane or 0),824,93,15,COLORS.ink,true)
+        text(string.format("DESLOCAMENTO %+.2f m",o.trackOffset or 0),824,170,12,COLORS.ink,true)
+        text(string.format("ZOOM %.1fx",TGGPSMap.getZoom(o)),824,329,13,COLORS.ink,true)
+        text(short(o.activeCourseName or "Linha sem nome",43),220,477,11,COLORS.muted)
+    elseif self.page=="guide" then
+        text("ORIENTACAO E CONTROLE DE LINHA",214,88,19,COLORS.ink,true)
+        text(string.format("Largura %.2f m   |   Orientacao %.1f graus   |   Deslocamento %+.2f m",
+            o.width,TGGPSContext.heading(o.basePath),o.trackOffset or 0),214,136,17,COLORS.green,true)
+        text("Ajustar ou puxar a linha desliga o piloto. Confira o alinhamento antes de religar.",214,510,12,COLORS.muted)
+    elseif self.page=="headland" then
+        text("CONTROLE DE CABECEIRA",214,90,19,COLORS.ink,true)
+        for i,v in ipairs({{"MARGEM",o.headlandDepth,"m"},{"VELOCIDADE DA CURVA",o.turnSpeed,"km/h"},{"RAIO MINIMO",o.turnRadius,"m"}}) do
+            local y=182+(i-1)*82
+            rect(214,y,806,66,COLORS.card);text(v[1],230,y+22,12,COLORS.muted,true)
+            text(string.format("%.1f %s",v[2],v[3]),230,y+51,23,COLORS.ink,true)
+        end
+        text(o.mode=="field" and "Passadas do talhao: levantar, virar e baixar implementos compativeis."
+            or "Gere o talhao para usar a cabeceira automatica. A/B e curvas usam retorno manual.",214,520,12,COLORS.muted)
+    elseif self.page=="library" then
+        local records=o.library:list(o.libraryFilter)
+        for row=1,4 do
+            local r=records[((o.libraryPage or 1)-1)*4+row]
+            if r then
+                local y=124+(row-1)*82
+                rect(214,y,806,70,COLORS.card)
+                text(short(r.name,55),228,y+25,17,COLORS.ink,true)
+                text(string.format("%s | %.1f graus | %.1f m | %s",short(r.fieldName,20),r.heading,r.width,r.mode),228,y+51,12,COLORS.muted)
             end
-        else
-            rect(20, 184, 680, 280, COLORS.card)
-            text("MAPA INDISPONIVEL", 360, 330, 16, COLORS.muted, true, "center")
         end
-        local coverage = owner.coverage
-        text(string.format("TRABALHADO %.2f ha | SOBREPOSICAO %.2f ha",
-            coverage and coverage:getWorkedHa() or 0, coverage and coverage:getOverlapHa() or 0),
-            24, 486, 13, COLORS.white, true)
-        text(coverage and coverage.working and (coverage.estimated and "ESTIMADO" or "TRABALHANDO") or "SEM TRABALHO",
-            696, 486, 12, coverage and coverage.working and COLORS.green or COLORS.muted, false, "right")
-    elseif self.page == "guide" then
-        rect(20, 184, 334, 68, COLORS.card)
-        rect(366, 184, 334, 68, COLORS.card)
-        text("LARGURA DO IMPLEMENTO", 36, 207, 11, COLORS.muted)
-        text(string.format("%.1f m", owner.width or 6), 36, 238, 27, COLORS.white, true)
-        text("PASSADA ATUAL", 382, 207, 11, COLORS.muted)
-        text(tostring(owner.currentLane or 0), 382, 238, 27, COLORS.white, true)
-        text(owner.autoLaneSelection and "AUTOMATICA" or "MANUAL", 682, 236, 12,
-            owner.autoLaneSelection and COLORS.green or COLORS.amber, false, "right")
-    elseif self.page == "headland" then
-        local rows = {
-            {y = 244, label = "MARGEM DE CABECEIRA", value = string.format("%.1f m", owner.headlandDepth or 18)},
-            {y = 314, label = "VELOCIDADE NA CURVA", value = string.format("%.1f km/h", owner.turnSpeed or 6)},
-            {y = 384, label = "RAIO MINIMO DA CURVA", value = string.format("%.1f m", owner.turnRadius or 6)}
-        }
-        for _, row in ipairs(rows) do
-            rect(20, row.y, 680, 60, COLORS.card)
-            text(row.label, 36, row.y + 21, 11, COLORS.muted)
-            text(row.value, 36, row.y + 49, 23, COLORS.white, true)
-        end
-        rect(20, 454, 680, 60, COLORS.card)
-        text("LADO DA PROXIMA PASSADA", 36, 476, 11, COLORS.muted)
-        text((owner.turnSide or 1) > 0 and "Sentido positivo das linhas" or "Sentido negativo das linhas", 36, 500, 12, COLORS.white)
-        text("A curva e calculada antes de levantar o implemento.", 24, 535, 12, COLORS.muted)
+        if #records==0 then text("Nenhum trajeto encontrado. Salve uma linha ou altere a busca.",228,170,16,COLORS.muted) end
+        text(string.format("%d trajetos | Pagina %d/%d | Busca: %s",#records,o.libraryPage or 1,
+            math.max(1,math.ceil(#records/4)),short(o.libraryFilter~="" and o.libraryFilter or "todos",24)),424,510,11,COLORS.muted)
     else
-        text("PREFERENCIAS DO MONITOR", 24, 205, 16, COLORS.white, true)
-        rect(20, 220, 680, 82, COLORS.card)
-        text("TAMANHO DO PAINEL", 36, 246, 12, COLORS.muted)
-        text(string.format("%d%%", math.floor(self.scale * 100 + 0.5)), 36, 280, 27, COLORS.white, true)
-        rect(20, 314, 680, 82, COLORS.card)
-        text("POSICAO NA TELA", 36, 340, 12, COLORS.muted)
-        text("Arraste a barra superior com o mouse.", 36, 368, 13, COLORS.white)
-        rect(20, 408, 680, 82, COLORS.card)
-        text("ESCOLHA DA PASSADA", 36, 434, 12, COLORS.muted)
-        text("Automatica usa a linha mais proxima.", 36, 461, 13, COLORS.white)
-        text("Shift direito+M: ajustar monitor na cabine.", 24, 518, 12, COLORS.muted)
+        text("PAINEL E MONITOR NA CABINE",214,88,19,COLORS.ink,true)
+        rect(214,104,806,70,COLORS.card)
+        text(string.format("Tamanho do painel: %d%%",math.floor(self.scale*100+0.5)),230,147,20,COLORS.ink,true)
+        text("Arraste a barra verde para mover o painel.",230,225,16,COLORS.ink)
+        text("Monitor fisico: ajuste parado, por modelo de maquina.",214,277,14,COLORS.muted)
+        text("O zoom e compartilhado entre o painel e a tela da cabine.",214,362,14,COLORS.muted)
+        text("A pintura e os hectares valem para a sessao atual.",214,448,14,COLORS.muted)
     end
-
-    for _, button in ipairs(self:getButtons()) do
-        local color = button.active and COLORS.active or COLORS.button
-        if button.tone == "red" then color = COLORS.danger end
-        if button.enabled and inside(button, self.pointerX, self.pointerY) then
-            color = self.pressedId == button.id and COLORS.pressed or COLORS.hover
-        end
-        if not button.enabled then color = COLORS.disabled end
-        commands[#commands + 1] = {type = "rect", x = button.x, y = button.y, w = button.w, h = button.h, color = COLORS.border}
-        commands[#commands + 1] = {type = "rect", x = button.x + self.unitX, y = button.y + self.unitY,
-            w = button.w - 2 * self.unitX, h = button.h - 2 * self.unitY, color = color}
-        if button.active then
-            commands[#commands + 1] = {type = "rect", x = button.x + self.unitX, y = button.y + self.unitY,
-                w = 3 * self.unitX, h = button.h - 2 * self.unitY, color = COLORS.green}
-        end
-        local foreground = button.enabled and (COLORS[button.tone] or COLORS.white) or COLORS.muted
-        commands[#commands + 1] = {type = "text", text = button.label,
-            x = button.x + button.w / 2, y = button.y + button.h / 2 - 5 * self.unitY,
-            size = 14 * self.unitY, color = foreground, bold = true, align = "center"}
+    for _,b in ipairs(self:getButtons()) do
+        local color=b.active and COLORS.active or COLORS.button
+        if b.tone=="red" then color=COLORS.danger end
+        if b.enabled and inside(b,self.pointerX,self.pointerY) then color=self.pressedId==b.id and COLORS.pressed or COLORS.hover end
+        if not b.enabled then color=COLORS.disabled end
+        commands[#commands+1]={type="rect",x=b.x,y=b.y,w=b.w,h=b.h,color=COLORS.border}
+        commands[#commands+1]={type="rect",x=b.x+self.unitX,y=b.y+self.unitY,w=b.w-2*self.unitX,h=b.h-2*self.unitY,color=color}
+        commands[#commands+1]={type="text",text=b.label,x=b.x+b.w/2,y=b.y+b.h/2-5*self.unitY,size=12*self.unitY,
+            color=b.enabled and COLORS.ink or COLORS.muted,bold=true,align="center"}
     end
-
-    rect(20, 546, 680, 96, COLORS.card)
-    text("MENSAGEM DO GPS", 36, 568, 11, COLORS.muted)
-    local lines = wrapText(owner.status or "Gere o talhao e alinhe o trator para ligar o piloto.", 76, 3)
-    for index, line in ipairs(lines) do
-        text(line, 36, 589 + (index - 1) * 18, 13, COLORS.white)
-    end
-    text("Use DESLIGAR ou mova o volante para assumir o controle.", 20, 668, 11, COLORS.muted)
+    rect(20,596,1000,46,COLORS.card)
+    text(short(o.status or "",133),32,624,13,COLORS.ink)
     return commands
 end
 
@@ -426,6 +410,19 @@ function TGGPSHud:draw()
             self.overlay:setDimension(command.w, command.h)
             self.overlay:setColor(unpack(command.color))
             self.overlay:render()
+        elseif command.type == "pda" and Overlay ~= nil then
+            if self.nativeFilename ~= command.filename then
+                if self.nativeOverlay ~= nil then self.nativeOverlay:delete() end
+                self.nativeOverlay=Overlay.new(command.filename,0,0,1,1)
+                self.nativeFilename=command.filename
+            end
+            if self.nativeOverlay ~= nil then
+                self.nativeOverlay:setPosition(command.x,command.y)
+                self.nativeOverlay:setDimension(command.w,command.h)
+                self.nativeOverlay:setColor(1,1,1,1)
+                self.nativeOverlay:setUVs(command.uvs)
+                self.nativeOverlay:render()
+            end
         elseif command.type == "line" then
             self:_drawLine(command)
         elseif command.type == "text" and renderText ~= nil and setTextColor ~= nil then
@@ -449,6 +446,8 @@ function TGGPSHud:draw()
 end
 
 function TGGPSHud:delete()
+    if self.nativeOverlay~=nil then self.nativeOverlay:delete();self.nativeOverlay=nil end
+    self.nativeFilename=nil
     self:setOpen(false)
     if self.overlay ~= nil and type(self.overlay.delete) == "function" then self.overlay:delete() end
     self.overlay = nil

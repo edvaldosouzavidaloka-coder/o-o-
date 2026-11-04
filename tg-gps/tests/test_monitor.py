@@ -2,6 +2,7 @@ from pathlib import Path
 import math
 import unittest
 import xml.etree.ElementTree as ET
+import re
 from lupa.lua51 import LuaRuntime
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -16,7 +17,23 @@ class MonitorTests(unittest.TestCase):
 
         def load_model(path, *_):
             self.lua.globals().loadedModels[len(self.lua.globals().loadedModels) + 1] = path
-            data = ET.parse(path).getroot()
+            if self.lua.globals().xmlFiles[path] is not None:
+                # Reconstruct XML written through the real runtime XML API contract.
+                values=self.lua.globals().xmlFiles[path]
+                data=ET.Element('i3D')
+                for key,value in values.items():
+                    nodepath,attribute=key.split('#',1)
+                    current=data
+                    for segment in nodepath.split('.')[1:]:
+                        match=re.fullmatch(r'(\w+)(?:\((\d+)\))?',segment)
+                        tag,index=match.group(1),int(match.group(2) or 0)
+                        children=current.findall(tag)
+                        while len(children)<=index:
+                            children.append(ET.SubElement(current,tag))
+                        current=children[index]
+                    current.set(attribute,str(value))
+            else:
+                data = ET.parse(path).getroot()
             make = self.lua.globals().makeNode
             root = make('i3dRoot')
 
@@ -165,7 +182,7 @@ class MonitorTests(unittest.TestCase):
             if c.role=='implement' then implement=implement+1 end
             if c.role=='tractor' then tractorIcon=tractorIcon+1 end
         end
-        assert(overlap>0 and selected>0 and implement>0 and tractorIcon==3)
+        assert(overlap>0 and selected>0 and implement>0 and tractorIcon>0)
         ''')
 
     def test_draw_budget_coarsens_coverage_without_losing_stored_cells(self):
@@ -198,7 +215,8 @@ class MonitorTests(unittest.TestCase):
         TGGPS:update(100);TGGPS:update(450)
         local screen=TGGPS.monitor.screenRenderer
         assert(screen.owner.coverage==TGGPS.coverage)
-        assert((screen.used.coverage or 0)>0 and (screen.used.tractor or 0)==3)
+        assert((screen.used.coverage or 0)>0 and (screen.used.tractor or 0)>0)
+        assert((screen.used.vehicleCab or 0)>0 and (screen.used.vehicleWheel or 0)>0)
         tractor.motorOn=false;TGGPS:update(250)
         assert(screen.used.off==1 and screen.used.coverage==0)
         tractor.motorOn=true;TGGPS:update(250)

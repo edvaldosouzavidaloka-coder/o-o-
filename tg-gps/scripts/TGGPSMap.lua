@@ -3,15 +3,18 @@ TGGPSMap = {}
 
 local MAX_COMMANDS = 4000
 local COLORS = {
-    background = {0.025, 0.060, 0.083, 1},
-    field = {0.035, 0.31, 0.52, 1}, headland = {0.48, 0.20, 0.12, 1},
+    background = {0.055, 0.070, 0.060, 1},
+    field = {0.12, 0.19, 0.12, 1}, headland = {0.48, 0.20, 0.12, 1},
     boundary = {0.94, 0.40, 0.32, 1}, lane = {0.58, 0.79, 0.87, 0.8},
     selected = {1, 0.84, 0.25, 1}, turn = {1, 1, 1, 1},
     tractor = {0.20, 1, 0.61, 1}, text = {0.82, 0.92, 0.95, 1}
 }
-COLORS.coverage = {0.17, 0.70, 0.91, 1}
-COLORS.overlap = {0.07, 0.34, 0.55, 1}
+COLORS.coverage = {0.20, 0.82, 0.30, 0.46}
+COLORS.overlap = {1, 0.67, 0.10, 0.58}
 COLORS.implement = {0.25, 0.92, 0.45, 1}
+COLORS.combine = {0.29, 0.88, 0.36, 1}
+COLORS.vehicleWheel = {0.025, 0.03, 0.03, 1}
+COLORS.vehicleCab = {0.40, 0.85, 0.96, 1}
 local cache = setmetatable({}, {__mode = "k"})
 
 local function finite(value)
@@ -23,7 +26,7 @@ local function validPoint(point)
 end
 
 function TGGPSMap.getZoom(owner)
-    if finite(owner.mapZoom) then return math.max(1, math.min(4, owner.mapZoom)) end
+    if finite(owner.mapZoom) then return math.max(1, math.min(12, owner.mapZoom)) end
     return owner.turnState ~= nil and 2.5 or 1
 end
 
@@ -114,6 +117,8 @@ local function pathsOf(owner)
         end
     end
     table.sort(paths, function(a, b)
+        local da,db=math.abs(a.lane-(owner.currentLane or 0)),math.abs(b.lane-(owner.currentLane or 0))
+        if da~=db then return da<db end
         if a.lane == b.lane then return a.section < b.section end
         return a.lane < b.lane
     end)
@@ -149,6 +154,14 @@ function TGGPSMap.getDrawCommands(owner, bounds, options)
         for _, item in ipairs(paths) do for _, point in ipairs(item.points) do include(point) end end
         if #paths == 0 then for _, point in ipairs(owner.basePath or {}) do include(point) end end
     end
+    local pose
+    if type(owner.getControlledVehicle)=="function" and type(owner.getVehiclePose)=="function" then
+        local vehicle=owner:getControlledVehicle()
+        if vehicle then local ok,p=pcall(owner.getVehiclePose,owner,vehicle);if ok and validPoint(p) then pose=p end end
+    end
+    if extent.minX==math.huge and pose then
+        include({x=pose.x-100,z=pose.z-100});include({x=pose.x+100,z=pose.z+100})
+    end
     local function label(value, role)
         commands[#commands + 1] = {type = "rect", x = bounds.x, y = bounds.y,
             w = bounds.w, h = bounds.h * 0.085, color = COLORS.background, role = "legend_background"}
@@ -160,19 +173,19 @@ function TGGPSMap.getDrawCommands(owner, bounds, options)
         label("GERE O TALHAO OU GRAVE UMA LINHA PARA VER O MAPA", "empty_map")
         return commands
     end
-    local spanX, spanZ = math.max(5, extent.maxX - extent.minX), math.max(5, extent.maxZ - extent.minZ)
-    local pose
-    if type(owner.getControlledVehicle) == "function" and type(owner.getVehiclePose) == "function" then
-        local vehicle = owner:getControlledVehicle()
-        if vehicle ~= nil then
-            local ok, value = pcall(owner.getVehiclePose, owner, vehicle)
-            if ok and validPoint(value) then pose = value end
-        end
-    end
+    -- The PDA is a local moving window, never a fit of the entire field/map.
+    local localSpan=math.max(80,math.min(180,(owner.width or 6)*14))
+    local spanX, spanZ = localSpan,localSpan
     local zoom = TGGPSMap.getZoom(owner)
     local pixelsPerMetre = math.min(box.w * sw / spanX, box.h * sh / spanZ) * zoom
     local centerX, centerZ = (extent.minX + extent.maxX) / 2, (extent.minZ + extent.maxZ) / 2
-    if zoom > 1 and pose ~= nil then centerX, centerZ = pose.x, pose.z end
+    if pose ~= nil then centerX, centerZ = pose.x, pose.z end
+    if options.centerX~=nil then centerX,centerZ=options.centerX,options.centerZ end
+    local nativeMap,filename=TGGPSPDA.get()
+    if nativeMap then
+        local halfX,halfZ=box.w*sw/(2*pixelsPerMetre),box.h*sh/(2*pixelsPerMetre)
+        commands[#commands+1]=TGGPSPDA.command(nativeMap,filename,box,centerX-halfX,centerZ-halfZ,centerX+halfX,centerZ+halfZ)
+    end
     local function project(point)
         return box.x + box.w / 2 + (point.x - centerX) * pixelsPerMetre / sw,
             box.y + box.h / 2 + (point.z - centerZ) * pixelsPerMetre / sh
@@ -187,7 +200,7 @@ function TGGPSMap.getDrawCommands(owner, bounds, options)
                 color = color, role = role, width = (width or 1.2) / sh, lane = lane, section = section}
         end
     end
-    if boundary ~= nil and options.drawField ~= false then
+    if boundary ~= nil and options.drawField ~= false and nativeMap==nil then
         for _, cell in ipairs(fieldRaster(owner, boundary, extent)) do
             if #commands >= 1000 then break end
             local x, y = project({x = cell.x, z = cell.z})
@@ -219,18 +232,19 @@ function TGGPSMap.getDrawCommands(owner, bounds, options)
     local selected
     -- Reserve room for the selected route, turn, implement and vehicle marker.
     local laneBudget = math.max(0, math.min(options.laneBudget or 1400, MAX_COMMANDS - #commands - 550))
-    local eachBudget = math.max(1, math.min(64, math.floor(laneBudget / math.max(1, #paths))))
+    local pathLimit=math.min(12,#paths)
     local backgroundSegments = 0
-    for _, item in ipairs(paths) do
+    for pathIndex, item in ipairs(paths) do
         if item.lane == owner.currentLane and item.section == (owner.currentSection or 1) then
             selected = item
-        elseif #commands < 3000 and backgroundSegments < laneBudget then
+        elseif pathIndex<=pathLimit and #commands < 3000 and backgroundSegments < laneBudget then
             local points = item.points
-            local stride = math.max(1, math.ceil((#points - 1) / eachBudget))
+            local stride = math.max(1, math.floor(2/math.max(0.01,pixelsPerMetre)))
             for i = 1, #points - 1, stride do
                 if backgroundSegments >= laneBudget then break end
+                local before=#commands
                 line(points[i], points[math.min(#points, i + stride)], COLORS.lane, "lane", 1.1, item.lane, item.section)
-                backgroundSegments = backgroundSegments + 1
+                if #commands>before then backgroundSegments = backgroundSegments + 1 end
             end
         end
     end
@@ -254,6 +268,7 @@ function TGGPSMap.getDrawCommands(owner, bounds, options)
         for i = 1, #turn - 1, stride do line(turn[i], turn[math.min(#turn, i + stride)], COLORS.turn, "planned_turn", 2.5) end
     end
     local outside = false
+    local context = owner.getMonitorContext and owner:getMonitorContext() or {kind="tractor"}
     local footprint = owner.coverage ~= nil and owner.coverage.footprint or nil
     if footprint ~= nil then
         local points = {}
@@ -275,17 +290,39 @@ function TGGPSMap.getDrawCommands(owner, bounds, options)
         local length = math.sqrt(dx * dx + dz * dz)
         if not outside and finite(length) and length > 0.000001 then
             dx, dz = dx / length, dz / length
-            local arrowMetres = 11 / pixelsPerMetre
-            local tip = {x = pose.x + dx * arrowMetres, z = pose.z + dz * arrowMetres}
-            local left = {x = pose.x - dx * arrowMetres * 0.7 - dz * arrowMetres * 0.6,
-                z = pose.z - dz * arrowMetres * 0.7 + dx * arrowMetres * 0.6}
-            local right = {x = pose.x - dx * arrowMetres * 0.7 + dz * arrowMetres * 0.6,
-                z = pose.z - dz * arrowMetres * 0.7 - dx * arrowMetres * 0.6}
-            line(tip, left, COLORS.tractor, "tractor", 2.8)
-            line(left, right, COLORS.tractor, "tractor", 2.8)
-            line(right, tip, COLORS.tractor, "tractor", 2.8)
+            local unit = 15 / pixelsPerMetre
+            local function part(ax, az, bx, bz, role, width, name)
+                local a={x=pose.x+(dz*ax+dx*az)*unit,z=pose.z+(-dx*ax+dz*az)*unit}
+                local b={x=pose.x+(dz*bx+dx*bz)*unit,z=pose.z+(-dx*bx+dz*bz)*unit}
+                local before=#commands
+                line(a,b,COLORS[role],role,width)
+                if #commands>before then
+                    commands[#commands].machineType=context.kind
+                    commands[#commands].part=name
+                end
+            end
+            if context.kind=="combine" then
+                part(0,-0.65,0,0.65,"combine",15,"body")
+                part(-0.65,-0.45,-0.65,-0.12,"vehicleWheel",5,"rearWheel")
+                part(0.65,-0.45,0.65,-0.12,"vehicleWheel",5,"rearWheel")
+                part(-0.70,0.22,-0.70,0.67,"vehicleWheel",6,"frontWheel")
+                part(0.70,0.22,0.70,0.67,"vehicleWheel",6,"frontWheel")
+                part(0,0.25,0,0.65,"vehicleCab",8,"cab")
+                if context.implement and context.implement.spec_cutter then
+                    part(-1.1,0.95,1.1,0.95,"implement",5,"header")
+                    part(0,0.67,0,0.95,"implement",3,"feeder")
+                end
+            else
+                part(0,-0.6,0,0.65,"tractor",9,"body")
+                part(-0.50,-0.55,-0.50,-0.13,"vehicleWheel",6,"rearWheel")
+                part(0.50,-0.55,0.50,-0.13,"vehicleWheel",6,"rearWheel")
+                part(-0.43,0.45,-0.43,0.70,"vehicleWheel",4,"frontWheel")
+                part(0.43,0.45,0.43,0.70,"vehicleWheel",4,"frontWheel")
+                part(0,-0.18,0,0.20,"vehicleCab",8,"cab")
+            end
         end
     end
-    label(outside and "TRATOR FORA DO MAPA" or "AZUL CLARO: TRABALHADO | AZUL ESCURO: SOBREPOSICAO")
+    label(outside and "MAQUINA FORA DO MAPA" or (nativeMap and "PDA DO JOGO | VERDE: TRABALHADO | AMARELO: SOBREPOSICAO"
+        or "PDA INDISPONIVEL | VERDE: TRABALHADO | AMARELO: SOBREPOSICAO"))
     return commands
 end

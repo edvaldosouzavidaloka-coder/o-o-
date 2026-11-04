@@ -1,10 +1,50 @@
-TG GPS PRO 0.6.0.0 - MONITOR NA CABINE E PINTURA - FS25 - single-player
+TG GPS PRO 0.7.0.0 - TERMINAL, MINIMAPA PDA E TRAJETOS - FS25 - single-player
 
 VERSAO PARA TESTE
 Logica, geometria, interface e manobra simulada testadas fora do jogo.
 O FS25 nao esta instalado neste ambiente; valide com seu trator e implemento.
 
 NOVO NESTA ATUALIZACAO
+Terminal com faixa verde, dados da fazenda/proprietario/talhao e identificacao
+da maquina e do implemento. Nomes ausentes no mapa aparecem como Nao informado.
+O icone muda automaticamente entre trator e colheitadeira; a plataforma ativa
+e a pintura usam a posicao da area de trabalho, inclusive na frente da colheitadeira.
+O mapa usa a imagem do PDA NATIVO do FS25 em um RECORTE LOCAL ao redor da
+maquina, seguindo seu deslocamento. Nunca abre o PDA inteiro no monitor.
+O +/- ajusta esse recorte; PADRAO restaura a aproximacao inicial e continua
+seguindo a maquina. Painel e monitor fisico compartilham o mesmo zoom salvo.
+A textura e a conversao de coordenadas sao as do minimapa fornecido pelo mapa.
+Nao e uma captura ao vivo do terreno 3D nem uma imagem de satelite externa.
+Se o mapa ainda nao disponibilizar a imagem ao mod, exibe PDA INDISPONIVEL e
+mantem linhas e cobertura sobre um fundo neutro, sem inventar uma imagem.
+
+AJUSTAR LINHA
+Qualquer entrada manual de direcao enviada pelo jogo desliga imediatamente
+o piloto, inclusive durante a cabeceira. Nao aguarda o fim da passada.
+Nao ha zona morta adicional no mod; as zonas mortas do jogo continuam valendo.
+MAPA e LINHAS permitem deslocar a guia em passos de 10 cm, zerar o deslocamento
+e PUXAR ATE A MAQUINA: a passada selecionada passa pela posicao atual.
+Essas mudancas desligam o piloto e mantem as posicoes da pintura ja gravada.
+Confira o alinhamento antes de religar. O deslocamento tambem e salvo no trajeto.
+No modo TALHAO, recalcula os cortes das linhas para preservar o contorno e a
+margem de cabeceira. A/B e curvas continuam usando retorno manual.
+
+BIBLIOTECA DE TRAJETOS
+SALVAR LINHA / SALVAR COM NOME abre a entrada de nome do jogo. Exemplo:
+Talhao 3 - Norte. TRAJETOS permite buscar por nome, talhao ou orientacao e
+CARREGAR novamente. Pode salvar varios rumos com o mesmo nome; cada item e
+independente e mostra a orientacao inicial em graus e a largura.
+A biblioteca guarda A/B, curva ou campo, deslocamento, largura, passada e
+configuracoes da cabeceira. Ao carregar, o piloto permanece desligado.
+A largura salva no trajeto e uma referencia: carregar uma linha preserva a
+largura do veiculo/implemento atual. A biblioteca nao armazena a pintura,
+que continua limitada a sessao atual.
+Os registros ficam separados por mapa, com filtro de fazenda quando esse dado
+e fornecido pelo jogo. Ate 200 trajetos por mapa em modSettings/FS25_TG_GPS.
+Nomes novos nao substituem registros anteriores. Uma biblioteca invalida e
+preservada e o mod informa que nao conseguiu salvar, em vez de sobrescreve-la.
+
+MONITOR FISICO
 Monitor 3D dentro da cabine usando o curveGPSMonitor.i3d enviado pelo usuario.
 HUDMonitor.lua foi adaptado para medir e desenhar a cobertura no TG GPS.
 CurveGPSMonitorScreen.lua e CurveGPSMonitorManager.lua foram adaptados para
@@ -12,9 +52,20 @@ o TG GPS, sem exigir o CurveGPS instalado e sem alterar seus controles de piloto
 Os modelos da tela e as letras estao incluidos; nao exigem downloads extras.
 O painel 2D e a tela da cabine usam o MESMO historico de trabalho.
 
+LARGURA INDEPENDENTE POR MAQUINA E IMPLEMENTO
+Ajuste ou detecte a largura na aba LINHAS. O valor pertence aquele veiculo
+e ao conjunto de implementos acoplados. A colheitadeira nao altera a largura
+do trator. Trocar a plantadeira tambem seleciona um perfil separado.
+Ao retornar ao conjunto anterior, a largura configurada e restaurada.
+Uma combinacao nova tenta detectar sua largura; sem dados, inicia em 6 m,
+sem copiar a largura da ultima maquina. Ajuste manualmente se necessario.
+Esses perfis sao salvos junto com os veiculos ao salvar a partida.
+Para distinguir implementos, usa o identificador nativo quando disponivel;
+sem ele, usa o arquivo do modelo dentro dos perfis daquele veiculo.
+
 PINTURA DA AREA TRABALHADA
 Gere o talhao ou finalize uma reta A/B/curva. Baixe/ligue o implemento e avance.
-Azul claro: faixa trabalhada. Azul escuro: passagem sobre area ja registrada.
+Verde transparente: faixa trabalhada. Amarelo: passagem sobre area ja registrada.
 O contorno verde mostra a area ativa do implemento quando seus dados existem.
 A pintura continua com direcao manual e com o painel 2D fechado.
 Levantar/desligar o implemento interrompe a faixa; retornar reinicia o registro.
@@ -51,9 +102,9 @@ Arraste a barra superior para mover. AJUSTES muda o tamanho do painel.
 Posicao e tamanho ficam em modSettings/FS25_TG_GPS/hud.xml.
 
 PREPARAR O TALHAO
-1. Na aba GUIA, ajuste/detecte a largura real do implemento.
+1. Na aba LINHAS, ajuste/detecte a largura real do implemento.
 2. Dentro do talhao, aponte o trator na direcao das passadas e use GERAR TALHAO.
-3. MAPA mostra o campo e as passadas. Nao exige gravacao anterior.
+3. MAPA acompanha a regiao local da maquina com PDA, passadas e cobertura.
 4. Alinhe o trator com uma passada e ligue o motor.
 
 CABECEIRA AUTOMATICA
@@ -63,7 +114,7 @@ Valores iniciais: margem 18 m, velocidade 6 km/h, raio 6 m. O + e - no lado
 referem-se aos indices das linhas, nao ao lado fisico fixo do trator.
 A margem reserva uma faixa interna ao contorno, encurtando as passadas de
 trabalho. Se nao sobrar area, o monitor recusa a configuracao.
-Use SALVAR TRAJETO na aba GUIA para guardar o campo e as configuracoes.
+Use SALVAR COM NOME na aba LINHAS para guardar o campo e as configuracoes.
 
 Baixe o implemento que vai trabalhar e pressione LIGAR PILOTO.
 Nas passadas, controle a velocidade ou use o cruzeiro nativo, ate 25 km/h.
@@ -92,12 +143,11 @@ Fechar o monitor apenas fecha a interface; nao desliga o piloto.
 Alterar largura, passada ou configuracoes de cabeceira desengata o piloto.
 
 LER O MAPA
-Azul: interior do talhao. Laranja: faixa reservada para cabeceira.
 Linhas claras: passadas. Amarelo: passada selecionada. Branco: curva planejada.
-Marcador verde: posicao e orientacao atuais do trator.
-O azul de fundo representa a geometria; a pintura azul-clara sobre ele indica
-a cobertura estimada do implemento e o azul escuro indica sobreposicao.
-A faixa laranja fica reservada para manobra; esta versao nao automatiza
+O icone representa o tipo da maquina e sua orientacao atual.
+A imagem de fundo e um recorte do PDA do mapa. Verde transparente indica a
+cobertura estimada do implemento e amarelo indica sobreposicao.
+A margem de cabeceira reserva espaco para manobra; esta versao nao automatiza
 voltas de trabalho ao redor do perimetro do campo.
 
 LIMITES
@@ -122,9 +172,10 @@ Ctrl+Alt+2: selecionar passada automaticamente. Ctrl+Alt+L: auto/manual.
 Ctrl+Alt+Esquerda/Direita: passada manual. Ctrl+Alt+Cima/Baixo: largura.
 Ctrl+Alt+W: detectar largura. Ctrl+Alt+A: marcar A/B.
 Ctrl+Alt+R: iniciar/finalizar curva. Ctrl+Alt+G: mostrar/ocultar linhas.
-Ctrl+Alt+S: salvar trajeto. Ctrl+Alt+X: limpar da tela, mantendo arquivo salvo.
+Ctrl+Alt+S: salvar trajeto com nome. Ctrl+Alt+X: limpar da tela, mantendo a biblioteca.
 As teclas podem ser alteradas nas opcoes de controles do jogo.
-Um trajeto e salvo por mapa em modSettings/FS25_TG_GPS.
+A biblioteca guarda varios trajetos por mapa em modSettings/FS25_TG_GPS.
+O trajeto rapido das versoes anteriores continua sendo carregado por compatibilidade.
 
 DESENVOLVIMENTO
 Testes: python3 tools/test.py (Lua 5.1+ ou pacote Python lupa==2.6).
