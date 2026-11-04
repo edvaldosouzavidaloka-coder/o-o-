@@ -32,7 +32,7 @@ function TGGPSHUDMonitor:reset()
     self.elapsed, self.working = 100, false
     self.mapCache, self.revision = nil, (self.revision or 0) + 1
     self:endRun()
-    if self.owner ~= nil then self.owner.workedAreaHa = 0 end
+    if self.owner ~= nil and (self.owner.coverage==nil or self.owner.coverage==self) then self.owner.workedAreaHa = 0 end
 end
 
 function TGGPSHUDMonitor:endRun()

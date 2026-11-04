@@ -173,6 +173,11 @@ end
 
 function TGGPSMonitorManager:keyEvent(unicode, sym, modifier, isDown)
     if not self.editing or not isDown or Input == nil then return false end
+    if Input.isKeyPressed then
+        local ctrl=(Input.KEY_lctrl and Input.isKeyPressed(Input.KEY_lctrl)) or (Input.KEY_rctrl and Input.isKeyPressed(Input.KEY_rctrl))
+        local alt=(Input.KEY_lalt and Input.isKeyPressed(Input.KEY_lalt)) or (Input.KEY_ralt and Input.isKeyPressed(Input.KEY_ralt))
+        if ctrl and alt then return false end -- reserved for native monitor shortcuts
+    end
     local function key(...)
         for _, name in ipairs({...}) do if Input[name] ~= nil and sym == Input[name] then return true end end
         return false

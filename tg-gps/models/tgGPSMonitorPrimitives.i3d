@@ -1,27 +1,90 @@
 <?xml version='1.0' encoding='utf-8'?>
 <i3D name="tgGPSMonitorPrimitives" version="1.6">
   <Asset />
-  <Files />
+  <Files>
+    <File fileId="1" filename="../shaders/tgGpsLcdShader.xml" />
+  </Files>
   <Materials>
-    <Material name="background" materialId="1" diffuseColor="0.025 0.06 0.083 1" emissiveColor="0.025 0.06 0.083" specularColor="0 0 0" />
-    <Material name="field" materialId="2" diffuseColor="0.035 0.31 0.52 1" emissiveColor="0.035 0.31 0.52" specularColor="0 0 0" />
-    <Material name="headland" materialId="3" diffuseColor="0.48 0.2 0.12 1" emissiveColor="0.48 0.2 0.12" specularColor="0 0 0" />
-    <Material name="boundary" materialId="4" diffuseColor="0.94 0.4 0.32 1" emissiveColor="0.94 0.4 0.32" specularColor="0 0 0" />
-    <Material name="lane" materialId="5" diffuseColor="0.58 0.79 0.87 1" emissiveColor="0.58 0.79 0.87" specularColor="0 0 0" />
-    <Material name="selected_lane" materialId="6" diffuseColor="1 0.84 0.25 1" emissiveColor="1 0.84 0.25" specularColor="0 0 0" />
-    <Material name="planned_turn" materialId="7" diffuseColor="1 1 1 1" emissiveColor="1 1 1" specularColor="0 0 0" />
-    <Material name="tractor" materialId="8" diffuseColor="0.2 1 0.61 1" emissiveColor="0.2 1 0.61" specularColor="0 0 0" />
-    <Material name="implement" materialId="9" diffuseColor="0.25 0.92 0.45 1" emissiveColor="0.25 0.92 0.45" specularColor="0 0 0" />
-    <Material name="coverage" materialId="10" diffuseColor="0.20 0.82 0.30 0.46" emissiveColor="0.20 0.82 0.30" specularColor="0 0 0" alphaBlending="true" />
-    <Material name="coverage_overlap" materialId="11" diffuseColor="1 0.67 0.10 0.58" emissiveColor="1 0.67 0.10" specularColor="0 0 0" alphaBlending="true" />
-    <Material name="off" materialId="12" diffuseColor="0.005 0.005 0.005 1" emissiveColor="0.005 0.005 0.005" specularColor="0 0 0" />
-    <Material name="green" materialId="13" diffuseColor="0.2 0.88 0.62 1" emissiveColor="0.2 0.88 0.62" specularColor="0 0 0" />
-    <Material name="text" materialId="14" diffuseColor="0.94 0.97 0.98 1" emissiveColor="0.94 0.97 0.98" specularColor="0 0 0" />
-    <Material name="combine" materialId="15" diffuseColor="0.29 0.88 0.36 1" emissiveColor="0.29 0.88 0.36" specularColor="0 0 0" />
-    <Material name="vehicleWheel" materialId="16" diffuseColor="0.025 0.03 0.03 1" emissiveColor="0.025 0.03 0.03" specularColor="0 0 0" />
-    <Material name="vehicleCab" materialId="17" diffuseColor="0.4 0.85 0.96 1" emissiveColor="0.4 0.85 0.96" specularColor="0 0 0" />
-    <Material name="panelHeader" materialId="18" diffuseColor="0.025 0.36 0.16 1" emissiveColor="0.025 0.36 0.16" specularColor="0 0 0" />
-    <Material name="panelCard" materialId="19" diffuseColor="0.07 0.11 0.08 1" emissiveColor="0.07 0.11 0.08" specularColor="0 0 0" />
+    <Material name="background" materialId="1" diffuseColor="1 1 1 1" specularColor="0 0 0" customShaderId="1">
+      <CustomParameter name="lcdTint" value="0.86 0.89 0.82 1" />
+      <CustomParameter name="lcdBrightness" value="0.05 0 0 0" />
+    </Material>
+    <Material name="field" materialId="2" diffuseColor="1 1 1 1" specularColor="0 0 0" customShaderId="1">
+      <CustomParameter name="lcdTint" value="0.035 0.31 0.52 1" />
+      <CustomParameter name="lcdBrightness" value="0.05 0 0 0" />
+    </Material>
+    <Material name="headland" materialId="3" diffuseColor="1 1 1 1" specularColor="0 0 0" customShaderId="1">
+      <CustomParameter name="lcdTint" value="0.48 0.2 0.12 1" />
+      <CustomParameter name="lcdBrightness" value="0.05 0 0 0" />
+    </Material>
+    <Material name="boundary" materialId="4" diffuseColor="1 1 1 1" specularColor="0 0 0" customShaderId="1">
+      <CustomParameter name="lcdTint" value="0.94 0.4 0.32 1" />
+      <CustomParameter name="lcdBrightness" value="0.05 0 0 0" />
+    </Material>
+    <Material name="lane" materialId="5" diffuseColor="1 1 1 1" specularColor="0 0 0" customShaderId="1">
+      <CustomParameter name="lcdTint" value="0.58 0.79 0.87 1" />
+      <CustomParameter name="lcdBrightness" value="0.05 0 0 0" />
+    </Material>
+    <Material name="selected_lane" materialId="6" diffuseColor="1 1 1 1" specularColor="0 0 0" customShaderId="1">
+      <CustomParameter name="lcdTint" value="1 0.84 0.25 1" />
+      <CustomParameter name="lcdBrightness" value="0.05 0 0 0" />
+    </Material>
+    <Material name="planned_turn" materialId="7" diffuseColor="1 1 1 1" specularColor="0 0 0" customShaderId="1">
+      <CustomParameter name="lcdTint" value="1 1 1 1" />
+      <CustomParameter name="lcdBrightness" value="0.05 0 0 0" />
+    </Material>
+    <Material name="tractor" materialId="8" diffuseColor="1 1 1 1" specularColor="0 0 0" customShaderId="1">
+      <CustomParameter name="lcdTint" value="0.2 1 0.61 1" />
+      <CustomParameter name="lcdBrightness" value="0.05 0 0 0" />
+    </Material>
+    <Material name="implement" materialId="9" diffuseColor="1 1 1 1" specularColor="0 0 0" customShaderId="1">
+      <CustomParameter name="lcdTint" value="0.25 0.92 0.45 1" />
+      <CustomParameter name="lcdBrightness" value="0.05 0 0 0" />
+    </Material>
+    <Material name="coverage" materialId="10" diffuseColor="1 1 1 0.46" specularColor="0 0 0" alphaBlending="true" customShaderId="1">
+      <CustomParameter name="lcdTint" value="0.20 0.82 0.30 1" />
+      <CustomParameter name="lcdBrightness" value="0.05 0 0 0" />
+    </Material>
+    <Material name="coverage_overlap" materialId="11" diffuseColor="1 1 1 0.58" specularColor="0 0 0" alphaBlending="true" customShaderId="1">
+      <CustomParameter name="lcdTint" value="1 0.67 0.10 1" />
+      <CustomParameter name="lcdBrightness" value="0.05 0 0 0" />
+    </Material>
+    <Material name="off" materialId="12" diffuseColor="1 1 1 1" specularColor="0 0 0" customShaderId="1">
+      <CustomParameter name="lcdTint" value="0.005 0.005 0.005 1" />
+      <CustomParameter name="lcdBrightness" value="0.05 0 0 0" />
+    </Material>
+    <Material name="green" materialId="13" diffuseColor="1 1 1 1" specularColor="0 0 0" customShaderId="1">
+      <CustomParameter name="lcdTint" value="0.2 0.88 0.62 1" />
+      <CustomParameter name="lcdBrightness" value="0.05 0 0 0" />
+    </Material>
+    <Material name="text" materialId="14" diffuseColor="1 1 1 1" specularColor="0 0 0" customShaderId="1">
+      <CustomParameter name="lcdTint" value="0.04 0.07 0.04 1" />
+      <CustomParameter name="lcdBrightness" value="0.05 0 0 0" />
+    </Material>
+    <Material name="combine" materialId="15" diffuseColor="1 1 1 1" specularColor="0 0 0" customShaderId="1">
+      <CustomParameter name="lcdTint" value="0.29 0.88 0.36 1" />
+      <CustomParameter name="lcdBrightness" value="0.05 0 0 0" />
+    </Material>
+    <Material name="vehicleWheel" materialId="16" diffuseColor="1 1 1 1" specularColor="0 0 0" customShaderId="1">
+      <CustomParameter name="lcdTint" value="0.025 0.03 0.03 1" />
+      <CustomParameter name="lcdBrightness" value="0.05 0 0 0" />
+    </Material>
+    <Material name="vehicleCab" materialId="17" diffuseColor="1 1 1 1" specularColor="0 0 0" customShaderId="1">
+      <CustomParameter name="lcdTint" value="0.4 0.85 0.96 1" />
+      <CustomParameter name="lcdBrightness" value="0.05 0 0 0" />
+    </Material>
+    <Material name="panelHeader" materialId="18" diffuseColor="1 1 1 1" specularColor="0 0 0" customShaderId="1">
+      <CustomParameter name="lcdTint" value="0.025 0.36 0.16 1" />
+      <CustomParameter name="lcdBrightness" value="0.05 0 0 0" />
+    </Material>
+    <Material name="panelCard" materialId="19" diffuseColor="1 1 1 1" specularColor="0 0 0" customShaderId="1">
+      <CustomParameter name="lcdTint" value="0.94 0.95 0.89 1" />
+      <CustomParameter name="lcdBrightness" value="0.05 0 0 0" />
+    </Material>
+    <Material name="textWhite" materialId="20" diffuseColor="1 1 1 1" specularColor="0 0 0" customShaderId="1">
+      <CustomParameter name="lcdTint" value="0.94 0.97 0.98 1" />
+      <CustomParameter name="lcdBrightness" value="0.05 0 0 0" />
+    </Material>
   </Materials>
   <Shapes>
     <IndexedTriangleSet name="plane" shapeId="1" meshUsage="0" bvCenter="0.00000000 0.00000000 0" bvRadius="0.70710678" isOptimized="true">
@@ -17788,6 +17851,100 @@
       <Shape name="vehicleCab" shapeId="1" nodeId="111" materialIds="17" castsShadows="false" receiveShadows="false" />
       <Shape name="panelHeader" shapeId="1" nodeId="112" materialIds="18" castsShadows="false" receiveShadows="false" />
       <Shape name="panelCard" shapeId="1" nodeId="113" materialIds="19" castsShadows="false" receiveShadows="false" />
+      <Shape name="textWhite_33" shapeId="33" nodeId="114" materialIds="20" castsShadows="false" receiveShadows="false" />
+      <Shape name="textWhite_34" shapeId="34" nodeId="115" materialIds="20" castsShadows="false" receiveShadows="false" />
+      <Shape name="textWhite_35" shapeId="35" nodeId="116" materialIds="20" castsShadows="false" receiveShadows="false" />
+      <Shape name="textWhite_36" shapeId="36" nodeId="117" materialIds="20" castsShadows="false" receiveShadows="false" />
+      <Shape name="textWhite_37" shapeId="37" nodeId="118" materialIds="20" castsShadows="false" receiveShadows="false" />
+      <Shape name="textWhite_38" shapeId="38" nodeId="119" materialIds="20" castsShadows="false" receiveShadows="false" />
+      <Shape name="textWhite_39" shapeId="39" nodeId="120" materialIds="20" castsShadows="false" receiveShadows="false" />
+      <Shape name="textWhite_40" shapeId="40" nodeId="121" materialIds="20" castsShadows="false" receiveShadows="false" />
+      <Shape name="textWhite_41" shapeId="41" nodeId="122" materialIds="20" castsShadows="false" receiveShadows="false" />
+      <Shape name="textWhite_42" shapeId="42" nodeId="123" materialIds="20" castsShadows="false" receiveShadows="false" />
+      <Shape name="textWhite_43" shapeId="43" nodeId="124" materialIds="20" castsShadows="false" receiveShadows="false" />
+      <Shape name="textWhite_44" shapeId="44" nodeId="125" materialIds="20" castsShadows="false" receiveShadows="false" />
+      <Shape name="textWhite_45" shapeId="45" nodeId="126" materialIds="20" castsShadows="false" receiveShadows="false" />
+      <Shape name="textWhite_46" shapeId="46" nodeId="127" materialIds="20" castsShadows="false" receiveShadows="false" />
+      <Shape name="textWhite_47" shapeId="47" nodeId="128" materialIds="20" castsShadows="false" receiveShadows="false" />
+      <Shape name="textWhite_48" shapeId="48" nodeId="129" materialIds="20" castsShadows="false" receiveShadows="false" />
+      <Shape name="textWhite_49" shapeId="49" nodeId="130" materialIds="20" castsShadows="false" receiveShadows="false" />
+      <Shape name="textWhite_50" shapeId="50" nodeId="131" materialIds="20" castsShadows="false" receiveShadows="false" />
+      <Shape name="textWhite_51" shapeId="51" nodeId="132" materialIds="20" castsShadows="false" receiveShadows="false" />
+      <Shape name="textWhite_52" shapeId="52" nodeId="133" materialIds="20" castsShadows="false" receiveShadows="false" />
+      <Shape name="textWhite_53" shapeId="53" nodeId="134" materialIds="20" castsShadows="false" receiveShadows="false" />
+      <Shape name="textWhite_54" shapeId="54" nodeId="135" materialIds="20" castsShadows="false" receiveShadows="false" />
+      <Shape name="textWhite_55" shapeId="55" nodeId="136" materialIds="20" castsShadows="false" receiveShadows="false" />
+      <Shape name="textWhite_56" shapeId="56" nodeId="137" materialIds="20" castsShadows="false" receiveShadows="false" />
+      <Shape name="textWhite_57" shapeId="57" nodeId="138" materialIds="20" castsShadows="false" receiveShadows="false" />
+      <Shape name="textWhite_58" shapeId="58" nodeId="139" materialIds="20" castsShadows="false" receiveShadows="false" />
+      <Shape name="textWhite_59" shapeId="59" nodeId="140" materialIds="20" castsShadows="false" receiveShadows="false" />
+      <Shape name="textWhite_60" shapeId="60" nodeId="141" materialIds="20" castsShadows="false" receiveShadows="false" />
+      <Shape name="textWhite_61" shapeId="61" nodeId="142" materialIds="20" castsShadows="false" receiveShadows="false" />
+      <Shape name="textWhite_62" shapeId="62" nodeId="143" materialIds="20" castsShadows="false" receiveShadows="false" />
+      <Shape name="textWhite_63" shapeId="63" nodeId="144" materialIds="20" castsShadows="false" receiveShadows="false" />
+      <Shape name="textWhite_64" shapeId="64" nodeId="145" materialIds="20" castsShadows="false" receiveShadows="false" />
+      <Shape name="textWhite_65" shapeId="65" nodeId="146" materialIds="20" castsShadows="false" receiveShadows="false" />
+      <Shape name="textWhite_66" shapeId="66" nodeId="147" materialIds="20" castsShadows="false" receiveShadows="false" />
+      <Shape name="textWhite_67" shapeId="67" nodeId="148" materialIds="20" castsShadows="false" receiveShadows="false" />
+      <Shape name="textWhite_68" shapeId="68" nodeId="149" materialIds="20" castsShadows="false" receiveShadows="false" />
+      <Shape name="textWhite_69" shapeId="69" nodeId="150" materialIds="20" castsShadows="false" receiveShadows="false" />
+      <Shape name="textWhite_70" shapeId="70" nodeId="151" materialIds="20" castsShadows="false" receiveShadows="false" />
+      <Shape name="textWhite_71" shapeId="71" nodeId="152" materialIds="20" castsShadows="false" receiveShadows="false" />
+      <Shape name="textWhite_72" shapeId="72" nodeId="153" materialIds="20" castsShadows="false" receiveShadows="false" />
+      <Shape name="textWhite_73" shapeId="73" nodeId="154" materialIds="20" castsShadows="false" receiveShadows="false" />
+      <Shape name="textWhite_74" shapeId="74" nodeId="155" materialIds="20" castsShadows="false" receiveShadows="false" />
+      <Shape name="textWhite_75" shapeId="75" nodeId="156" materialIds="20" castsShadows="false" receiveShadows="false" />
+      <Shape name="textWhite_76" shapeId="76" nodeId="157" materialIds="20" castsShadows="false" receiveShadows="false" />
+      <Shape name="textWhite_77" shapeId="77" nodeId="158" materialIds="20" castsShadows="false" receiveShadows="false" />
+      <Shape name="textWhite_78" shapeId="78" nodeId="159" materialIds="20" castsShadows="false" receiveShadows="false" />
+      <Shape name="textWhite_79" shapeId="79" nodeId="160" materialIds="20" castsShadows="false" receiveShadows="false" />
+      <Shape name="textWhite_80" shapeId="80" nodeId="161" materialIds="20" castsShadows="false" receiveShadows="false" />
+      <Shape name="textWhite_81" shapeId="81" nodeId="162" materialIds="20" castsShadows="false" receiveShadows="false" />
+      <Shape name="textWhite_82" shapeId="82" nodeId="163" materialIds="20" castsShadows="false" receiveShadows="false" />
+      <Shape name="textWhite_83" shapeId="83" nodeId="164" materialIds="20" castsShadows="false" receiveShadows="false" />
+      <Shape name="textWhite_84" shapeId="84" nodeId="165" materialIds="20" castsShadows="false" receiveShadows="false" />
+      <Shape name="textWhite_85" shapeId="85" nodeId="166" materialIds="20" castsShadows="false" receiveShadows="false" />
+      <Shape name="textWhite_86" shapeId="86" nodeId="167" materialIds="20" castsShadows="false" receiveShadows="false" />
+      <Shape name="textWhite_87" shapeId="87" nodeId="168" materialIds="20" castsShadows="false" receiveShadows="false" />
+      <Shape name="textWhite_88" shapeId="88" nodeId="169" materialIds="20" castsShadows="false" receiveShadows="false" />
+      <Shape name="textWhite_89" shapeId="89" nodeId="170" materialIds="20" castsShadows="false" receiveShadows="false" />
+      <Shape name="textWhite_90" shapeId="90" nodeId="171" materialIds="20" castsShadows="false" receiveShadows="false" />
+      <Shape name="textWhite_91" shapeId="91" nodeId="172" materialIds="20" castsShadows="false" receiveShadows="false" />
+      <Shape name="textWhite_92" shapeId="92" nodeId="173" materialIds="20" castsShadows="false" receiveShadows="false" />
+      <Shape name="textWhite_93" shapeId="93" nodeId="174" materialIds="20" castsShadows="false" receiveShadows="false" />
+      <Shape name="textWhite_94" shapeId="94" nodeId="175" materialIds="20" castsShadows="false" receiveShadows="false" />
+      <Shape name="textWhite_95" shapeId="95" nodeId="176" materialIds="20" castsShadows="false" receiveShadows="false" />
+      <Shape name="textWhite_96" shapeId="96" nodeId="177" materialIds="20" castsShadows="false" receiveShadows="false" />
+      <Shape name="textWhite_97" shapeId="97" nodeId="178" materialIds="20" castsShadows="false" receiveShadows="false" />
+      <Shape name="textWhite_98" shapeId="98" nodeId="179" materialIds="20" castsShadows="false" receiveShadows="false" />
+      <Shape name="textWhite_99" shapeId="99" nodeId="180" materialIds="20" castsShadows="false" receiveShadows="false" />
+      <Shape name="textWhite_100" shapeId="100" nodeId="181" materialIds="20" castsShadows="false" receiveShadows="false" />
+      <Shape name="textWhite_101" shapeId="101" nodeId="182" materialIds="20" castsShadows="false" receiveShadows="false" />
+      <Shape name="textWhite_102" shapeId="102" nodeId="183" materialIds="20" castsShadows="false" receiveShadows="false" />
+      <Shape name="textWhite_103" shapeId="103" nodeId="184" materialIds="20" castsShadows="false" receiveShadows="false" />
+      <Shape name="textWhite_104" shapeId="104" nodeId="185" materialIds="20" castsShadows="false" receiveShadows="false" />
+      <Shape name="textWhite_105" shapeId="105" nodeId="186" materialIds="20" castsShadows="false" receiveShadows="false" />
+      <Shape name="textWhite_106" shapeId="106" nodeId="187" materialIds="20" castsShadows="false" receiveShadows="false" />
+      <Shape name="textWhite_107" shapeId="107" nodeId="188" materialIds="20" castsShadows="false" receiveShadows="false" />
+      <Shape name="textWhite_108" shapeId="108" nodeId="189" materialIds="20" castsShadows="false" receiveShadows="false" />
+      <Shape name="textWhite_109" shapeId="109" nodeId="190" materialIds="20" castsShadows="false" receiveShadows="false" />
+      <Shape name="textWhite_110" shapeId="110" nodeId="191" materialIds="20" castsShadows="false" receiveShadows="false" />
+      <Shape name="textWhite_111" shapeId="111" nodeId="192" materialIds="20" castsShadows="false" receiveShadows="false" />
+      <Shape name="textWhite_112" shapeId="112" nodeId="193" materialIds="20" castsShadows="false" receiveShadows="false" />
+      <Shape name="textWhite_113" shapeId="113" nodeId="194" materialIds="20" castsShadows="false" receiveShadows="false" />
+      <Shape name="textWhite_114" shapeId="114" nodeId="195" materialIds="20" castsShadows="false" receiveShadows="false" />
+      <Shape name="textWhite_115" shapeId="115" nodeId="196" materialIds="20" castsShadows="false" receiveShadows="false" />
+      <Shape name="textWhite_116" shapeId="116" nodeId="197" materialIds="20" castsShadows="false" receiveShadows="false" />
+      <Shape name="textWhite_117" shapeId="117" nodeId="198" materialIds="20" castsShadows="false" receiveShadows="false" />
+      <Shape name="textWhite_118" shapeId="118" nodeId="199" materialIds="20" castsShadows="false" receiveShadows="false" />
+      <Shape name="textWhite_119" shapeId="119" nodeId="200" materialIds="20" castsShadows="false" receiveShadows="false" />
+      <Shape name="textWhite_120" shapeId="120" nodeId="201" materialIds="20" castsShadows="false" receiveShadows="false" />
+      <Shape name="textWhite_121" shapeId="121" nodeId="202" materialIds="20" castsShadows="false" receiveShadows="false" />
+      <Shape name="textWhite_122" shapeId="122" nodeId="203" materialIds="20" castsShadows="false" receiveShadows="false" />
+      <Shape name="textWhite_123" shapeId="123" nodeId="204" materialIds="20" castsShadows="false" receiveShadows="false" />
+      <Shape name="textWhite_124" shapeId="124" nodeId="205" materialIds="20" castsShadows="false" receiveShadows="false" />
+      <Shape name="textWhite_125" shapeId="125" nodeId="206" materialIds="20" castsShadows="false" receiveShadows="false" />
+      <Shape name="textWhite_126" shapeId="126" nodeId="207" materialIds="20" castsShadows="false" receiveShadows="false" />
     </TransformGroup>
   </Scene>
 </i3D>

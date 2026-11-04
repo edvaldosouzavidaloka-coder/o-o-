@@ -171,7 +171,8 @@ function TGGPSHud:getButtons()
             b(v[1],v[2],214+(i-1)*274,174,258,40,v[3])
         end
         b("width_down","- LARGURA",214,236,190,38,"onWidthDown",o.width>1)
-        b("detect_width","DETECTAR IMPLEMENTO",418,236,398,38,"onDetectWidth")
+        b("detect_width","DETECTAR",418,236,190,38,"onDetectWidth")
+        b("reset_width","RESTAURAR SO ESTE",622,236,194,38,"onResetImplementWidth")
         b("width_up","LARGURA +",830,236,190,38,"onWidthUp",o.width<50)
         b("lane_prev","< PASSADA",214,298,258,38,"onLanePrevious",route)
         b("auto_lane",o.autoLaneSelection and "SELECAO AUTOMATICA" or "SELECAO MANUAL",488,298,258,38,"onToggleAutoLane",true,o.autoLaneSelection)
@@ -181,6 +182,8 @@ function TGGPSHud:getButtons()
         b("nudge_right","LINHA + 10 cm",762,360,258,38,"onNudgeLineRight",route)
         b("save","SALVAR COM NOME",214,432,392,40,"onSaveNamedCourse",route)
         b("clear","LIMPAR TRAJETO DA TELA",622,432,398,40,"onClear",route or o.pointA~=nil,false,"red")
+        b("generate_straight","GERAR RETAS DO TALHAO",214,482,392,38,"onGenerateFieldStraight")
+        b("generate_curved","GERAR CURVAS DO TALHAO",622,482,398,38,"onGenerateFieldCurve",o.mode=='curve' or (o.curveReference and #o.curveReference>=2) or (o.fieldCurveReference and #o.fieldCurveReference>=2))
     elseif self.page=="headland" then
         b("headland_toggle",o.headlandEnabled and "CABECEIRA AUTOMATICA LIGADA" or "ATIVAR CABECEIRA AUTOMATICA",214,120,806,40,"onToggleHeadland",o.mode=="field",o.headlandEnabled)
         for i,v in ipairs({{"headland_depth","onHeadlandDepthDown","onHeadlandDepthUp"},{"headland_speed","onTurnSpeedDown","onTurnSpeedUp"},{"headland_radius","onTurnRadiusDown","onTurnRadiusUp"}}) do
@@ -191,13 +194,17 @@ function TGGPSHud:getButtons()
     elseif self.page=="library" then
         b("save_named","SALVAR ATUAL",214,76,252,34,"onSaveNamedCourse",route)
         b("search_courses","BUSCAR NOME / TALHAO",480,76,330,34,"onSearchCourses")
-        b("clear_search","VER TODOS",824,76,196,34,"clear_search")
-        local records=o.library:list(o.libraryFilter)
+        b("library_scope",o.libraryShowAll and "SO DESTE IMPLEMENTO" or "TODAS AS LINHAS",824,76,196,34,"library_scope")
+        local records=o.library:list(o.libraryFilter,o.libraryShowAll)
         local pages=math.max(1,math.ceil(#records/4))
         o.libraryPage=math.max(1,math.min(pages,o.libraryPage or 1))
         for row=1,4 do
             local r=records[(o.libraryPage-1)*4+row]
-            if r then b("load_course_"..r.id,"CARREGAR",874,142+(row-1)*82,134,36,"load_course:"..r.id) end
+            if r then
+                b("load_course_"..r.id,"SO A LINHA",850,142+(row-1)*82,130,36,"load_course:"..r.id)
+                b("use_course_"..r.id,"USAR AQUI",700,142+(row-1)*82,138,36,"use_course:"..r.id)
+                b("delete_course_"..r.id,"X",988,142+(row-1)*82,24,36,"delete_course:"..r.id,r.profileId==o.activeImplementId,false,'red')
+            end
         end
         b("library_prev","< ANTERIOR",214,488,190,34,"library_prev",o.libraryPage>1)
         b("library_next","PROXIMA >",830,488,190,34,"library_next",o.libraryPage<pages)
@@ -205,11 +212,13 @@ function TGGPSHud:getButtons()
         b("scale_down","-",814,120,90,42,"scale_down",self.scale>MIN_SCALE+0.001)
         b("scale_up","+",918,120,90,42,"scale_up",self.scale<MAX_SCALE-0.001)
         b("reset_position","CENTRALIZAR PAINEL",714,200,294,42,"reset_position")
-        b("edit_cab","AJUSTAR POSICAO DO MONITOR NA CABINE",214,298,806,44,"onEditMonitor")
-        b("map_zoom_out","ZOOM -",214,378,252,38,"onZoomOut",TGGPSMap.getZoom(o)>1)
-        b("map_fit","ZOOM PADRAO / SEGUIR MAQUINA",480,378,330,38,"onZoomFit")
-        b("map_zoom_in","ZOOM +",824,378,196,38,"onZoomIn",TGGPSMap.getZoom(o)<12)
-        b("reset_coverage","ZERAR PINTURA DESTA SESSAO",214,468,806,40,"onResetCoverage",true,false,"red")
+        b("brightness_down","- BRILHO",814,258,90,36,"onBrightnessDown",(o.monitorBrightness or 0.20)>0.05)
+        b("brightness_up","BRILHO +",918,258,90,36,"onBrightnessUp",(o.monitorBrightness or 0.20)<1)
+        b("edit_cab","AJUSTAR POSICAO DO MONITOR NA CABINE",214,316,806,44,"onEditMonitor")
+        b("map_zoom_out","ZOOM -",214,400,252,38,"onZoomOut",TGGPSMap.getZoom(o)>1)
+        b("map_fit","ZOOM PADRAO / SEGUIR MAQUINA",480,400,330,38,"onZoomFit")
+        b("map_zoom_in","ZOOM +",824,400,196,38,"onZoomIn",TGGPSMap.getZoom(o)<12)
+        b("reset_coverage","ZERAR PINTURA DESTE IMPLEMENTO / TALHAO",214,468,806,40,"onResetCoverage",true,false,"red")
     end
     return buttons
 end
@@ -223,9 +232,12 @@ function TGGPSHud:_run(button)
         self:_layout();self:_saveSettings()
     elseif a=="reset_position" then self:resetPosition()
     elseif a=="clear_search" then self.owner.libraryFilter,self.owner.libraryPage="",1
+    elseif a=="library_scope" then self.owner.libraryShowAll=not self.owner.libraryShowAll;self.owner.libraryPage=1
     elseif a=="library_prev" then self.owner.libraryPage=math.max(1,self.owner.libraryPage-1)
     elseif a=="library_next" then self.owner.libraryPage=self.owner.libraryPage+1
     elseif a:match("^load_course:%d+$") then self.owner:loadNamedCourse(tonumber(a:match("(%d+)$")))
+    elseif a:match("^use_course:%d+$") then self.owner:loadNamedCourse(tonumber(a:match("(%d+)$")),true)
+    elseif a:match("^delete_course:%d+$") then self.owner:deleteNamedCourse(tonumber(a:match("(%d+)$")))
     elseif type(self.owner[a])=="function" then self.owner[a](self.owner,nil,1) end
 end
 
@@ -319,12 +331,12 @@ function TGGPSHud:getDrawCommands()
         text("PASSADA "..tostring(o.currentLane or 0),824,93,15,COLORS.ink,true)
         text(string.format("DESLOCAMENTO %+.2f m",o.trackOffset or 0),824,170,12,COLORS.ink,true)
         text(string.format("ZOOM %.1fx",TGGPSMap.getZoom(o)),824,329,13,COLORS.ink,true)
-        text(short(o.activeCourseName or "Linha sem nome",43),220,477,11,COLORS.muted)
+        local curved=o.mode=='curve' or (o.fieldCurveReference and #o.fieldCurveReference>=2)
+        text(short((curved and "CURVA | " or "RETA | ")..(o.activeCourseName or "Linha sem nome"),43),220,477,11,COLORS.muted)
     elseif self.page=="guide" then
         text("ORIENTACAO E CONTROLE DE LINHA",214,88,19,COLORS.ink,true)
         text(string.format("Largura %.2f m   |   Orientacao %.1f graus   |   Deslocamento %+.2f m",
             o.width,TGGPSContext.heading(o.basePath),o.trackOffset or 0),214,136,17,COLORS.green,true)
-        text("Ajustar ou puxar a linha desliga o piloto. Confira o alinhamento antes de religar.",214,510,12,COLORS.muted)
     elseif self.page=="headland" then
         text("CONTROLE DE CABECEIRA",214,90,19,COLORS.ink,true)
         for i,v in ipairs({{"MARGEM",o.headlandDepth,"m"},{"VELOCIDADE DA CURVA",o.turnSpeed,"km/h"},{"RAIO MINIMO",o.turnRadius,"m"}}) do
@@ -335,13 +347,13 @@ function TGGPSHud:getDrawCommands()
         text(o.mode=="field" and "Passadas do talhao: levantar, virar e baixar implementos compativeis."
             or "Gere o talhao para usar a cabeceira automatica. A/B e curvas usam retorno manual.",214,520,12,COLORS.muted)
     elseif self.page=="library" then
-        local records=o.library:list(o.libraryFilter)
+        local records=o.library:list(o.libraryFilter,o.libraryShowAll)
         for row=1,4 do
             local r=records[((o.libraryPage or 1)-1)*4+row]
             if r then
                 local y=124+(row-1)*82
                 rect(214,y,806,70,COLORS.card)
-                text(short(r.name,55),228,y+25,17,COLORS.ink,true)
+                text(short(r.name,39),228,y+25,17,COLORS.ink,true)
                 text(string.format("%s | %.1f graus | %.1f m | %s",short(r.fieldName,20),r.heading,r.width,r.mode),228,y+51,12,COLORS.muted)
             end
         end
@@ -353,8 +365,9 @@ function TGGPSHud:getDrawCommands()
         rect(214,104,806,70,COLORS.card)
         text(string.format("Tamanho do painel: %d%%",math.floor(self.scale*100+0.5)),230,147,20,COLORS.ink,true)
         text("Arraste a barra verde para mover o painel.",230,225,16,COLORS.ink)
-        text("Monitor fisico: ajuste parado, por modelo de maquina.",214,277,14,COLORS.muted)
-        text("O zoom e compartilhado entre o painel e a tela da cabine.",214,362,14,COLORS.muted)
+        rect(214,250,806,52,COLORS.card)
+        text(string.format("Brilho da tela na cabine: %d%%",math.floor((o.monitorBrightness or 0.20)*100+0.5)),230,282,17,COLORS.ink,true)
+        text("Zoom: Ctrl+Alt+PageUp / PageDown. Posicao: Shift direito+M.",214,385,14,COLORS.muted)
         text("A pintura e os hectares valem para a sessao atual.",214,448,14,COLORS.muted)
     end
     for _,b in ipairs(self:getButtons()) do

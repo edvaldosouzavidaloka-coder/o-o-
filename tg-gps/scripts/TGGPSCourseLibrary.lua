@@ -3,7 +3,7 @@
 TGGPSCourseLibrary = {}
 TGGPSCourseLibrary.__index = TGGPSCourseLibrary
 local NUMBERS = {"width", "currentLane", "currentSection", "trackOffset", "headlandDepth", "turnSpeed", "turnRadius", "turnSide", "heading"}
-local STRINGS = {"name", "mapId", "farmName", "ownerName", "fieldId", "fieldName", "mode"}
+local STRINGS = {"name", "mapId", "farmName", "ownerName", "fieldId", "fieldName", "mode","profileId"}
 local function finite(v) return type(v) == "number" and v == v and math.abs(v) < math.huge end
 local function clone(value)
     if type(value) ~= "table" then return value end
@@ -32,6 +32,7 @@ function TGGPSCourseLibrary.valid(record)
             or not finite(record.fieldDirection.dz) then return false end
         if record.fieldDirection.dx ^ 2 + record.fieldDirection.dz ^ 2 < 0.000001 then return false end
     end
+    if record.fieldCurveReference and #record.fieldCurveReference>0 and not pointsValid(record.fieldCurveReference,2) then return false end
     return true
 end
 function TGGPSCourseLibrary.new(owner)
@@ -43,21 +44,24 @@ function TGGPSCourseLibrary:path()
     return self.owner:getSavePath():gsub("%.xml$", "_library.xml")
 end
 function TGGPSCourseLibrary:snapshot(name)
+    self.owner:syncWorkingWidth()
     local o, c = self.owner, self.owner:getMonitorContext()
-    local r = {name = name, mapId = TGGPSContext.mapId(), farmId = c.farmId,
+    local r = {name = name, mapId = TGGPSContext.mapId(), farmId = c.farmId,profileId=o.activeImplementId,
         farmName = c.farmName, ownerName = c.ownerName, fieldId = c.fieldId, fieldName = c.fieldName,
         mode = o.mode, width = o.width, currentLane = o.currentLane, currentSection = o.currentSection,
         trackOffset = o.trackOffset or 0, heading = TGGPSContext.heading(o.basePath),
         headlandEnabled = o.headlandEnabled, headlandDepth = o.headlandDepth, turnSpeed = o.turnSpeed,
         turnRadius = o.turnRadius, turnSide = o.turnSide, autoLaneSelection = o.autoLaneSelection,
         sourcePoints = clone(o.sourcePoints), fieldBoundary = clone(o.fieldBoundary),
-        fieldOrigin = clone(o.fieldOrigin), fieldDirection = clone(o.fieldDirection)}
+        fieldOrigin = clone(o.fieldOrigin), fieldDirection = clone(o.fieldDirection),
+        fieldCurveReference=clone(o.mode=='field' and o.fieldCurveReference or {})}
     return r
 end
 function TGGPSCourseLibrary:saveSnapshot(record, name)
     if self.readError then return false,"Biblioteca existente invalida; arquivo preservado, confira uma copia de seguranca" end
     if #self.records >= 200 then return false, "Biblioteca cheia (200 trajetos neste mapa)" end
     record = clone(record)
+    if not record.profileId or record.profileId=='' then record.profileId=self.owner.activeImplementId end
     record.name = tostring(name or ""):gsub("[%c]", " "):match("^%s*(.-)%s*$")
     if not self.valid(record) then return false, "Nome ou geometria de trajeto invalido" end
     record.id = self.nextId
@@ -69,36 +73,62 @@ function TGGPSCourseLibrary:saveSnapshot(record, name)
     end
     return true, record
 end
-function TGGPSCourseLibrary:list(filter)
+function TGGPSCourseLibrary:list(filter,shared)
+    self.owner:syncWorkingWidth()
     local context, result = self.owner:getMonitorContext(), {}
     filter = tostring(filter or ""):lower()
     for _, r in ipairs(self.records) do
         local text = table.concat({r.name, r.fieldName or "", r.fieldId or "", string.format("%.1f", r.heading)}, " "):lower()
-        if r.mapId == TGGPSContext.mapId() and (r.farmId == nil or context.farmId == nil or r.farmId == context.farmId)
+        if (shared or r.profileId==self.owner.activeImplementId) and r.mapId == TGGPSContext.mapId() and (r.farmId == nil or context.farmId == nil or r.farmId == context.farmId)
             and (filter == "" or text:find(filter, 1, true) ~= nil) then result[#result + 1] = r end
     end
     table.sort(result, function(a,b) if a.name == b.name then return a.id < b.id end return a.name < b.name end)
     return result
 end
-function TGGPSCourseLibrary:load(id)
+function TGGPSCourseLibrary:load(id,options)
+    options=options or {}
     local record
-    for _, r in ipairs(self:list()) do if r.id == id then record = clone(r); break end end
+    for _, r in ipairs(self:list(nil,options.shared)) do if r.id == id then record = clone(r); break end end
     if not record or not self.valid(record) then return false, "Trajeto indisponivel ou invalido para este mapa/fazenda" end
     local o = self.owner
     o:syncWorkingWidth()
+    if options.here then
+        local pose=o:getVehiclePose(o:getControlledVehicle())
+        if not pose then return false,'Entre na maquina para usar a linha aqui' end
+        local reference=(record.fieldCurveReference and #record.fieldCurveReference>=2) and record.fieldCurveReference or record.sourcePoints
+        local first=reference[1]
+        local dx,dz=pose.x-first.x,pose.z-first.z
+        local moved={}
+        for _,p in ipairs(reference) do moved[#moved+1]={x=p.x+dx,z=p.z+dz} end
+        local curved=record.mode=='curve' or (record.fieldCurveReference and #record.fieldCurveReference>=2)
+        local boundary=TGFieldBoundary.getAt(pose.x,pose.z)
+        record.sourcePoints=moved
+        if boundary then
+            record.mode,record.fieldBoundary='field',boundary
+            record.fieldOrigin={x=pose.x,z=pose.z}
+            local heading=math.rad(record.heading);record.fieldDirection={dx=math.sin(heading),dz=math.cos(heading)}
+            record.fieldCurveReference=curved and moved or {}
+        else record.mode=curved and 'curve' or 'straight';record.fieldBoundary=nil;record.fieldCurveReference={} end
+        record.trackOffset,record.currentLane,record.currentSection=0,0,1
+    end
     local candidate = setmetatable({}, {__index = o})
     for _, key in ipairs({"mode", "width", "currentLane", "currentSection", "trackOffset", "headlandEnabled",
         "headlandDepth", "turnSpeed", "turnRadius", "turnSide", "autoLaneSelection", "sourcePoints",
-        "fieldBoundary", "fieldOrigin", "fieldDirection"}) do candidate[key] = clone(record[key]) end
+        "fieldBoundary", "fieldOrigin", "fieldDirection","fieldCurveReference"}) do candidate[key] = clone(record[key]) end
     candidate.fieldBoundary = record.mode == "field" and record.fieldBoundary or nil
+    candidate.fieldCurveReference=record.fieldCurveReference or {}
     candidate.width=o.width -- loading a route must not replace this vehicle/implement's width
+    if options.onlyLine then
+        for _,name in ipairs({'headlandEnabled','headlandDepth','turnSpeed','turnRadius','turnSide'}) do candidate[name]=o[name] end
+        if candidate.mode~='field' then candidate.headlandEnabled=false end
+    end
     if not candidate:rebuildGuidance() then return false, "Nao foi possivel reconstruir as linhas salvas" end
     local section = record.currentSection
     if candidate:getLanePath(candidate.currentLane, section) ~= nil then candidate.currentSection = section end
     o:stopAutosteer()
     for _, key in ipairs({"mode", "width", "currentLane", "currentSection", "trackOffset", "headlandEnabled",
         "headlandDepth", "turnSpeed", "turnRadius", "turnSide", "autoLaneSelection", "sourcePoints",
-        "basePath", "guidanceLines", "guidanceSections", "minLane", "maxLane", "fieldBoundary", "fieldOrigin", "fieldDirection"}) do
+        "basePath", "guidanceLines", "guidanceSections", "minLane", "maxLane", "fieldBoundary", "fieldOrigin", "fieldDirection","fieldCurveReference"}) do
         o[key] = candidate[key]
     end
     -- Explicitly clear inherited metadata for a non-field route.
@@ -128,7 +158,7 @@ function TGGPSCourseLibrary:write()
             setXMLFloat(xml, k .. "#originX", r.fieldOrigin.x); setXMLFloat(xml, k .. "#originZ", r.fieldOrigin.z)
             setXMLFloat(xml, k .. "#dirX", r.fieldDirection.dx); setXMLFloat(xml, k .. "#dirZ", r.fieldDirection.dz)
         end
-        for _, group in ipairs({"sourcePoints", "fieldBoundary"}) do
+        for _, group in ipairs({"sourcePoints", "fieldBoundary","fieldCurveReference"}) do
             local points = r[group] or {}
             setXMLInt(xml, k .. "#" .. group .. "Count", #points)
             for j, p in ipairs(points) do
@@ -139,6 +169,18 @@ function TGGPSCourseLibrary:write()
     end
     local result = saveXMLFile(xml); delete(xml)
     return result ~= false
+end
+function TGGPSCourseLibrary:deleteOwn(id,profile)
+    if self.readError then return false,'Biblioteca invalida; arquivo preservado' end
+    for index,record in ipairs(self.records) do
+        if record.id==id then
+            if record.profileId~=profile then return false,'Esta linha pertence a outro implemento' end
+            table.remove(self.records,index)
+            if not self:write() then table.insert(self.records,index,record);return false,'Nao foi possivel excluir a linha no disco' end
+            return true,'Somente a linha selecionada foi excluida'
+        end
+    end
+    return false,'Linha nao encontrada'
 end
 function TGGPSCourseLibrary:read()
     if fileExists == nil or not fileExists(self:path()) or loadXMLFile == nil then return end
@@ -156,7 +198,7 @@ function TGGPSCourseLibrary:read()
         r.fieldOrigin = {x=getXMLFloat(xml,k.."#originX"),z=getXMLFloat(xml,k.."#originZ")}
         r.fieldDirection = {dx=getXMLFloat(xml,k.."#dirX"),dz=getXMLFloat(xml,k.."#dirZ")}
         local readable = true
-        for _, group in ipairs({"sourcePoints", "fieldBoundary"}) do
+        for _, group in ipairs({"sourcePoints", "fieldBoundary","fieldCurveReference"}) do
             r[group] = {}
             local n = getXMLInt(xml,k.."#"..group.."Count") or 0
             if n < 0 or n > 10000 then readable=false else for j=0,n-1 do

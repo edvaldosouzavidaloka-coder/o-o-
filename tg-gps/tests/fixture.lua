@@ -1,5 +1,5 @@
 -- Minimal GIANTS contracts for offline integration tests, not a game emulator.
-nodes, loadedModels, xmlFiles = {}, {}, {}
+nodes, loadedModels, xmlFiles, assetFiles = {}, {}, {}, {}
 function makeNode(name, parent, x, y, z)
     local n = {name=name, children={}, x=x or 0, y=y or 0, z=z or 0,
         rx=0, ry=0, rz=0, sx=1, sy=1, sz=1, visible=true}
@@ -50,7 +50,7 @@ function localDirectionToWorld(n,x,y,z)
 end
 function getUserProfileAppPath() return '/test-profile/' end
 function createFolder() end
-function fileExists(path) return xmlFiles[path]~=nil end
+function fileExists(path) return xmlFiles[path]~=nil or assetFiles[path]==true end
 local function duplicate(v)
     if type(v)~='table' then return v end
     local r={} for k,x in pairs(v) do r[k]=duplicate(x) end return r
@@ -108,6 +108,7 @@ function route(owner)
 end
 
 function metadata()
+    assetFiles['/maps/native_pda.dds']=true
     local farms={[1]={name='Fazenda Vidal'},[2]={name='Proprietario do campo'}}
     g_farmManager={getFarmById=function(_,id) return farms[id] end}
     function tractor:getOwnerFarmId() return 1 end
@@ -119,4 +120,13 @@ function metadata()
         worldCenterOffsetX=1024,worldCenterOffsetZ=1024,mapOverlay={filename='/maps/native_pda.dds'}}}
     tractor.name='Trator de teste';tool.name='Semeadora de teste'
     TGGPS.monitorContext=nil
+end
+
+function workTool(name,width)
+    local object={rootNode=makeNode(name),configFileName='implements/'..name..'.xml',spec_sowingMachine={},active=true}
+    local area={start=makeNode('start',object.rootNode,-width/2,0,-1),
+        width=makeNode('width',object.rootNode,width/2,0,-1),height=makeNode('height',object.rootNode,-width/2,0,1)}
+    object.spec_workArea={workAreas={area}}
+    function object:getIsWorkAreaActive() return self.active end
+    return object
 end

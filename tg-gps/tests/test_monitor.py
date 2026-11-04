@@ -269,7 +269,9 @@ class MonitorTests(unittest.TestCase):
     def test_i3d_geometry_material_and_glyph_references(self):
         for path in (ROOT / 'models').glob('*.i3d'):
             data = ET.parse(path).getroot()
-            self.assertEqual(len(data.find('Files')), 0)
+            for ref in data.findall('./Files/File'):
+                target=(path.parent/ref.attrib['filename']).resolve()
+                self.assertTrue(target.is_relative_to(ROOT) and target.is_file())
             shapes = {s.attrib['shapeId']: s for s in data.find('Shapes')}
             materials = {m.attrib['materialId'] for m in data.find('Materials')}
             for node in data.findall('.//Scene//Shape'):

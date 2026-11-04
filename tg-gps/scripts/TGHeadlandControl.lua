@@ -52,9 +52,9 @@ function TGHeadlandControl.begin(owner, vehicle, result)
         for section, points in ipairs(sections) do
             if not owner.completedSections[key(lane, section)] then
                 local entryIndex = distance(exit, points[1]) <= distance(exit, points[#points]) and 1 or #points
-                local entry, other = points[entryIndex], points[entryIndex == 1 and #points or 1]
+                local entry, other = points[entryIndex], points[entryIndex == 1 and 2 or #points-1]
                 local length = distance(entry, other)
-                if length >= 3 then
+                if length > 0.01 then
                     local preferred = (lane - owner.currentLane) * owner.turnSide > 0
                     choices[#choices + 1] = {
                         lane = lane, section = section, direction = entryIndex == 1 and 1 or -1,

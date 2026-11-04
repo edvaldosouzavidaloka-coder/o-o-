@@ -6,7 +6,7 @@ TGGPS = {}
 TGGPS.MOD_NAME = g_currentModName
 TGGPS.MOD_DIRECTORY = g_currentModDirectory
 
-TGGPS.VERSION = "0.7.0.0"
+TGGPS.VERSION = "0.8.0.0"
 TGGPS.DEFAULT_WIDTH = 6.0
 TGGPS.MIN_WIDTH = 1.0
 TGGPS.MAX_WIDTH = 50.0
@@ -166,6 +166,8 @@ function TGGPS:loadMap()
     self.width = TGGPS.DEFAULT_WIDTH
     self.trackOffset, self.activeCourseName, self.libraryFilter, self.libraryPage = 0, nil, "", 1
     self.mapZoom, self.contextTimer, self.monitorContext, self.dialogBusy = 1, 0, nil, false
+    self.monitorBrightness=0.20
+    self.activeImplementId,self.activeSessionKey,self.activeWorkAreaId,self.implementSessions,self.coverageSessions=nil,nil,nil,{},{}
     self.currentLane = 0
     self.showLines = true
     self.isRecording = false
@@ -177,6 +179,7 @@ function TGGPS:loadMap()
     self.fieldBoundary = nil
     self.fieldOrigin = nil
     self.fieldDirection = nil
+    self.curveReference,self.fieldCurveReference=nil,nil
     self.autoLaneSelection = true
     self.currentSection = 1
     self.selectionTimer = 0
@@ -225,6 +228,8 @@ function TGGPS:registerOneAction(vehicle, actionName, callback, textKey)
         vehicle.tgGpsActionEvents, action, self, callback, false, true, false, true
     )
     if eventId ~= nil then
+        vehicle.tgGpsRegisteredActions=vehicle.tgGpsRegisteredActions or {}
+        vehicle.tgGpsRegisteredActions[actionName]=eventId
         if textKey ~= nil and g_i18n ~= nil then
             g_inputBinding:setActionEventText(eventId, g_i18n:getText(textKey))
         end
@@ -235,6 +240,10 @@ function TGGPS:registerOneAction(vehicle, actionName, callback, textKey)
 end
 
 function TGGPS:registerInputActions(vehicle)
+    vehicle.tgGpsRegisteredActions={}
+    self:registerOneAction(vehicle,"TG_GPS_MONITOR_SETTINGS",TGGPS.onOpenMonitorSettings,"input_TG_GPS_MONITOR_SETTINGS")
+    self:registerOneAction(vehicle,"TG_GPS_ZOOM_IN",TGGPS.onZoomIn,"input_TG_GPS_ZOOM_IN")
+    self:registerOneAction(vehicle,"TG_GPS_ZOOM_OUT",TGGPS.onZoomOut,"input_TG_GPS_ZOOM_OUT")
     self:registerOneAction(vehicle, "TG_GPS_MONITOR_EDIT", TGGPS.onEditMonitor, "input_TG_GPS_MONITOR_EDIT")
     self:registerOneAction(vehicle, "TG_GPS_HUD", TGGPS.onToggleHud, "input_TG_GPS_HUD")
     self:registerOneAction(vehicle, "TG_GPS_ENABLE", TGGPS.onEnableAutosteer, "input_TG_GPS_ENABLE")
@@ -253,6 +262,8 @@ function TGGPS:registerInputActions(vehicle)
     self:registerOneAction(vehicle, "TG_GPS_DETECT_WIDTH", TGGPS.onDetectWidth, "input_TG_GPS_DETECT_WIDTH")
     self:registerOneAction(vehicle, "TG_GPS_SAVE", TGGPS.onSave, "input_TG_GPS_SAVE")
     self:registerOneAction(vehicle, "TG_GPS_CLEAR", TGGPS.onClear, "input_TG_GPS_CLEAR")
+    local count=0 for _ in pairs(vehicle.tgGpsRegisteredActions) do count=count+1 end
+    return count
 end
 
 function TGGPS:getControlledVehicle()
@@ -287,6 +298,42 @@ end
 function TGGPS:syncWorkingWidth()
     if self.widthProfiles then return self.widthProfiles:select(self:getControlledVehicle()) end
     return false
+end
+local IMPLEMENT_STATE={"mode","sourcePoints","basePath","guidanceLines","guidanceSections","fieldBoundary","fieldOrigin",
+    "fieldDirection","minLane","maxLane","currentLane","currentSection","autoLaneSelection","trackOffset","headlandEnabled",
+    "headlandDepth","turnSpeed","turnRadius","turnSide","activeCourseName","pointA","curveReference","fieldCurveReference"}
+function TGGPS:selectImplementSession(id)
+    local context=self:getMonitorContext()
+    local field=context.fieldId~='' and context.fieldId or (self.activeImplementId==id and self.activeWorkAreaId or 'unknown')
+    local key=id..'|'..tostring(field)
+    if self.activeSessionKey==key then return false end
+    self:stopAutosteer()
+    if self.activeSessionKey then
+        local state={}
+        for _,name in ipairs(IMPLEMENT_STATE) do state[name]=self[name] end
+        self.implementSessions[self.activeSessionKey]=state
+        if self.coverage then self.coverage:endRun() end
+        if self.activeImplementId==id and self.activeWorkAreaId=='unknown' and field~='unknown' then
+            self.implementSessions[key]=state
+            self.coverageSessions[key]=self.coverage
+        end
+    else
+        -- Preserve the legacy quick route only for the first implement entered.
+        local first={}
+        for _,name in ipairs(IMPLEMENT_STATE) do first[name]=self[name] end
+        self.implementSessions[key]=first
+    end
+    local state=self.implementSessions[key] or {mode='none',sourcePoints={},basePath={},guidanceLines={},guidanceSections={},
+        currentLane=0,currentSection=1,autoLaneSelection=true,trackOffset=0,headlandEnabled=false,
+        headlandDepth=18,turnSpeed=6,turnRadius=6,turnSide=1}
+    for _,name in ipairs(IMPLEMENT_STATE) do self[name]=state[name] end
+    self.activeImplementId,self.activeSessionKey,self.activeWorkAreaId=id,key,field
+    self.isRecording,self.recordingVehicle,self.recordedPoints=false,nil,{}
+    self.libraryFilter,self.libraryPage,self.libraryShowAll='',1,false
+    self.coverageSessions[key]=self.coverageSessions[key] or TGGPSHUDMonitor.new(self)
+    self.coverage=self.coverageSessions[key]
+    self.workedAreaHa=self.coverage:getWorkedHa()
+    return true
 end
 
 function TGGPS:requestText(title, default, callback)
@@ -328,8 +375,8 @@ function TGGPS:onSearchCourses()
     end)
 end
 
-function TGGPS:loadNamedCourse(id)
-    local ok, result = self.library:load(id)
+function TGGPS:loadNamedCourse(id,here)
+    local ok, result = self.library:load(id,{onlyLine=true,here=here==true,shared=self.libraryShowAll==true})
     if ok then
         self:notify(string.format("Carregado: %s | %.1f graus | largura deste conjunto %.1f m. Alinhe e ligue o piloto.", result.name, result.heading, self.width))
         if self.hud then self.hud.page="map" end
@@ -371,6 +418,18 @@ end
 function TGGPS:onZoomIn() self.mapZoom=math.min(12,TGGPSMap.getZoom(self)+0.5);self:saveHudSettings() end
 function TGGPS:onZoomOut() self.mapZoom=math.max(1,TGGPSMap.getZoom(self)-0.5);self:saveHudSettings() end
 function TGGPS:onZoomFit() self.mapZoom=1;self:saveHudSettings() end
+function TGGPS:onOpenMonitorSettings()
+    if self.hud then self.hud.page="settings" end
+    self:openHud()
+end
+function TGGPS:onBrightnessDown()
+    self.monitorBrightness=math.max(0.05,(self.monitorBrightness or 0.20)-0.05)
+    self:saveHudSettings()
+end
+function TGGPS:onBrightnessUp()
+    self.monitorBrightness=math.min(1,(self.monitorBrightness or 0.20)+0.05)
+    self:saveHudSettings()
+end
 
 local function isGameMenuVisible()
     return g_gui ~= nil and g_gui.getIsGuiVisible ~= nil and g_gui:getIsGuiVisible()
@@ -380,6 +439,7 @@ function TGGPS:openHud()
     if self.hud == nil or isGameMenuVisible() then
         return false
     end
+    if self.monitor and self.monitor.editing then self.monitor:finishEditing(true) end
     if self.hud.isOpen then
         return true
     end
@@ -437,10 +497,20 @@ end
 
 function TGGPS:onResetCoverage()
     if self.coverage == nil then return end
+    local selected=self.coverage
     if g_gui ~= nil and g_gui.showYesNoDialog ~= nil then
-        g_gui:showYesNoDialog({text = "Zerar pintura e hectares desta sessao?",
+        g_gui:showYesNoDialog({text = "Zerar pintura e hectares somente deste implemento nesta sessao?",
             target = self, callback = function(target, yes)
-                if yes and target.coverage ~= nil then target.coverage:reset() end
+                if yes then selected:reset() end
+            end})
+    end
+end
+function TGGPS:deleteNamedCourse(id)
+    local profile=self.activeImplementId
+    if g_gui and g_gui.showYesNoDialog then
+        g_gui:showYesNoDialog({text='Excluir somente esta linha salva deste implemento?',target=self,
+            callback=function(target,yes)
+                if yes then local ok,message=target.library:deleteOwn(id,profile);target:notify(message) end
             end})
     end
 end
@@ -486,6 +556,7 @@ function TGGPS:saveHudSettings()
     setXMLFloat(xml, "tgGpsHud#y", settings.y)
     setXMLFloat(xml, "tgGpsHud#scale", settings.scale)
     setXMLFloat(xml, "tgGpsHud#zoom", self.mapZoom or 1)
+    setXMLFloat(xml,"tgGpsHud#brightness",self.monitorBrightness or 0.20)
     saveXMLFile(xml)
     delete(xml)
     return true
@@ -503,6 +574,8 @@ function TGGPS:loadHudSettings()
     })
     local zoom=getXMLFloat(xml,"tgGpsHud#zoom")
     self.mapZoom=finite(zoom) and math.max(1,math.min(12,zoom)) or 1
+    local brightness=getXMLFloat(xml,"tgGpsHud#brightness")
+    self.monitorBrightness=finite(brightness) and math.max(0.05,math.min(1,brightness)) or 0.20
     delete(xml)
     return true
 end
@@ -512,6 +585,17 @@ function TGGPS:rebuildGuidance()
     self.guidanceSections = {}
     self.basePath = {}
 
+    if self.mode=='field' and self.fieldBoundary and self.fieldCurveReference and #self.fieldCurveReference>=2 then
+        local data,reason=TGFieldCurves.generate(self,self.fieldBoundary,self.fieldCurveReference,self.width,self.trackOffset or 0,
+            self.headlandEnabled and self.headlandDepth or 0)
+        if not data then self:notify('Nao foi possivel gerar curvas: '..tostring(reason));return false end
+        self.guidanceSections,self.minLane,self.maxLane=data.lanes,data.minLane,data.maxLane
+        self.basePath,self.sourcePoints=data.basePath,self.fieldCurveReference
+        for lane,paths in pairs(data.lanes) do self.guidanceLines[lane]=paths[1] end
+        if self.guidanceLines[self.currentLane]==nil then self.currentLane=next(self.guidanceLines) end
+        self.currentSection=1
+        return true
+    end
     if self.mode == "field" and self.fieldBoundary ~= nil then
         local d, origin = self.fieldDirection, self.fieldOrigin
         if d==nil or origin==nil or not finite(d.dx) or not finite(d.dz)
@@ -715,6 +799,8 @@ function TGGPS:onRecordCurve(actionName, inputValue)
     end
 
     self.sourcePoints = self.recordedPoints
+    self.curveReference=self.sourcePoints
+    self.fieldCurveReference=nil
     self.trackOffset, self.activeCourseName = 0, nil
     self.recordedPoints = {}
     self.mode = "curve"
@@ -778,6 +864,31 @@ function TGGPS:onEnableAutoLane(actionName, inputValue)
 end
 
 function TGGPS:onGenerateField()
+    if self.isRecording then self:notify('Finalize a gravacao da curva antes de gerar o talhao');return end
+    if self.mode=='curve' or (self.fieldCurveReference and #self.fieldCurveReference>=2) then return self:onGenerateFieldCurve() end
+    return self:onGenerateFieldStraight()
+end
+function TGGPS:onGenerateFieldCurve()
+    self:syncWorkingWidth();self:stopAutosteer()
+    local reference
+    if self.mode=='curve' then reference=self.sourcePoints
+    elseif self.fieldCurveReference and #self.fieldCurveReference>=2 then reference=self.fieldCurveReference
+    else reference=self.curveReference end
+    if not reference or #reference<2 then self:notify('Grave ou carregue uma curva primeiro');return end
+    local pose=self:getVehiclePose(self:getControlledVehicle())
+    local boundary,reason=pose and TGFieldBoundary.getAt(pose.x,pose.z)
+    if not boundary then self:notify('Entre no talhao para gerar curvas: '..tostring(reason));return end
+    local old={} for _,name in ipairs(IMPLEMENT_STATE) do old[name]=self[name] end
+    self.mode,self.fieldBoundary,self.fieldCurveReference='field',boundary,reference
+    self.curveReference,self.sourcePoints=reference,reference
+    self.fieldOrigin={x=reference[1].x,z=reference[1].z}
+    local angle=math.rad(TGGPSContext.heading(reference));self.fieldDirection={dx=math.sin(angle),dz=math.cos(angle)}
+    self.trackOffset,self.currentLane,self.currentSection,self.activeCourseName=0,0,1,nil
+    if not self:rebuildGuidance() then for _,name in ipairs(IMPLEMENT_STATE) do self[name]=old[name] end;return end
+    self:refreshSelection(self:getControlledVehicle())
+    self:notify('Curvas paralelas geradas no talhao; referencia curva preservada')
+end
+function TGGPS:onGenerateFieldStraight()
     self:syncWorkingWidth()
     self:stopAutosteer()
     local vehicle = self:getControlledVehicle()
@@ -806,6 +917,7 @@ function TGGPS:onGenerateField()
     self.isRecording, self.recordingVehicle = false, nil
     self.recordedPoints, self.pointA = {}, nil
     self.fieldBoundary = vertices
+    self.fieldCurveReference=nil
     self.trackOffset, self.activeCourseName = 0, nil
     self.fieldOrigin = {x = pose.x, z = pose.z}
     self.fieldDirection = {dx = pose.dx, dz = pose.dz}
@@ -823,6 +935,12 @@ function TGGPS:onWidthDown(actionName, inputValue)
     self.widthProfiles:remember(self.width)
     self:rebuildGuidance()
     self:notify(string.format("Largura do implemento: %.1f m", self.width))
+end
+function TGGPS:onResetImplementWidth()
+    self:syncWorkingWidth()
+    self:stopAutosteer()
+    self.widthProfiles:resetCurrent()
+    self:notify(string.format("Largura restaurada so deste implemento: %.2f m",self.width))
 end
 
 function TGGPS:onWidthUp(actionName, inputValue)
@@ -866,6 +984,7 @@ function TGGPS:onClear(actionName, inputValue)
     self.guidanceLines = {}
     self.guidanceSections = {}
     self.fieldBoundary, self.fieldOrigin, self.fieldDirection = nil, nil, nil
+    self.fieldCurveReference=nil
     self.minLane, self.maxLane = nil, nil
     self.currentSection = 1
     self.autoLaneSelection = true
@@ -1275,6 +1394,12 @@ function TGGPS:saveCourse()
         setXMLFloat(xmlFile, key .. "#x", point.x)
         setXMLFloat(xmlFile, key .. "#z", point.z)
     end
+    local curve=self.mode=='field' and self.fieldCurveReference or {}
+    setXMLInt(xmlFile,'tgGps#fieldCurveCount',curve and #curve or 0)
+    for i,p in ipairs(curve or {}) do
+        local k=string.format('tgGps.fieldCurve(%d)',i-1)
+        setXMLFloat(xmlFile,k..'#x',p.x);setXMLFloat(xmlFile,k..'#z',p.z)
+    end
 
     saveXMLFile(xmlFile)
     delete(xmlFile)
@@ -1315,6 +1440,17 @@ function TGGPS:loadCourse()
         self.autoLaneSelection = getXMLInt(xmlFile, "tgGps#autoLane") ~= 0
         local section = getXMLInt(xmlFile, "tgGps#currentSection") or 1
         self.sourcePoints = {}
+        self.fieldCurveReference=nil
+        local curveCount=getXMLInt(xmlFile,'tgGps#fieldCurveCount') or 0
+        if self.mode=='field' and curveCount>=2 and curveCount<=10000 then
+            local curve={}
+            for i=0,curveCount-1 do
+                local k=string.format('tgGps.fieldCurve(%d)',i)
+                local x,z=getXMLFloat(xmlFile,k..'#x'),getXMLFloat(xmlFile,k..'#z')
+                if finite(x) and finite(z) then curve[#curve+1]={x=x,z=z} end
+            end
+            if #curve==curveCount then self.fieldCurveReference=curve;self.curveReference=curve end
+        end
 
         for i = 0, pointCount - 1 do
             local key = string.format("tgGps.point(%d)", i)
@@ -1467,6 +1603,10 @@ function TGGPS.installSpecialization(typeManager)
         return
     end
     for typeName, typeEntry in pairs(typeManager.types) do
+        if TGGPSImplementProfile and TGGPSImplementProfile.prerequisitesPresent(typeEntry.specializations)
+            and not SpecializationUtil.hasSpecialization(TGGPSImplementProfile,typeEntry.specializations) then
+            typeManager:addSpecialization(typeName,TGGPS.MOD_NAME..'.tgGpsImplement')
+        end
         if TGGPSVehicle.prerequisitesPresent(typeEntry.specializations)
             and not SpecializationUtil.hasSpecialization(TGGPSVehicle, typeEntry.specializations) then
             typeManager:addSpecialization(typeName, TGGPS.MOD_NAME .. ".tgGpsVehicle")

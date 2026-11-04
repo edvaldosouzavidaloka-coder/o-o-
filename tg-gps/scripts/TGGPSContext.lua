@@ -23,17 +23,21 @@ function TGGPSContext.machineKind(vehicle)
 end
 function TGGPSContext.implement(vehicle)
     local visited, found = {}, nil
+    local selected=call(vehicle,"getSelectedImplement")
+    if type(selected)=="table" and selected.object then selected=selected.object end
+    local selectedWork
     local function scan(object)
         if object == nil or visited[object] then return end
         visited[object] = true
         if object ~= vehicle and (object.spec_cutter ~= nil or object.spec_workArea ~= nil
             or object.spec_sowingMachine ~= nil or object.spec_sprayer ~= nil) then
             if found == nil or object.spec_cutter ~= nil then found = object end
+            if object==selected then selectedWork=object end
         end
         for _, entry in pairs(call(object, "getAttachedImplements") or {}) do scan(entry.object) end
     end
     scan(vehicle)
-    return found
+    return selectedWork or found
 end
 function TGGPSContext.read(owner)
     local vehicle = owner:getControlledVehicle()

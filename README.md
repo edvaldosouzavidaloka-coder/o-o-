@@ -64,25 +64,29 @@ python package.py
 cp FS25_TransbordoInteligente.zip ../FS25_TransbordoInteligente.zip
 ```
 
-## TG GPS PRO — versão de teste 0.7.0.0
+## TG GPS PRO — versão de teste 0.8.0.0
 
 [Baixar FS25_TG_GPS.zip](FS25_TG_GPS.zip) · [Instruções](tg-gps/LEIA-ME.txt) · [Fontes e testes](tg-gps/)
 
-Inclui monitor 3D na cabine, pintura da faixa trabalhada e destaque de sobreposições. Os três scripts de monitor enviados pelo usuário foram adaptados para o TG GPS e usam um único histórico de cobertura no painel e na tela física. O modelo do monitor, as peças da tela e as letras estão incluídos; não exige o CurveGPS instalado.
+Inclui monitor 3D na cabine, pintura da faixa trabalhada e destaque de sobreposições. Mantém o terminal verde e bege escolhido pelo usuário. O painel e a tela física usam o mesmo histórico do implemento e talhão selecionados. O modelo do monitor, as peças da tela e as letras estão incluídos; não exige o CurveGPS instalado.
 
 O terminal agora mostra fazenda, proprietário do terreno, talhão, máquina e implemento, usando os dados disponíveis no jogo. O ícone muda entre trator e colheitadeira e representa a plataforma acoplada. O fundo usa **um recorte local do PDA nativo, que acompanha a máquina**, com zoom compartilhado entre painel e cabine. Não mostra o PDA inteiro. A imagem é a fornecida pelo mapa, sem captura ao vivo do terreno nem serviço externo; se estiver indisponível, o terminal informa isso e usa um fundo neutro.
 
-Os controles permitem deslocar a linha em passos de 10 cm, puxar a passada até a máquina e restaurar o deslocamento. A aba **TRAJETOS** salva linhas com nome, talhão, orientação inicial, largura e ajustes de cabeceira, permite buscar e carregar novamente e mantém registros separados. Exemplo: `Talhão 3 - Norte`. Carregar ou ajustar uma linha mantém o piloto desligado até o jogador conferir o alinhamento.
+Corrige o caminho do PDA identificado no log: imagens `data/maps/...` passam a ser referenciadas como `$data/maps/...` no modelo 3D, sem procurar a imagem dentro de `modSettings`. Uma imagem ausente gera um aviso por textura; o monitor tenta novamente quando o arquivo fica disponível. O brilho da tela física inicia em 20% e pode ser ajustado na aba **MONITOR**.
 
-A largura é independente por veículo e conjunto de implementos e é restaurada ao trocar entre colheitadeira, trator e plantadeiras. Os perfis são guardados junto com os veículos ao salvar a partida. Carregar um trajeto preserva a largura do conjunto atual. Qualquer entrada manual de direção enviada pelo jogo desliga imediatamente o piloto, inclusive durante a cabeceira, sem esperar o fim da passada.
+Os controles permitem deslocar a linha em passos de 10 cm, puxar a passada até a máquina e restaurar o deslocamento. **GERAR TALHÃO** preserva a referência curva quando uma curva está ativa. Na aba **LINHAS**, **GERAR RETAS DO TALHÃO** e **GERAR CURVAS DO TALHÃO** permitem escolher explicitamente. As curvas paralelas são recortadas pelo contorno e pela margem de cabeceira.
+
+A aba **TRAJETOS** salva linhas com nome, talhão e orientação. **SÓ A LINHA** usa as coordenadas originais; **USAR AQUI** posiciona a referência na máquina e, dentro de um talhão reconhecido, gera as passadas para esse campo. As duas opções preservam a largura atual, a pintura e os ajustes de cabeceira do implemento em uso. Exemplo: salvar `Talhão 76 - Plantadeira` e usar somente sua referência no talhão 73. **TODAS AS LINHAS** permite buscar referências de outros implementos e das versões anteriores. Carregar ou ajustar uma linha mantém o piloto desligado até o jogador conferir o alinhamento.
+
+Cada implemento tem sua própria largura, inclusive dois equipamentos do mesmo modelo. A configuração acompanha o implemento ao mudar de trator e é guardada com ele ao salvar a partida. **RESTAURAR SÓ ESTE** redetecta somente a largura selecionada. A linha ativa e a pintura ficam separadas por implemento e talhão; excluir uma linha ou zerar a pintura selecionada preserva os outros registros. Qualquer entrada manual de direção enviada pelo jogo desliga imediatamente o piloto, inclusive durante a cabeceira, sem esperar o fim da passada.
 
 Gere o talhão ou finalize uma reta A/B/curva, baixe/ligue o implemento e avance. A pintura também funciona com direção manual e painel fechado. A medição usa as áreas de trabalho ativas do implemento; ferramentas sem esses dados usam uma posição e largura estimadas. A pintura e os hectares valem apenas para a sessão atual e zeram ao recarregar a partida.
 
-**Ctrl+Alt+M** abre o painel. **Shift direito+M**, com o trator parado, abre o ajuste do monitor físico. Setas movem, PageUp/PageDown alteram a altura, Q/E giram, R/F inclinam e +/- mudam o tamanho. Enter salva por modelo de veículo; Esc cancela. As instruções completas estão no arquivo LEIA-ME.
+**Ctrl+Alt+M** abre o painel; **Ctrl+Alt+C** abre diretamente os ajustes do monitor. **Ctrl+Alt+PageUp/PageDown** ajusta o zoom sem abrir o painel. **Shift direito+M**, com o trator parado, abre o ajuste do monitor físico. Setas movem, PageUp/PageDown alteram a altura, Q/E giram, R/F inclinam e +/- mudam o tamanho. Enter salva por modelo de veículo; Esc cancela. As instruções completas estão no arquivo LEIA-ME.
 
 Feche o FS25, faça backup do ZIP anterior e substitua `FS25_TG_GPS.zip` na pasta `mods`, sem descompactar nem manter cópias duplicadas. Ative o mod em uma partida single-player.
 
-**52 testes simulados passaram**, cobrindo registro de trabalho, sobreposição, ícones, janela local do PDA e coordenadas, controles de linha, biblioteca e persistência, larguras independentes e salvamento nativo, liberação imediata da direção, botões, ancoragem e sequência de cabeceira com plataforma de colheitadeira. A renderização, a textura e o posicionamento em cada cabine e a física dos veículos ainda precisam de validação no FS25. A cabeceira automática exige passadas do modo TALHÃO; em A/B e curvas, o retorno continua manual.
+**68 testes simulados** cobrem o caminho do PDA do log, recuperação de imagem ausente, brilho e atalhos, curvas e recortes, separação de dados por implemento/talhão, reaproveitamento da linha, larguras e salvamento nativo, liberação imediata da direção, botões e sequência de cabeceira com plataforma de colheitadeira. A renderização, a textura, o brilho e o posicionamento em cada cabine e a física dos veículos ainda precisam de validação no FS25. A cabeceira automática exige passadas geradas no modo TALHÃO; em A/B e curva gravada sem gerar o campo, o retorno continua manual.
 
 Para desenvolver, use Python com `lupa==2.6`:
 

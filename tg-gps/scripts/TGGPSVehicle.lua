@@ -46,9 +46,14 @@ function TGGPSVehicle:onRegisterActionEvents(isSelected, isOnActiveVehicle)
     self.tgGpsActionEvents = self.tgGpsActionEvents or {}
     self:clearActionEventsTable(self.tgGpsActionEvents)
 
-    if self.isClient and isOnActiveVehicle and self:getIsActiveForInput(true, true)
+    if self.isClient and self:getIsActiveForInput(true, true)
         and TGGPS ~= nil and TGGPS.registerInputActions ~= nil then
-        TGGPS:registerInputActions(self)
+        local count=TGGPS:registerInputActions(self)
+        if count~=self.tgGpsLastActionCount and Logging then
+            if count==0 then Logging.warning("[TG GPS PRO] Nenhum atalho registrado neste veiculo")
+            else Logging.info(string.format("[TG GPS PRO] %d atalhos registrados no veiculo ativo",count)) end
+        end
+        self.tgGpsLastActionCount=count
     end
 end
 

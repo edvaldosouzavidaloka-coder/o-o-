@@ -9,7 +9,7 @@ parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--output', type=Path, default=ROOT.parent / 'FS25_TG_GPS.zip')
 args = parser.parse_args()
 members = {name: (ROOT / name).read_bytes() for name in ('modDesc.xml', 'icon.dds', 'LEIA-ME.txt')}
-for folder in ('scripts', 'models'):
+for folder in ('scripts', 'models', 'shaders', 'licenses'):
     for path in sorted((ROOT / folder).rglob('*')):
         if path.is_file():
             members[path.relative_to(ROOT).as_posix()] = path.read_bytes()
@@ -25,8 +25,10 @@ for action in actions:
 for name, content in members.items():
     if name.endswith('.i3d'):
         model = ET.fromstring(content)
-        # All supplied/generated geometry and materials are embedded in XML.
-        assert len(model.find('Files')) == 0, name
+        # Geometry is embedded; local shader references must resolve inside the ZIP.
+        for ref in model.findall('./Files/File'):
+            resolved = (ROOT / name).parent.joinpath(ref.attrib['filename']).resolve()
+            assert resolved.is_relative_to(ROOT) and resolved.relative_to(ROOT).as_posix() in members, ref.attrib['filename']
 assert f'TGGPS.VERSION = "{desc.findtext("version")}"' in members['scripts/TGGPS.lua'].decode()
 args.output.parent.mkdir(parents=True, exist_ok=True)
 with zipfile.ZipFile(args.output, 'w', compression=zipfile.ZIP_DEFLATED) as archive:

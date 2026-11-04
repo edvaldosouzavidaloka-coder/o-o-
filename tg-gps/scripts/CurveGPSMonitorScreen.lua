@@ -47,6 +47,7 @@ function TGGPSMonitorScreen:attach(monitorNode, vehicle)
     end
     for code = 32, 126 do
         self.templates["text_" .. code] = find(templates, "text_" .. code)
+        self.templates["textWhite_" .. code] = find(templates,"textWhite_"..code)
     end
     self.elapsed = 250
     self:refresh()
@@ -57,7 +58,8 @@ function TGGPSMonitorScreen:detach()
     if valid(self.contentRoot) then delete(self.contentRoot) end
     if valid(self.templateRoot) then delete(self.templateRoot) end
     self.contentRoot, self.templateRoot, self.monitorRoot, self.vehicle = nil, nil, nil, nil
-    self.nativeNode,self.nativeKey,self.failedNativeKey,self.viewport,self.viewportElapsed=nil,nil,nil,nil,1000
+    self.nativeNode,self.nativeShape,self.nativeKey,self.failedNativeFilename,self.viewport,self.viewportElapsed=nil,nil,nil,nil,nil,1000
+    self.nodeBrightness={}
     self.templates, self.pools, self.used, self.count = {}, {}, {}, 0
 end
 
@@ -89,23 +91,35 @@ function TGGPSMonitorScreen:quad(style, x, y, w, h, rotation, layer)
         if not valid(node) then return false end
         link(self.contentRoot, node)
         pool[index], self.count = node, self.count + 1
+        self.nodeBrightness=self.nodeBrightness or {};self.nodeBrightness[node]=nil
     end
     self.used[style] = index
+    self:applyBrightness(node)
     setVisibility(node, true)
-    setTranslation(node, x, y, 0.004 + (layer or 0) * 0.00004)
+    setTranslation(node, x, y, 0.004 + (layer or 0) * 0.00015)
     setRotation(node, 0, 0, rotation or 0)
     setScale(node, w, h, 1)
     return true
 end
 
-function TGGPSMonitorScreen:text(value, x, y, size, limit)
+function TGGPSMonitorScreen:applyBrightness(node)
+    local value=self.owner.monitorBrightness or 0.20
+    self.nodeBrightness=self.nodeBrightness or {}
+    if self.nodeBrightness[node]~=value and getHasShaderParameter and setShaderParameter
+        and getHasShaderParameter(node,"lcdBrightness") then
+        setShaderParameter(node,"lcdBrightness",value*0.25,0,0,0,false)
+        self.nodeBrightness[node]=value
+    end
+end
+
+function TGGPSMonitorScreen:text(value, x, y, size, limit, white)
     value=tostring(value) -- ASCII glyphs below; normalize complete UTF-8 sequences.
     for from,to in pairs({["á"]="a",["à"]="a",["ã"]="a",["â"]="a",["é"]="e",["ê"]="e",["í"]="i",["ó"]="o",["ô"]="o",["õ"]="o",["ú"]="u",["ç"]="c",
         ["Á"]="A",["Ã"]="A",["É"]="E",["Ó"]="O",["Ç"]="C"}) do value=value:gsub(from,to) end
     value=value:gsub("[^\32-\126]","?"):sub(1,limit or 44)
     for i = 1, #value do
         local code = value:byte(i)
-        if code ~= 32 then self:quad("text_" .. code, x, y, size, size, 0, 8) end
+        if code ~= 32 then self:quad((white and "textWhite_" or "text_") .. code, x, y, size, size, 0, 8) end
         x = x + size * 0.64
     end
 end
@@ -119,8 +133,8 @@ function TGGPSMonitorScreen:refresh()
     if motorOn then
         local context=self.owner:getMonitorContext()
         self:quad("panelHeader",0,0.066,self.WIDTH,0.018,0,3)
-        self:text(context.kind=="combine" and "TG GPS | COLHEITA" or "TG GPS | TRATOR",-0.121,0.061,0.008)
-        self:text(self.owner.autosteerEnabled and "PILOTO" or "MANUAL",0.082,0.061,0.007)
+        self:text(context.kind=="combine" and "TG GPS | COLHEITA" or "TG GPS | TRATOR",-0.121,0.061,0.008,44,true)
+        self:text(self.owner.autosteerEnabled and "PILOTO" or "MANUAL",0.082,0.061,0.007,44,true)
         self:quad("panelCard",-0.095,-0.003,0.060,0.112,0,3)
         self:quad("panelCard",0.103,-0.003,0.042,0.112,0,3)
         self:text("FAZENDA",-0.122,0.043,0.0045)
@@ -145,7 +159,7 @@ function TGGPSMonitorScreen:refresh()
         if self.vehicle~=nil then
             if self.viewport==nil or self.viewport.zoom~=zoom or (self.viewportElapsed or 1000)>=1000 then
                 local pose=self.owner:getVehiclePose(self.vehicle)
-                if pose then self.viewport={x=pose.x,z=pose.z,zoom=zoom};self.viewportElapsed=0 end
+                if pose then self.viewport={x=math.floor(pose.x/2+0.5)*2,z=math.floor(pose.z/2+0.5)*2,zoom=zoom};self.viewportElapsed=0 end
             end
             if self.viewport then options.centerX,options.centerZ=self.viewport.x,self.viewport.z end
         else self.viewport=nil end
@@ -154,18 +168,32 @@ function TGGPSMonitorScreen:refresh()
         for _,command in ipairs(commands) do if command.type=="pda" then nativeCommand=command end end
         if nativeCommand then
             local key=nativeCommand.filename..table.concat(nativeCommand.uvs,":")
-            if key~=self.nativeKey and key~=self.failedNativeKey then
-                local node=TGGPSPDA.createCabBackground(nativeCommand,self.contentRoot,self.WIDTH,self.HEIGHT)
-                if valid(node) then
-                    if valid(self.nativeNode) then delete(self.nativeNode) end
-                    self.nativeNode,self.nativeKey,self.failedNativeKey=node,key,nil
-                else self.failedNativeKey=key end
+            if self.failedNativeFilename==nativeCommand.filename and self.failedNativeRecoverable then
+                local _,lookup=TGGPSPDA.textureForI3D(nativeCommand.filename)
+                if lookup and fileExists and fileExists(lookup) then self.failedNativeFilename=nil end
             end
-            if valid(self.nativeNode) and self.nativeKey==key then setVisibility(self.nativeNode,true) end
+            if key~=self.nativeKey and nativeCommand.filename~=self.failedNativeFilename then
+                local node,reason,recoverable=TGGPSPDA.createCabBackground(nativeCommand,self.contentRoot,self.WIDTH,self.HEIGHT)
+                local shape=valid(node) and find(node,"NativePDA") or nil
+                if valid(node) and valid(shape) then
+                    if valid(self.nativeNode) then delete(self.nativeNode) end
+                    self.nativeNode,self.nativeShape,self.nativeKey,self.failedNativeFilename=node,shape,key,nil
+                    self.nodeBrightness[self.nativeShape]=nil
+                else
+                    if valid(node) then delete(node);reason='Malha do PDA nao foi carregada' end
+                    self.failedNativeFilename=nativeCommand.filename
+                    self.failedNativeRecoverable=recoverable
+                    if Logging and Logging.warning then Logging.warning("[TG GPS PRO] "..tostring(reason)) end
+                end
+            end
+            if valid(self.nativeNode) and self.nativeKey==key then
+                setVisibility(self.nativeNode,true)
+                if valid(self.nativeShape) then self:applyBrightness(self.nativeShape) end
+            end
         end
         for _, command in ipairs(commands) do
             if command.type == "rect" and command.role ~= "legend_background"
-                and not (command.role=="map_background" and nativeCommand and self.nativeKey~=nil) then
+                and not (command.role=="map_background" and nativeCommand and self.nativeKey==nativeCommand.filename..table.concat(nativeCommand.uvs,":")) then
                 local style = command.role == "map_background" and "background" or command.role
                 local layer = (style == "coverage" or style == "coverage_overlap") and 2 or 1
                 self:quad(style, (command.x + command.w / 2 - 0.5) * self.WIDTH,
@@ -184,6 +212,7 @@ function TGGPSMonitorScreen:refresh()
                 end
             end
         end
+        if self.failedNativeFilename then self:text("PDA INDISPONIVEL",-0.055,0.025,0.007,20) end
         if type(self.owner.sourcePoints) ~= "table" or #self.owner.sourcePoints < 2 then
             self:text("MARQUE A/B",-0.042,0,0.008)
         end

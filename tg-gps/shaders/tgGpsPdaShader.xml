@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Keep the engine's diffuse texture sampling. Only scale its intensity;
+     do not reference a local variable from another shader injection stage. -->
+<CustomShader version="5">
+    <Parameters>
+        <Parameter name="lcdBrightness" target="lcdBrightness" type="float4" defaultValue="0.05 0 0 0" />
+    </Parameters>
+    <UvUsages />
+    <LodLevel startDistance="0">
+        <CodeInjections>
+            <CodeInjection position="OBJECT_PARAMETERS"><![CDATA[
+                float4 lcdBrightness;
+            ]]></CodeInjection>
+            <CodeInjection position="POST_DIFFUSE_COLOR_FS"><![CDATA[
+                diffuseColor.rgb *= object.lcdBrightness.x * 4.0;
+            ]]></CodeInjection>
+        </CodeInjections>
+    </LodLevel>
+</CustomShader>

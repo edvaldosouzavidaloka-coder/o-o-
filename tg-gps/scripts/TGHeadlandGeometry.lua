@@ -161,16 +161,17 @@ local function addCapsule(intervals, edge, start, ux, uz, length, radius)
     addClipped(intervals, math.max(pLow, qLow), math.min(pHigh, qHigh), length)
 end
 
-local function clipSection(edges, start, finish, margin, work)
+local function clipSection(edges, start, finish, margin, work, minimum)
+    minimum=minimum or MIN_SECTION_LENGTH
     local dx, dz = finish.x - start.x, finish.z - start.z
     local length = math.sqrt(dx * dx + dz * dz)
     if not finite(length) then return nil, "invalid_lanes" end
-    if length < MIN_SECTION_LENGTH - EPSILON then return {} end
+    if length < minimum - EPSILON then return {} end
     local ux, uz = dx / length, dz / length
     local crossings, insideIntervals, forbidden = {}, {}, {}
     for _, edge in ipairs(edges) do
         work.used = work.used + 1
-        if work.used > MAX_EDGE_WORK then return nil, "geometry_too_complex" end
+        if work.used > (work.limit or MAX_EDGE_WORK) then return nil, "geometry_too_complex" end
         local ax, az = edge.a.x - start.x, edge.a.z - start.z
         local bx, bz = edge.b.x - start.x, edge.b.z - start.z
         local aS, bS = ax * ux + az * uz, bx * ux + bz * uz
@@ -209,13 +210,51 @@ local function clipSection(edges, start, finish, margin, work)
     end
     local result = {}
     for _, interval in ipairs(allowed) do
-        if interval[2] - interval[1] >= MIN_SECTION_LENGTH - EPSILON then
+        if interval[2] - interval[1] >= minimum - EPSILON then
             result[#result + 1] = {
                 {x = start.x + ux * interval[1], z = start.z + uz * interval[1]},
                 {x = start.x + ux * interval[2], z = start.z + uz * interval[2]}
             }
         end
     end
+    return result
+end
+
+-- Clip every segment of a curve analytically, then join only touching fragments.
+-- This preserves curvature and never bridges a concave gap or headland strip.
+function TGHeadlandGeometry.clipPolylines(lanes,boundary,margin)
+    local edges=prepare(boundary)
+    if not edges then return nil,'invalid_polygon' end
+    if not finite(margin) or margin<0 then return nil,'invalid_margin' end
+    local result={lanes={},laneCount=0,sectionCount=0}
+    local work={used=0,limit=2000000}
+    for lane,paths in pairs(lanes) do
+        local sections={}
+        for _,path in ipairs(paths) do
+            local current
+            for i=1,#path-1 do
+                if not validPoint(path[i]) or not validPoint(path[i+1]) then return nil,'invalid_lanes' end
+                local pieces,reason=clipSection(edges,path[i],path[i+1],margin,work,0.01)
+                if not pieces then return nil,reason end
+                if #pieces==0 then current=nil end
+                for _,piece in ipairs(pieces) do
+                    if current and samePoint(current[#current],piece[1]) then current[#current+1]=piece[2]
+                    else current={piece[1],piece[2]};sections[#sections+1]=current end
+                end
+            end
+        end
+        local usable={}
+        for _,path in ipairs(sections) do
+            local length=0
+            for i=2,#path do length=length+math.sqrt((path[i].x-path[i-1].x)^2+(path[i].z-path[i-1].z)^2) end
+            if length>=2 then usable[#usable+1]=path end
+        end
+        if #usable>0 then
+            result.lanes[lane]=usable;result.laneCount=result.laneCount+1;result.sectionCount=result.sectionCount+#usable
+            result.minLane=math.min(result.minLane or lane,lane);result.maxLane=math.max(result.maxLane or lane,lane)
+        end
+    end
+    if result.laneCount==0 then return nil,'no_lanes' end
     return result
 end
 

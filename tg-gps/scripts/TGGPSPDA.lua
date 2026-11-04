@@ -1,6 +1,20 @@
 -- Borrow the game's own PDA image and world-to-image transform, without changing
 -- its map object/overlay. Based on the native-map bridge in the supplied HUD.
 TGGPSPDA = {}
+function TGGPSPDA.textureForI3D(filename)
+    if type(filename)~="string" or filename=="" then return nil,nil end
+    local path=filename:gsub("\\","/")
+    if path:sub(1,6)=="$data/" or path:sub(1,7)=="$dataS/" then return path,path:sub(2) end
+    if path:sub(1,5)=="data/" or path:sub(1,6)=="dataS/" then return "$"..path,path end
+    if path:sub(1,1)=="/" or path:match("^[A-Za-z]:/") then return path,path end
+    local info=g_currentMission and g_currentMission.missionInfo
+    local base=info and (info.baseDirectory or info.mapBaseDirectory)
+    if type(base)=="string" and base~="" and Utils and Utils.getFilename then
+        local resolved=Utils.getFilename(path,base)
+        if resolved and resolved~=path then return TGGPSPDA.textureForI3D(resolved) end
+    end
+    return nil,nil
+end
 function TGGPSPDA.get()
     local m=g_currentMission
     if m==nil then return nil end
@@ -39,6 +53,9 @@ end
 -- external imagery, guessed map size or private engine texture setter is needed.
 function TGGPSPDA.createCabBackground(command,parent,width,height)
     if createXMLFile==nil or setXMLString==nil or saveXMLFile==nil then return nil end
+    local texture,lookup=TGGPSPDA.textureForI3D(command.filename)
+    if texture==nil then return nil,"Caminho do PDA sem base conhecida" end
+    if fileExists and not fileExists(lookup) then return nil,"Textura do PDA indisponivel: "..lookup,true end
     local folder=getUserProfileAppPath()..TGGPS.SAVE_FOLDER
     if createFolder then createFolder(folder) end
     local path=folder.."/pdaMonitor.i3d"
@@ -46,10 +63,15 @@ function TGGPSPDA.createCabBackground(command,parent,width,height)
     if xml==nil or xml==0 then return nil end
     local function put(key,value) setXMLString(xml,"i3D"..key,tostring(value)) end
     put("#name","TGGPSNativePDA");put("#version","1.6")
-    put(".Files.File(0)#fileId",1);put(".Files.File(0)#filename",command.filename)
+    put(".Files.File(0)#fileId",1);put(".Files.File(0)#filename",texture)
+    put(".Files.File(1)#fileId",2)
+    put(".Files.File(1)#filename",TGGPS.MOD_DIRECTORY.."shaders/tgGpsPdaShader.xml")
     local material=".Materials.Material(0)"
     put(material.."#name","nativePda");put(material.."#materialId",1)
     put(material.."#diffuseColor","1 1 1 1");put(material.."#specularColor","0 0 0")
+    put(material.."#customShaderId",2)
+    put(material..".CustomParameter(0)#name","lcdBrightness")
+    put(material..".CustomParameter(0)#value",tostring((TGGPS.monitorBrightness or 0.20)*0.25).." 0 0 0")
     put(material..".Texture#fileId",1)
     local shape=".Shapes.IndexedTriangleSet(0)"
     put(shape.."#name","nativePdaPlane");put(shape.."#shapeId",1)
@@ -72,11 +94,11 @@ function TGGPSPDA.createCabBackground(command,parent,width,height)
         put(scene.."#"..key,value)
     end
     local saved=saveXMLFile(xml);delete(xml)
-    if saved==false then return nil end
+    if saved==false then return nil,"Nao foi possivel preparar a textura da cabine" end
     local node=loadI3DFile(path,false,false,false)
-    if node==nil or node==0 then return nil end
+    if node==nil or node==0 then return nil,"Nao foi possivel carregar o fundo do PDA" end
     link(parent,node)
-    setTranslation(node,(command.x+command.w/2-0.5)*width,(command.y+command.h/2-0.5)*height,0.00404)
+    setTranslation(node,(command.x+command.w/2-0.5)*width,(command.y+command.h/2-0.5)*height,0.00415)
     setScale(node,command.w*width,command.h*height,1)
     return node
 end

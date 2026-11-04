@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- FS25 shader injection interfaces checked against AutoDrive's MIT-licensed
+     line shader. See licenses/AutoDrive-MIT.txt. Tint and intensity are separate:
+     the LCD must not inherit a full-strength emissive material. -->
+<CustomShader version="5">
+    <Parameters>
+        <Parameter name="lcdTint" target="lcdTint" type="float4" defaultValue="1 1 1 1" />
+        <Parameter name="lcdBrightness" target="lcdBrightness" type="float4" defaultValue="0.05 0 0 0" />
+    </Parameters>
+    <UvUsages />
+    <LodLevel startDistance="0">
+        <CodeInjections>
+            <CodeInjection position="OBJECT_PARAMETERS"><![CDATA[
+                float4 lcdTint;
+                float4 lcdBrightness;
+            ]]></CodeInjection>
+            <CodeInjection position="POST_DIFFUSE_COLOR_FS"><![CDATA[
+                diffuseColor.rgb = float3(0.0, 0.0, 0.0);
+            ]]></CodeInjection>
+            <CodeInjection position="EMISSIVE_FS"><![CDATA[
+                emissiveColor.rgb = object.lcdTint.rgb * object.lcdBrightness.x;
+            ]]></CodeInjection>
+        </CodeInjections>
+    </LodLevel>
+</CustomShader>
