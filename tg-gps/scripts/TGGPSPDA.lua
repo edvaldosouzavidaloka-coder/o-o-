@@ -26,8 +26,31 @@ function TGGPSPDA.get()
         local image=map.mapOverlay or (map.mapElement and map.mapElement.overlay)
         if image and type(image.filename)=="string" and image.filename~=""
             and type(map.worldSizeX)=="number" and map.worldSizeX>0
-            and type(map.worldSizeZ)=="number" and map.worldSizeZ>0 then return map,image.filename end
+            and type(map.worldSizeZ)=="number" and map.worldSizeZ>0 then return map,image.filename,image end
     end
+end
+
+-- fileExists checks a literal path, not the engine's texture-resolution rules.
+-- A native *.png reference can be backed by a DDS or the game's virtual data.
+-- Keep the original map filename/UV transform; only resolve the cab I3D asset.
+function TGGPSPDA.resolveCabTexture(filename)
+    local texture,lookup=TGGPSPDA.textureForI3D(filename)
+    if texture==nil then return nil,nil,'Caminho do PDA sem base conhecida',false end
+    if fileExists==nil or fileExists(lookup) then return texture,lookup end
+    local ext=lookup:match('%.([^./]+)$')
+    if ext and ({png=true,tga=true,jpg=true,jpeg=true})[ext:lower()] then
+        local dds=lookup:gsub('%.[^./]+$','.dds')
+        if fileExists(dds) then return TGGPSPDA.textureForI3D(dds) end
+    end
+    -- $data/$dataS are engine mount points. A negative OS-style existence
+    -- result is not evidence that these resources cannot be loaded by GIANTS.
+    if texture:sub(1,6)=='$data/' or texture:sub(1,7)=='$dataS/' then return texture,lookup end
+    local _,nativeFilename,image=TGGPSPDA.get()
+    local overlayId=image and image.overlayId
+    if nativeFilename==filename and type(overlayId)=='number' and overlayId>0 then
+        return texture,lookup
+    end
+    return nil,nil,'Textura do PDA indisponivel: '..lookup,true
 end
 function TGGPSPDA.uv(map,x,z)
     local scale=map.mapExtensionScaleFactor or 1
@@ -73,9 +96,8 @@ end
 -- external imagery, guessed map size or private engine texture setter is needed.
 function TGGPSPDA.createCabBackground(command,parent,width,height)
     if createXMLFile==nil or setXMLString==nil or saveXMLFile==nil then return nil end
-    local texture,lookup=TGGPSPDA.textureForI3D(command.filename)
-    if texture==nil then return nil,"Caminho do PDA sem base conhecida" end
-    if fileExists and not fileExists(lookup) then return nil,"Textura do PDA indisponivel: "..lookup,true end
+    local texture,lookup,reason,recoverable=TGGPSPDA.resolveCabTexture(command.filename)
+    if texture==nil then return nil,reason,recoverable end
     local folder=getUserProfileAppPath()..TGGPS.SAVE_FOLDER
     if createFolder then createFolder(folder) end
     local path=folder.."/pdaMonitor.i3d"

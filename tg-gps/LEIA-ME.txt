@@ -1,8 +1,20 @@
-TG GPS PRO 0.9.0.0 - TERMINAL, MINIMAPA PDA E TRAJETOS - FS25 - single-player
+TG GPS PRO 0.9.1.0 - TERMINAL, MINIMAPA PDA E TRAJETOS - FS25 - single-player
 
 VERSAO PARA TESTE
 Logica, geometria, interface e manobra simulada testadas fora do jogo.
 O FS25 nao esta instalado neste ambiente; valide com seu trator e implemento.
+
+CORRECAO 0.9.1 - TEXTURA DO PDA
+Corrige o falso bloqueio "Textura do PDA indisponivel" para overview.png.
+O nome PNG pode ser atendido por um DDS ou pelo sistema virtual do jogo.
+Agora procura o DDS correspondente e permite que GIANTS resolva os caminhos
+virtuais $data/ e $dataS/, mesmo quando fileExists nao encontra o PNG literal.
+Uma referencia ja carregada pelo overlay nativo do mapa tambem e aceita.
+As coordenadas e o arquivo de referencia do PDA original permanecem intactos.
+Se faltar um arquivo personalizado, recupera quando ele ou seu DDS aparecer.
+Os avisos "i3d contains non-binary indexed triangle sets" continuam: sao sobre
+malhas em texto, cuja conversao para binario exige GIANTS Editor. Eles nao sao
+a causa do falso aviso de textura desta correcao.
 
 NOVO NA VERSAO 0.9 - MONITOR E MINIMAPA
 Adaptacao da organizacao visual do Curve GPS 1.29.3.21, de Andre Girotto,
@@ -20,7 +32,7 @@ Os icones de trator e colheitadeira acompanham o zoom com limites de tamanho.
 O implemento levantado continua desenhado, usando sua posicao como referencia,
 sem produzir pintura. A area real ativa tem prioridade quando estiver trabalhando.
 A base do LCD foi escurecida e a area util ampliada para reduzir a borda clara.
-Foram aprovados 77 testes simulados; a renderizacao e o desempenho no FS25
+Foram aprovados 82 testes simulados; a renderizacao e o desempenho no FS25
 ainda precisam de confirmacao com o mapa e a cabine escolhidos.
 
 TERMINAL E PDA

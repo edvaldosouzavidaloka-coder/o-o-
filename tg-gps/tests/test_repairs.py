@@ -34,6 +34,66 @@ class RepairTests(unittest.TestCase):
         assert(xmlFiles[getUserProfileAppPath()..TGGPS.SAVE_FOLDER..'/pdaMonitor.i3d']==nil)
         ''')
 
+    def test_native_png_reference_uses_existing_dds_for_cab_texture(self):
+        self.check('''
+        metadata();local path='data/maps/mapUS/textures/ui/overview.png'
+        g_currentMission.hud.ingameMap.mapOverlay.filename=path
+        assetFiles['data/maps/mapUS/textures/ui/overview.dds']=true
+        assert(not fileExists(path))
+        TGGPS:update(100);TGGPS:update(450)
+        local xml=xmlFiles[getUserProfileAppPath()..TGGPS.SAVE_FOLDER..'/pdaMonitor.i3d']
+        assert(xml and xml['i3D.Files.File(0)#filename']=='$data/maps/mapUS/textures/ui/overview.dds')
+        assert(TGGPS.monitor.screenRenderer.nativeNode~=nil)
+        assert(g_currentMission.hud.ingameMap.mapOverlay.filename==path)
+        ''')
+
+    def test_virtual_basegame_texture_is_not_rejected_by_literal_file_check(self):
+        self.check('''
+        metadata();local path='data/maps/mapUS/textures/ui/overview.png'
+        g_currentMission.hud.ingameMap.mapOverlay.filename=path
+        assert(not fileExists(path) and not fileExists(path:gsub('%.png$','.dds')))
+        local warnings=0;Logging.warning=function() warnings=warnings+1 end
+        TGGPS:update(100);TGGPS:update(450)
+        local xml=xmlFiles[getUserProfileAppPath()..TGGPS.SAVE_FOLDER..'/pdaMonitor.i3d']
+        assert(xml and xml['i3D.Files.File(0)#filename']=='$'..path)
+        assert(TGGPS.monitor.screenRenderer.nativeNode~=nil and warnings==0)
+        ''')
+
+    def test_custom_map_png_alias_is_resolved_without_changing_native_pda(self):
+        self.check('''
+        metadata();local image=g_currentMission.hud.ingameMap.mapOverlay
+        image.filename='D:/mods/customMap/overview.PNG'
+        assetFiles['D:/mods/customMap/overview.dds']=true
+        local texture=TGGPSPDA.resolveCabTexture(image.filename)
+        assert(texture=='D:/mods/customMap/overview.dds')
+        assert(image.filename=='D:/mods/customMap/overview.PNG' and image.uvs==nil)
+        ''')
+
+    def test_loaded_native_overlay_can_back_a_custom_virtual_texture(self):
+        self.check('''
+        metadata();local image=g_currentMission.hud.ingameMap.mapOverlay
+        image.filename='/packed-map/overview.png';image.overlayId=781
+        assert(not fileExists(image.filename))
+        TGGPS:update(100);TGGPS:update(450)
+        assert(TGGPS.monitor.screenRenderer.nativeNode~=nil)
+        local xml=xmlFiles[getUserProfileAppPath()..TGGPS.SAVE_FOLDER..'/pdaMonitor.i3d']
+        assert(xml['i3D.Files.File(0)#filename']==image.filename)
+        image.overlayId=0
+        assert(TGGPSPDA.resolveCabTexture(image.filename)==nil)
+        ''')
+
+    def test_missing_custom_png_recovers_when_only_its_dds_becomes_ready(self):
+        self.check('''
+        metadata();g_currentMission.hud.ingameMap.mapOverlay.filename='/maps/custom/overview.png'
+        local warnings=0;Logging.warning=function() warnings=warnings+1 end
+        TGGPS:update(100);TGGPS:update(450)
+        assert(TGGPS.monitor.screenRenderer.nativeNode==nil and warnings==1)
+        assetFiles['/maps/custom/overview.dds']=true;TGGPS:update(250)
+        assert(TGGPS.monitor.screenRenderer.nativeNode~=nil and warnings==1)
+        local xml=xmlFiles[getUserProfileAppPath()..TGGPS.SAVE_FOLDER..'/pdaMonitor.i3d']
+        assert(xml['i3D.Files.File(0)#filename']=='/maps/custom/overview.dds')
+        ''')
+
     def test_idle_vehicle_jitter_does_not_regenerate_the_pda_mesh(self):
         self.check('''
         metadata();TGGPS:update(100);TGGPS:update(450)

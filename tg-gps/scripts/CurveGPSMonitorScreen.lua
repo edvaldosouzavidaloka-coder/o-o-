@@ -161,8 +161,7 @@ function TGGPSMonitorScreen:refresh()
         if nativeCommand then
             local key=nativeCommand.filename..table.concat(nativeCommand.uvs,":")
             if self.failedNativeFilename==nativeCommand.filename and self.failedNativeRecoverable then
-                local _,lookup=TGGPSPDA.textureForI3D(nativeCommand.filename)
-                if lookup and fileExists and fileExists(lookup) then self.failedNativeFilename=nil end
+                if TGGPSPDA.resolveCabTexture(nativeCommand.filename) then self.failedNativeFilename=nil end
             end
             if key~=self.nativeKey and nativeCommand.filename~=self.failedNativeFilename then
                 local node,reason,recoverable=TGGPSPDA.createCabBackground(nativeCommand,self.contentRoot,self.WIDTH,self.HEIGHT)

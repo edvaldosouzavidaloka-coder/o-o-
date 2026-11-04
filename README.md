@@ -64,7 +64,7 @@ python package.py
 cp FS25_TransbordoInteligente.zip ../FS25_TransbordoInteligente.zip
 ```
 
-## TG GPS PRO — versão de teste 0.9.0.0
+## TG GPS PRO — versão de teste 0.9.1.0
 
 [Baixar FS25_TG_GPS.zip](FS25_TG_GPS.zip) · [Instruções](tg-gps/LEIA-ME.txt) · [Fontes e testes](tg-gps/)
 
@@ -76,7 +76,9 @@ A versão 0.9 adapta a organização do **monitor e minimapa** do `FS25_CurveGPS
 
 Os ícones acompanham o zoom com limites de legibilidade. O implemento continua representado enquanto está levantado, sem registrar pintura; quando trabalha, a área ativa real tem prioridade. A pintura é recortada dentro do mapa, com orçamento de desenho e reaproveitamento do cálculo entre quadros. A superfície base do LCD ficou escura e a área útil foi ampliada para reduzir a borda clara; o ajuste de brilho continua na aba MONITOR. A comparação com o mod de referência está em [REFERENCIA-MONITOR.md](tg-gps/REFERENCIA-MONITOR.md).
 
-Corrige o caminho do PDA identificado no log: imagens `data/maps/...` passam a ser referenciadas como `$data/maps/...` no modelo 3D, sem procurar a imagem dentro de `modSettings`. Uma imagem ausente gera um aviso por textura; o monitor tenta novamente quando o arquivo fica disponível. O brilho da tela física inicia em 20% e pode ser ajustado na aba **MONITOR**.
+A correção 0.9.1 trata o aviso `Textura do PDA indisponivel: data/maps/mapUS/textures/ui/overview.png`. A checagem anterior bloqueava o carregamento quando o PNG não existia como arquivo literal. Agora procura o DDS correspondente e permite que o carregador GIANTS resolva referências virtuais `$data/` e `$dataS/`; uma imagem já carregada pelo PDA nativo também pode fornecer uma referência virtual de mapa personalizado. O caminho continua sendo o do próprio mapa, sem copiar imagens ou alterar seu overlay. Arquivos personalizados realmente ausentes geram um aviso por textura e podem ser tentados novamente quando o arquivo ou DDS fica disponível. O brilho da tela física inicia em 20% e pode ser ajustado na aba **MONITOR**.
+
+Os avisos `i3d contains non-binary indexed triangle sets` permanecem: as malhas estão em texto e sua conversão para binário exige GIANTS Editor. Esses avisos são independentes da checagem incorreta do PDA.
 
 Os controles permitem deslocar a linha em passos de 10 cm, puxar a passada até a máquina e restaurar o deslocamento. **GERAR TALHÃO** preserva a referência curva quando uma curva está ativa. Na aba **LINHAS**, **GERAR RETAS DO TALHÃO** e **GERAR CURVAS DO TALHÃO** permitem escolher explicitamente. As curvas paralelas são recortadas pelo contorno e pela margem de cabeceira.
 
@@ -90,7 +92,7 @@ Gere o talhão ou finalize uma reta A/B/curva, baixe/ligue o implemento e avance
 
 Feche o FS25, faça backup do ZIP anterior e substitua `FS25_TG_GPS.zip` na pasta `mods`, sem descompactar nem manter cópias duplicadas. Ative o mod em uma partida single-player.
 
-**77 testes simulados passaram**, incluindo rotação e coordenadas da textura do PDA, igualdade do recorte na cabine e no painel, pintura fixa no mundo durante curvas, limites de desenho, tamanho dos ícones, preferência de orientação e implemento levantado. Mantêm as verificações anteriores de brilho, atalhos, curvas, perfis por implemento/talhão, biblioteca, direção e cabeceira. Renderização, brilho, posicionamento, desempenho e física ainda precisam de validação no FS25. A cabeceira automática exige passadas geradas no modo TALHÃO; em A/B e curva gravada sem gerar o campo, o retorno continua manual.
+**82 testes simulados passaram**, incluindo PNG com DDS correspondente, arquivos virtuais do jogo, mapa personalizado com imagem já carregada e recuperação quando somente o DDS aparece. Também cobrem rotação e coordenadas da textura, igualdade do recorte na cabine e no painel, pintura fixa no mundo durante curvas, limites de desenho, ícones, preferência de orientação, implemento levantado, brilho, atalhos, perfis, biblioteca, direção e cabeceira. Renderização, brilho, posicionamento, desempenho e física ainda precisam de validação no FS25. A cabeceira automática exige passadas geradas no modo TALHÃO; em A/B e curva gravada sem gerar o campo, o retorno continua manual.
 
 Para desenvolver, use Python com `lupa==2.6`:
 
