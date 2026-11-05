@@ -9,8 +9,8 @@ local COLORS = {
     selected = {1, 0.84, 0.25, 1}, turn = {1, 1, 1, 1},
     tractor = {0.20, 1, 0.61, 1}, text = {0.82, 0.92, 0.95, 1}
 }
-COLORS.coverage = {0.20, 0.82, 0.30, 0.46}
-COLORS.overlap = {1, 0.67, 0.10, 0.58}
+COLORS.coverage = {0.04, 0.18, 0.95, 0.70}
+COLORS.overlap = {0.02, 0.06, 0.40, 0.80}
 COLORS.implement = {0.25, 0.92, 0.45, 1}
 COLORS.combine = {0.29, 0.88, 0.36, 1}
 COLORS.vehicleWheel = {0.025, 0.03, 0.03, 1}
@@ -298,7 +298,7 @@ function TGGPSMap.getDrawCommands(owner, bounds, options)
                 x=cx-side/sw/2,y=cy-side/sh/2,w=side/sw,h=side/sh,cx=cx,cy=cy,rotation=rotation}
         end
     end
-    label(outside and "MAQUINA FORA DO MAPA" or (nativeMap and "PDA DO JOGO | VERDE: TRABALHADO | AMARELO: SOBREPOSICAO"
-        or "PDA INDISPONIVEL | VERDE: TRABALHADO | AMARELO: SOBREPOSICAO"))
+    label(outside and "MAQUINA FORA DO MAPA" or (nativeMap and "PDA DO JOGO | AZUL: TRABALHADO | AZUL ESCURO: SOBREPOSICAO"
+        or "PDA INDISPONIVEL | AZUL: TRABALHADO | AZUL ESCURO: SOBREPOSICAO"))
     return commands
 end

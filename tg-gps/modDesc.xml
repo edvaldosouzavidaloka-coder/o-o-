@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <modDesc descVersion="105">
     <author>Top Gamers</author>
-    <version>0.9.3.0</version>
+    <version>0.9.4.0</version>
     <title>
         <en>TG GPS PRO - Cab Monitor and Coverage</en>
         <pt>TG GPS PRO - Monitor na Cabine e Pintura</pt>
@@ -32,6 +32,7 @@
         <sourceFile filename="scripts/TGGPSAudio.lua" />
         <sourceFile filename="scripts/TGGPSRecognition.lua" />
         <sourceFile filename="scripts/TGGPSGreenStar.lua" />
+        <sourceFile filename="scripts/TGGPSPerspective.lua" />
         <sourceFile filename="scripts/CurveGPSMonitorScreen.lua" />
         <sourceFile filename="scripts/CurveGPSMonitorManager.lua" />
         <sourceFile filename="scripts/TGFieldCurves.lua" />

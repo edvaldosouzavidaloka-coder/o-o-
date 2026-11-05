@@ -64,7 +64,9 @@ class MonitorTests(unittest.TestCase):
         manifest = ET.parse(ROOT / 'modDesc.xml').getroot()
         for element in manifest.findall('./extraSourceFiles/sourceFile'):
             self.lua.execute((ROOT / element.attrib['filename']).read_text())
-        self.lua.execute('TGGPS:loadMap(); route(TGGPS)')
+        # Preserve explicit coverage of the older top-down renderer/texture
+        # resolver; perspective is the production default and tested separately.
+        self.lua.execute('TGGPS:loadMap(); TGGPS.cabPerspective=false; route(TGGPS)')
 
     def check(self, source):
         self.lua.execute(source)

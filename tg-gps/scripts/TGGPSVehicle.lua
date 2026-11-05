@@ -80,6 +80,9 @@ end
 
 function TGGPSVehicle:onDelete()
     releaseSteering(self)
+    if TGGPS~=nil and TGGPS.monitor~=nil then
+        TGGPS.monitor:onVehicleDeleted(self)
+    end
     if self.tgGpsActionEvents ~= nil then
         self:clearActionEventsTable(self.tgGpsActionEvents)
     end

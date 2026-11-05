@@ -6,7 +6,7 @@ TGGPS = {}
 TGGPS.MOD_NAME = g_currentModName
 TGGPS.MOD_DIRECTORY = g_currentModDirectory
 
-TGGPS.VERSION = "0.9.3.0"
+TGGPS.VERSION = "0.9.4.0"
 TGGPS.DEFAULT_WIDTH = 6.0
 TGGPS.MIN_WIDTH = 1.0
 TGGPS.MAX_WIDTH = 50.0
@@ -169,6 +169,7 @@ function TGGPS:loadMap()
     self.mapZoom, self.contextTimer, self.monitorContext, self.dialogBusy = 1, 0, nil, false
     self.monitorBrightness=0.20
     self.monitorSounds=true
+    self.cabPerspective=true
     self.mapVehicleUp,self.mapViewport,self.mapTime=true,nil,nil
     self.activeImplementId,self.activeSessionKey,self.activeWorkAreaId,self.implementSessions,self.coverageSessions=nil,nil,nil,{},{}
     self.currentLane = 0

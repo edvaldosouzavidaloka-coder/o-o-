@@ -42,11 +42,11 @@
       <CustomParameter name="lcdBrightness" value="0.05 0 0 0" />
     </Material>
     <Material name="coverage" materialId="10" diffuseColor="1 1 1 0.46" specularColor="0 0 0" alphaBlending="true" customShaderId="1">
-      <CustomParameter name="lcdTint" value="0.20 0.82 0.30 1" />
+      <CustomParameter name="lcdTint" value=".04 .18 .95 1" />
       <CustomParameter name="lcdBrightness" value="0.05 0 0 0" />
     </Material>
     <Material name="coverage_overlap" materialId="11" diffuseColor="1 1 1 0.58" specularColor="0 0 0" alphaBlending="true" customShaderId="1">
-      <CustomParameter name="lcdTint" value="1 0.67 0.10 1" />
+      <CustomParameter name="lcdTint" value=".02 .06 .40 1" />
       <CustomParameter name="lcdBrightness" value="0.05 0 0 0" />
     </Material>
     <Material name="off" materialId="12" diffuseColor="1 1 1 1" specularColor="0 0 0" customShaderId="1">
@@ -85,7 +85,7 @@
       <CustomParameter name="lcdTint" value="0.94 0.97 0.98 1" />
       <CustomParameter name="lcdBrightness" value="0.05 0 0 0" />
     </Material>
-  </Materials>
+  <Material name="guidanceGround" materialId="501" diffuseColor="1 1 1 1" customShaderId="1"><CustomParameter name="lcdTint" value=".035 .28 .57 1" /><CustomParameter name="lcdBrightness" value="0.05 0 0 0" /></Material><Material name="guidanceSky" materialId="502" diffuseColor="1 1 1 1" customShaderId="1"><CustomParameter name="lcdTint" value=".015 .025 .12 1" /><CustomParameter name="lcdBrightness" value="0.05 0 0 0" /></Material><Material name="guidanceLane" materialId="503" diffuseColor="1 1 1 1" customShaderId="1"><CustomParameter name="lcdTint" value=".07 .15 .29 1" /><CustomParameter name="lcdBrightness" value="0.05 0 0 0" /></Material><Material name="guidanceSelected" materialId="504" diffuseColor="1 1 1 1" customShaderId="1"><CustomParameter name="lcdTint" value=".95 .95 .95 1" /><CustomParameter name="lcdBrightness" value="0.05 0 0 0" /></Material><Material name="guidancePaint" materialId="505" diffuseColor="1 1 1 1" customShaderId="1"><CustomParameter name="lcdTint" value=".04 .18 .95 1" /><CustomParameter name="lcdBrightness" value="0.05 0 0 0" /></Material><Material name="guidanceOverlap" materialId="506" diffuseColor="1 1 1 1" customShaderId="1"><CustomParameter name="lcdTint" value=".02 .06 .40 1" /><CustomParameter name="lcdBrightness" value="0.05 0 0 0" /></Material></Materials>
   <Shapes>
     <IndexedTriangleSet name="plane" shapeId="1" meshUsage="0" bvCenter="0.00000000 0.00000000 0" bvRadius="0.70710678" isOptimized="true">
       <Vertices count="4" normal="true" uv0="true">
@@ -17945,6 +17945,12 @@
       <Shape name="textWhite_124" shapeId="124" nodeId="205" materialIds="20" castsShadows="false" receiveShadows="false" />
       <Shape name="textWhite_125" shapeId="125" nodeId="206" materialIds="20" castsShadows="false" receiveShadows="false" />
       <Shape name="textWhite_126" shapeId="126" nodeId="207" materialIds="20" castsShadows="false" receiveShadows="false" />
-    </TransformGroup>
+    <Shape name="guidanceGround" shapeId="1" nodeId="2501" materialIds="501" castsShadows="false" receiveShadows="false" />
+      <Shape name="guidanceSky" shapeId="1" nodeId="2502" materialIds="502" castsShadows="false" receiveShadows="false" />
+      <Shape name="guidanceLane" shapeId="1" nodeId="2503" materialIds="503" castsShadows="false" receiveShadows="false" />
+      <Shape name="guidanceSelected" shapeId="1" nodeId="2504" materialIds="504" castsShadows="false" receiveShadows="false" />
+      <Shape name="guidancePaint" shapeId="1" nodeId="2505" materialIds="505" castsShadows="false" receiveShadows="false" />
+      <Shape name="guidanceOverlap" shapeId="1" nodeId="2506" materialIds="506" castsShadows="false" receiveShadows="false" />
+      </TransformGroup>
   </Scene>
 </i3D>

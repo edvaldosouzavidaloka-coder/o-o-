@@ -3,9 +3,9 @@
 TGGPSGreenStar = {}
 TGGPSGreenStar.__index = TGGPSGreenStar
 TGGPSGreenStar.BOOT_MS = 1800
-TGGPSGreenStar.MAP_BOX = {x=14/1024,y=323/1024,w=744/1024,h=414/1024}
+TGGPSGreenStar.MAP_BOX = {x=.225,y=.19,w=.53,h=.62}
 
-local function valid(n) return n~=nil and n~=0 end
+local function valid(n) return n~=nil and n~=0 and entityExists(n) end
 local function finite(n) return type(n)=='number' and n==n and math.abs(n)<math.huge end
 function TGGPSGreenStar.find(node,name)
     if not valid(node) then return nil end
@@ -49,6 +49,29 @@ function TGGPSGreenStar.new(owner,model,vehicle,layout,directory,content)
     self.fill=TGGPSGreenStar.find(overlay,'BootProgressFill')
     self.workRing=TGGPSGreenStar.find(overlay,'GreenStarWorkRing')
     self.bootRing=TGGPSGreenStar.find(overlay,'GreenStarBootRing')
+    self.menuIcons={}
+    for _,name in ipairs({'mapping','guidance','resources','equipment','water','document','totals'}) do
+        self.menuIcons[name]=TGGPSGreenStar.find(overlay,'menu_'..name)
+    end
+    if owner.cabPerspective then
+        for i=0,getNumOfChildren(self.controls)-1 do
+            local node=getChildAt(self.controls,i)
+            if getName(node):match('^originalControl') then setVisibility(node,false) end
+        end
+        local source={{'mapping',800,38,75,80},{'guidance',794,193,84,83},
+            {'resources',925,198,84,84},{'equipment',934,369,77,91},
+            {'water',804,533,62,82},{'document',930,543,72,77},{'totals',915,736,92,70}}
+        for i,entry in ipairs(source) do
+            local node=self.menuIcons[entry[1]]
+            if node then
+                local sx,sy=48/entry[4],48/entry[5]
+                local cx,cy=(entry[2]+entry[4]/2)/1024-.5,.5-(entry[3]+entry[5]/2)/1024
+                setScale(node,sx,sy,1)
+                setTranslation(node,(265+(i-1)*99)/1024-.5-cx*sx,.5-943/1024-cy*sy,.008)
+            end
+        end
+        setTranslation(self.workRing,.43,-.42,.008)
+    end
     if not self.boot or not self.controls or not self.bootProgress or not self.fill or not self.workRing or not self.bootRing then
         delete(overlay);return nil
     end
@@ -57,6 +80,7 @@ function TGGPSGreenStar.new(owner,model,vehicle,layout,directory,content)
 end
 
 function TGGPSGreenStar:update(dt)
+    if not valid(self.screen) or not valid(self.overlay) or not valid(self.content) then return end
     dt=math.max(0,dt or 0)
     local on=self.vehicle.getIsMotorStarted==nil or self.vehicle:getIsMotorStarted()
     local previous=self.state
@@ -85,6 +109,18 @@ function TGGPSGreenStar:update(dt)
     setVisibility(self.workRing,self.working)
     if booting or self.working then self.angle=(self.angle-math.rad(350)*dt/1000)%(2*math.pi) end
     setRotation(self.workRing,0,0,self.angle);setRotation(self.bootRing,0,0,self.angle)
+    self.animationTime=(self.animationTime or 0)+dt
+    local context=self.owner:getMonitorContext()
+    local active={mapping=self.working,guidance=self.owner.autosteerEnabled==true,
+        resources=self.owner.recognition and self.owner.recognition.boundary~=nil,
+        equipment=coverage and coverage.working,water=context.implement and context.implement.spec_sprayer~=nil and self.working,
+        document=self.owner.isRecording==true,totals=coverage and coverage:getWorkedHa()>0}
+    for name,node in pairs(self.menuIcons) do
+        if valid(node) and getHasShaderParameter and setShaderParameter and getHasShaderParameter(node,'lcdBrightness') then
+            local pulse=ready and active[name] and (1+.30*(.5+.5*math.sin(self.animationTime/230))) or 1
+            setShaderParameter(node,'lcdBrightness',(self.owner.monitorBrightness or .20)*.25*pulse,0,0,0,false)
+        end
+    end
 end
 
 function TGGPSGreenStar:delete()

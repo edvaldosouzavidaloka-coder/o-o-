@@ -1,6 +1,8 @@
-# Monitor e minimapa — TG GPS 0.9.3.0
+# Monitor e minimapa — TG GPS 0.9.4.0
 
-O monitor físico atual é o GreenStar 3 enviado em `GPS.zip` e `GPS3000.dds`. A importação, animações, sons, três formas de reconhecimento, validação e limites estão em [MONITOR-GREENSTAR.md](MONITOR-GREENSTAR.md). As sete imagens/recursos binários originais permanecem idênticos. O terminal 2D conserva os controles TG. São **104 testes simulados aprovados**; o resultado visual precisa de confirmação no FS25.
+O monitor físico atual é o GreenStar 3 enviado em `GPS.zip` e `GPS3000.dds`. A importação, animações, sons, três formas de reconhecimento, validação e limites estão em [MONITOR-GREENSTAR.md](MONITOR-GREENSTAR.md). As sete imagens/recursos binários originais permanecem idênticos. O terminal 2D conserva os controles TG. São **118 testes simulados aprovados**; o resultado visual precisa de confirmação no FS25.
+
+Na 0.9.4.0 a tela física passa a usar perspectiva sem PDA e pintura azul; a organização abaixo descreve o minimapa 2D e o renderer anterior.
 
 ## Referência da organização do minimapa
 
@@ -26,4 +28,4 @@ A correção 0.9.2 substitui os símbolos feitos de barras por desenhos próprio
 
 A pintura recente segue os polígonos das bordas reais do implemento. A grade de composição visual é de até 384 × 192 amostras, com união vertical de faixas iguais antes de reduzir resolução. A grade visual de sobreposição e histórico tem 0,75 m; a medição de hectares continua na grade original de 0,75 m. Histórico arquivado permanece disponível quando os trechos visuais mais antigos são removidos da memória limitada.
 
-Validação atual: **104 testes em Lua 5.1 simulada**, incluindo o monitor GreenStar e as regressões anteriores de arquivos DDS completos, geometria e materiais dos ícones, rotação pelo centro, largura fracionada da pintura, união de faixas sem baixar resolução e preservação do histórico. Mantêm a resolução de texturas, coordenadas e recorte do PDA, pintura fixa durante curvas, limites de desenho, orientação e implemento levantado. XML, dependências e ZIP são conferidos pelo empacotador. Brilho, shaders, renderização, desempenho e colocação na cabine precisam de confirmação dentro do FS25. A pintura continua limitada à sessão atual, conforme as versões anteriores do TG GPS. Os avisos sobre malhas I3D não binárias permanecem até a conversão em GIANTS Editor.
+Validação atual: **118 testes em Lua 5.1 simulada**, incluindo o monitor GreenStar e as regressões anteriores de arquivos DDS completos, geometria e materiais dos ícones, rotação pelo centro, largura fracionada da pintura, união de faixas sem baixar resolução e preservação do histórico. Mantêm a resolução de texturas, coordenadas e recorte do PDA, pintura fixa durante curvas, limites de desenho, orientação e implemento levantado. XML, dependências e ZIP são conferidos pelo empacotador. Brilho, shaders, renderização, desempenho e colocação na cabine precisam de confirmação dentro do FS25. A pintura continua limitada à sessão atual, conforme as versões anteriores do TG GPS. Os avisos sobre malhas I3D não binárias permanecem até a conversão em GIANTS Editor.

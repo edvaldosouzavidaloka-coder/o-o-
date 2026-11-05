@@ -162,6 +162,111 @@
                 <Subset firstVertex="0" numVertices="4" firstIndex="0" numIndices="6" uvDensity0="1" />
             </Subsets>
         </IndexedTriangleSet>
+        <IndexedTriangleSet name="menu_mapping" shapeId="30" meshUsage="0" bvCenter="0 0 0" bvRadius="0.708">
+            <Vertices count="4" normal="true" uv0="true">
+                <v p="0.281250000 0.384765625 0" n="0 0 1" t0="0.781250000 0.884765625" />
+                <v p="0.354492188 0.384765625 0" n="0 0 1" t0="0.854492188 0.884765625" />
+                <v p="0.354492188 0.462890625 0" n="0 0 1" t0="0.854492188 0.962890625" />
+                <v p="0.281250000 0.462890625 0" n="0 0 1" t0="0.781250000 0.962890625" />
+            </Vertices>
+            <Triangles count="2">
+                <t vi="0 1 2" />
+                <t vi="0 2 3" />
+            </Triangles>
+            <Subsets count="1">
+                <Subset firstVertex="0" numVertices="4" firstIndex="0" numIndices="6" uvDensity0="1" />
+            </Subsets>
+        </IndexedTriangleSet>
+        <IndexedTriangleSet name="menu_guidance" shapeId="31" meshUsage="0" bvCenter="0 0 0" bvRadius="0.708">
+            <Vertices count="4" normal="true" uv0="true">
+                <v p="0.275390625 0.230468750 0" n="0 0 1" t0="0.775390625 0.730468750" />
+                <v p="0.357421875 0.230468750 0" n="0 0 1" t0="0.857421875 0.730468750" />
+                <v p="0.357421875 0.311523438 0" n="0 0 1" t0="0.857421875 0.811523438" />
+                <v p="0.275390625 0.311523438 0" n="0 0 1" t0="0.775390625 0.811523438" />
+            </Vertices>
+            <Triangles count="2">
+                <t vi="0 1 2" />
+                <t vi="0 2 3" />
+            </Triangles>
+            <Subsets count="1">
+                <Subset firstVertex="0" numVertices="4" firstIndex="0" numIndices="6" uvDensity0="1" />
+            </Subsets>
+        </IndexedTriangleSet>
+        <IndexedTriangleSet name="menu_resources" shapeId="32" meshUsage="0" bvCenter="0 0 0" bvRadius="0.708">
+            <Vertices count="4" normal="true" uv0="true">
+                <v p="0.403320312 0.224609375 0" n="0 0 1" t0="0.903320312 0.724609375" />
+                <v p="0.485351562 0.224609375 0" n="0 0 1" t0="0.985351562 0.724609375" />
+                <v p="0.485351562 0.306640625 0" n="0 0 1" t0="0.985351562 0.806640625" />
+                <v p="0.403320312 0.306640625 0" n="0 0 1" t0="0.903320312 0.806640625" />
+            </Vertices>
+            <Triangles count="2">
+                <t vi="0 1 2" />
+                <t vi="0 2 3" />
+            </Triangles>
+            <Subsets count="1">
+                <Subset firstVertex="0" numVertices="4" firstIndex="0" numIndices="6" uvDensity0="1" />
+            </Subsets>
+        </IndexedTriangleSet>
+        <IndexedTriangleSet name="menu_equipment" shapeId="33" meshUsage="0" bvCenter="0 0 0" bvRadius="0.708">
+            <Vertices count="4" normal="true" uv0="true">
+                <v p="0.412109375 0.050781250 0" n="0 0 1" t0="0.912109375 0.550781250" />
+                <v p="0.487304688 0.050781250 0" n="0 0 1" t0="0.987304688 0.550781250" />
+                <v p="0.487304688 0.139648438 0" n="0 0 1" t0="0.987304688 0.639648438" />
+                <v p="0.412109375 0.139648438 0" n="0 0 1" t0="0.912109375 0.639648438" />
+            </Vertices>
+            <Triangles count="2">
+                <t vi="0 1 2" />
+                <t vi="0 2 3" />
+            </Triangles>
+            <Subsets count="1">
+                <Subset firstVertex="0" numVertices="4" firstIndex="0" numIndices="6" uvDensity0="1" />
+            </Subsets>
+        </IndexedTriangleSet>
+        <IndexedTriangleSet name="menu_water" shapeId="34" meshUsage="0" bvCenter="0 0 0" bvRadius="0.708">
+            <Vertices count="4" normal="true" uv0="true">
+                <v p="0.285156250 -0.100585938 0" n="0 0 1" t0="0.785156250 0.399414062" />
+                <v p="0.345703125 -0.100585938 0" n="0 0 1" t0="0.845703125 0.399414062" />
+                <v p="0.345703125 -0.020507812 0" n="0 0 1" t0="0.845703125 0.479492188" />
+                <v p="0.285156250 -0.020507812 0" n="0 0 1" t0="0.785156250 0.479492188" />
+            </Vertices>
+            <Triangles count="2">
+                <t vi="0 1 2" />
+                <t vi="0 2 3" />
+            </Triangles>
+            <Subsets count="1">
+                <Subset firstVertex="0" numVertices="4" firstIndex="0" numIndices="6" uvDensity0="1" />
+            </Subsets>
+        </IndexedTriangleSet>
+        <IndexedTriangleSet name="menu_document" shapeId="35" meshUsage="0" bvCenter="0 0 0" bvRadius="0.708">
+            <Vertices count="4" normal="true" uv0="true">
+                <v p="0.408203125 -0.105468750 0" n="0 0 1" t0="0.908203125 0.394531250" />
+                <v p="0.478515625 -0.105468750 0" n="0 0 1" t0="0.978515625 0.394531250" />
+                <v p="0.478515625 -0.030273438 0" n="0 0 1" t0="0.978515625 0.469726562" />
+                <v p="0.408203125 -0.030273438 0" n="0 0 1" t0="0.908203125 0.469726562" />
+            </Vertices>
+            <Triangles count="2">
+                <t vi="0 1 2" />
+                <t vi="0 2 3" />
+            </Triangles>
+            <Subsets count="1">
+                <Subset firstVertex="0" numVertices="4" firstIndex="0" numIndices="6" uvDensity0="1" />
+            </Subsets>
+        </IndexedTriangleSet>
+        <IndexedTriangleSet name="menu_totals" shapeId="36" meshUsage="0" bvCenter="0 0 0" bvRadius="0.708">
+            <Vertices count="4" normal="true" uv0="true">
+                <v p="0.393554688 -0.287109375 0" n="0 0 1" t0="0.893554688 0.212890625" />
+                <v p="0.483398438 -0.287109375 0" n="0 0 1" t0="0.983398438 0.212890625" />
+                <v p="0.483398438 -0.218750000 0" n="0 0 1" t0="0.983398438 0.281250000" />
+                <v p="0.393554688 -0.218750000 0" n="0 0 1" t0="0.893554688 0.281250000" />
+            </Vertices>
+            <Triangles count="2">
+                <t vi="0 1 2" />
+                <t vi="0 2 3" />
+            </Triangles>
+            <Subsets count="1">
+                <Subset firstVertex="0" numVertices="4" firstIndex="0" numIndices="6" uvDensity0="1" />
+            </Subsets>
+        </IndexedTriangleSet>
         <IndexedTriangleSet name="BootProgressMask" shapeId="21" meshUsage="0" bvCenter="0 0 0" bvRadius="0.708">
             <Vertices count="4" normal="true" uv0="true">
                 <v p="-0.197265625 -0.072265625 0" n="0 0 1" t0="0.302734375 0.427734375" />
@@ -219,6 +324,15 @@
             <Shape name="originalControl7" nodeId="7" shapeId="7" materialIds="1" castsShadows="false" receiveShadows="false" translation="0 0 0.0075" />
             <Shape name="originalControl8" nodeId="8" shapeId="8" materialIds="1" castsShadows="false" receiveShadows="false" translation="0 0 0.0075" />
             <Shape name="GreenStarWorkRing" nodeId="20" shapeId="20" materialIds="2" castsShadows="false" receiveShadows="false" translation="0.08203125 -0.25 0.008" scale="0.029296875 0.029296875 1" />
+            <TransformGroup name="GreenStarMenuAnimation" nodeId="1003">
+                <Shape name="menu_mapping" nodeId="30" shapeId="30" materialIds="1" castsShadows="false" receiveShadows="false" translation="0 0 0.008" />
+                <Shape name="menu_guidance" nodeId="31" shapeId="31" materialIds="1" castsShadows="false" receiveShadows="false" translation="0 0 0.008" />
+                <Shape name="menu_resources" nodeId="32" shapeId="32" materialIds="1" castsShadows="false" receiveShadows="false" translation="0 0 0.008" />
+                <Shape name="menu_equipment" nodeId="33" shapeId="33" materialIds="1" castsShadows="false" receiveShadows="false" translation="0 0 0.008" />
+                <Shape name="menu_water" nodeId="34" shapeId="34" materialIds="1" castsShadows="false" receiveShadows="false" translation="0 0 0.008" />
+                <Shape name="menu_document" nodeId="35" shapeId="35" materialIds="1" castsShadows="false" receiveShadows="false" translation="0 0 0.008" />
+                <Shape name="menu_totals" nodeId="36" shapeId="36" materialIds="1" castsShadows="false" receiveShadows="false" translation="0 0 0.008" />
+            </TransformGroup>
         </TransformGroup>
         <TransformGroup name="GreenStarBootProgress" nodeId="1002">
             <Shape name="BootProgressMask" nodeId="21" shapeId="21" materialIds="3" castsShadows="false" receiveShadows="false" translation="0 0 0.0075" />

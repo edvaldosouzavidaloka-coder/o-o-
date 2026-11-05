@@ -105,6 +105,13 @@ def main(source):
     ring = quad(shapes, controls, 20, 'GreenStarWorkRing', 2, (0,0,1024,1024), z=0.008)
     ring.set('translation', '0.08203125 -0.25 0.008')
     ring.set('scale', '0.029296875 0.029296875 1')
+    menu = ET.SubElement(controls, 'TransformGroup', name='GreenStarMenuAnimation', nodeId='1003')
+    for i,(name,box) in enumerate([
+        ('mapping',(800,38,75,80)),('guidance',(794,193,84,83)),
+        ('resources',(925,198,84,84)),('equipment',(934,369,77,91)),
+        ('water',(804,533,62,82)),('document',(930,543,72,77)),
+        ('totals',(915,736,92,70))],30):
+        quad(shapes,menu,i,'menu_'+name,1,box,z=0.008)
     boot = ET.SubElement(scene, 'TransformGroup', name='GreenStarBootProgress', nodeId='1002')
     quad(shapes, boot, 21, 'BootProgressMask', 3, (155,263,222,30), source_size=512)
     fill = quad(shapes, boot, 22, 'BootProgressFill', 4, (0,0,1024,1024), z=0.008)

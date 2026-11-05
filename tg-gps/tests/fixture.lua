@@ -16,6 +16,7 @@ function link(parent,node)
     node.parent=parent; parent.children[#parent.children+1]=node
 end
 function getName(n) return n.name end
+function entityExists(n) return type(n)=='table' and not n.deleted and not n.closed end
 function getParent(n) return n.parent or 0 end
 function getNumOfChildren(n) return #n.children end
 function getChildAt(n,i) return n.children[i+1] end
@@ -35,7 +36,7 @@ end
 function delete(n)
     if n.xml then n.closed=true; return end
     if n.sample then n.deleted=true;return end
-    if n.deleted then return end
+    assert(not n.deleted,"Unknown entity id for 'object' in method 'delete'")
     local children={unpack(n.children)}
     for _,c in ipairs(children) do delete(c) end
     if n.parent then

@@ -4,7 +4,7 @@
 TGGPSMonitorManager = {}
 TGGPSMonitorManager.__index = TGGPSMonitorManager
 
-local function valid(node) return node ~= nil and node ~= 0 end
+local function valid(node) return node ~= nil and node ~= 0 and entityExists(node) end
 local function copy(value)
     local result = {}
     for k, v in pairs(value) do result[k] = v end
@@ -118,6 +118,14 @@ function TGGPSMonitorManager:removeMonitor()
     self.screenRenderer:detach()
     if valid(self.monitorNode) then delete(self.monitorNode) end
     self.monitorNode, self.parentNode, self.placement = nil, nil, nil
+end
+
+function TGGPSMonitorManager:onVehicleDeleted(vehicle)
+    if self.vehicle==vehicle or self.screenRenderer.vehicle==vehicle then
+        self:removeMonitor()
+        self.vehicle=nil
+    end
+    if self.pendingVehicle==vehicle then self.pendingVehicle=nil end
 end
 
 function TGGPSMonitorManager:update(dt)
