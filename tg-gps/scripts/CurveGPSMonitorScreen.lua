@@ -36,7 +36,7 @@ function TGGPSMonitorScreen.new(owner, modDirectory)
         templates = {}, pools = {}, used = {}, count = 0, elapsed = 250}, TGGPSMonitorScreen)
 end
 
-function TGGPSMonitorScreen:attach(monitorNode, vehicle)
+function TGGPSMonitorScreen:attach(monitorNode, vehicle, layout)
     self:detach()
     local root = find(monitorNode, "MonitorRoot")
     local screen = find(monitorNode, "MonitorScreen")
@@ -51,6 +51,9 @@ function TGGPSMonitorScreen:attach(monitorNode, vehicle)
     link(root, content)
     self.contentRoot, self.templateRoot = content, templates
     self.vehicle, self.monitorRoot = vehicle, root
+    self.WIDTH,self.HEIGHT=layout.width,layout.height
+    self.greenStar=TGGPSGreenStar.new(self.owner,monitorNode,vehicle,layout,self.modDirectory,content)
+    if self.greenStar==nil then self:detach();return false end
     for _, style in ipairs(self.STYLES) do
         self.templates[style] = find(templates, style)
         if not valid(self.templates[style]) then self:detach(); return false end
@@ -76,6 +79,7 @@ function TGGPSMonitorScreen:attach(monitorNode, vehicle)
 end
 
 function TGGPSMonitorScreen:detach()
+    if self.greenStar then self.greenStar:delete();self.greenStar=nil end
     if valid(self.contentRoot) then delete(self.contentRoot) end
     if valid(self.templateRoot) then delete(self.templateRoot) end
     if valid(self.symbolTemplateRoot) then delete(self.symbolTemplateRoot) end
@@ -151,38 +155,68 @@ function TGGPSMonitorScreen:text(value, x, y, size, limit, white)
     end
 end
 
+function TGGPSMonitorScreen:pixelText(value,x,y,size,limit,white)
+    self:text(value,(x/1024-.5)*self.WIDTH,(.5-y/1024)*self.HEIGHT,size/1024*self.HEIGHT,limit,white)
+end
+
+function TGGPSMonitorScreen:pixelQuad(style,x,y,w,h,layer)
+    self:quad(style,(x/1024-.5)*self.WIDTH,(.5-y/1024)*self.HEIGHT,
+        w/1024*self.WIDTH,h/1024*self.HEIGHT,0,layer or 6)
+end
+
+function TGGPSMonitorScreen:drawGreenStarReadouts()
+    local context=self.owner:getMonitorContext()
+    local state=self.owner.recognition and self.owner.recognition.state
+    local kind=context.kind=='combine' and 'COLHEITA' or 'TRATOR'
+    self:pixelText(string.format('%s | %.1f M | %s',kind,self.owner.width or 6,context.fieldName),24,310,15,55,true)
+    local edge=state and state.borderDistance
+    self:pixelText(edge and string.format('BORDA %.1f M%s',edge,state.nearHeadland and ' | CABECEIRA' or '')
+        or 'BORDA NAO INFORMADA PELO MAPA',24,332,12,55,true)
+    self:pixelText(self.owner.autosteerEnabled and 'PILOTO LIGADO' or 'DIRECAO MANUAL',180,681,14,32,true)
+    local speed=self.vehicle.getLastSpeed and self.vehicle:getLastSpeed() or 0
+    local motor=self.vehicle.spec_motorized
+    local fuel=motor and motor.lastFuelUsageDisplay
+    local rate=(self.owner.width or 6)*math.abs(speed)/10
+    self.readoutFuel=(type(fuel)=='number' and rate>0.01 and self.owner.coverage and self.owner.coverage.working)
+        and string.format('%.1f',fuel/rate) or '--'
+    self:pixelQuad('panelCard',155,783,150,45)
+    self:pixelText(self.readoutFuel,110,795,27,7)
+    local cruise=self.vehicle.getCruiseControlSpeed and self.vehicle:getCruiseControlSpeed() or speed
+    self:pixelQuad('panelCard',500,778,103,44)
+    self:pixelText(string.format('%.1f',cruise),465,790,26,6)
+    if self.owner.autosteerEnabled then
+        self:pixelQuad('panelCard',432,978,150,34)
+        self:pixelText('Steer ON',386,988,23,12)
+    end
+    local result=self.owner:calculateSteering(self.vehicle,self.owner.travelDirection)
+    local pose=state and state.pose
+    if result and pose then
+        local signed=(pose.x-result.nearest.x)*(pose.dz or 1)-(pose.z-result.nearest.z)*(pose.dx or 0)
+        local inches=signed/0.0254
+        self.crossTrackMetres=signed
+        self:pixelQuad('green',414,184,54,41)
+        self:pixelText(string.format('%+.0f',inches),396,194,20,5)
+        local marker=414+math.max(-308,math.min(266,inches*8))
+        if math.abs(marker-414)>37 then self:pixelQuad('green',marker,193,12,62) end
+    else self.crossTrackMetres=nil end
+end
+
 function TGGPSMonitorScreen:refresh()
     if not valid(self.contentRoot) or self.vehicle == nil then return end
     self:beginFrame()
     local motorOn = self.vehicle.getIsMotorStarted == nil or self.vehicle:getIsMotorStarted()
+    if self.greenStar then
+        self:applyBrightness(self.greenStar.screen)
+        self:applyBrightness(self.greenStar.boot)
+        self:applyBrightness(self.greenStar.overlay)
+    end
     if valid(self.nativeNode) then setVisibility(self.nativeNode,false) end
-    self:quad(motorOn and "background" or "off", 0, 0, self.WIDTH, self.HEIGHT, 0, 0)
+    if not motorOn then self:quad('off',0,0,self.WIDTH,self.HEIGHT,0,0) end
     if motorOn then
-        local context=self.owner:getMonitorContext()
-        self:quad("panelHeader",0,0.066,self.WIDTH,0.018,0,3)
-        self:text(context.kind=="combine" and "TG GPS | COLHEITA" or "TG GPS | TRATOR",-0.121,0.061,0.008,44,true)
-        self:text(self.owner.autosteerEnabled and "PILOTO" or "MANUAL",0.082,0.061,0.007,44,true)
-        self:quad("panelCard",-0.095,-0.003,0.060,0.112,0,3)
-        self:quad("panelCard",0.103,-0.003,0.042,0.112,0,3)
-        self:text("FAZENDA",-0.122,0.043,0.0045)
-        self:text(context.farmName,-0.122,0.034,0.0055,16)
-        self:text("PROPRIETARIO",-0.122,0.019,0.0045)
-        self:text(context.ownerName,-0.122,0.010,0.0055,16)
-        self:text("TALHAO",-0.122,-0.006,0.0045)
-        self:text(context.fieldName,-0.122,-0.015,0.0055,16)
-        self:text(context.machineName,-0.122,-0.034,0.005,17)
-        self:text(context.implementName,-0.122,-0.046,0.0045,19)
-        self:text("PASSADA",0.085,0.043,0.0045)
-        self:text(tostring(self.owner.currentLane or 0),0.085,0.031,0.008)
-        self:text("DESLOC.",0.085,0.015,0.0045)
-        self:text(string.format("%+.2fm",self.owner.trackOffset or 0),0.085,0.004,0.0055)
-        self:text(string.format("ZOOM %.1fx",TGGPSMap.getZoom(self.owner)),0.085,-0.015,0.0045)
-        self:text("CABECEIRA",0.085,-0.032,0.0045)
-        self:text(self.owner.headlandEnabled and "LIGADA" or "MANUAL",0.085,-0.043,0.0055)
-        local options = {screenWidth = 516, screenHeight = 312, drawField = false,
+        local options = {screenWidth = 640, screenHeight = 480, drawField = false,
             coverageBudget = 130, laneBudget = 70, boundaryBudget = 40,
             selectedBudget = 55, turnBudget = 45}
-        local commands = TGGPSMap.getDrawCommands(self.owner, {x = 0.255, y = 0.15, w = 0.56, h = 0.70}, options)
+        local commands = TGGPSMap.getDrawCommands(self.owner, TGGPSGreenStar.MAP_BOX, options)
         local nativeCommand
         for _,command in ipairs(commands) do if command.type=="pda" then nativeCommand=command end end
         if nativeCommand then
@@ -233,21 +267,23 @@ function TGGPSMonitorScreen:refresh()
                 end
             end
         end
-        if self.failedNativeFilename then self:text("PDA INDISPONIVEL",-0.055,0.025,0.007,20) end
+        if self.failedNativeFilename then self:pixelText('PDA INDISPONIVEL',180,400,19,22,true) end
         if type(self.owner.sourcePoints) ~= "table" or #self.owner.sourcePoints < 2 then
-            self:text("MARQUE A/B",-0.042,0,0.008)
+            self:pixelText('MARQUE A/B OU GERE O TALHAO',180,452,18,28,true)
         end
         if self.owner.coverage ~= nil then
             local coverage = self.owner.coverage
-            self:text(string.format("%.2f HA", coverage:getWorkedHa()), -0.118, -0.069, 0.010)
-            self:text(coverage.working and "TRABALHANDO" or "EM ESPERA", 0.036, -0.069, 0.008)
+            self:pixelText(string.format('%.2f HA', coverage:getWorkedHa()),190,626,17,18,true)
+            self:pixelText(coverage.working and 'TRABALHANDO' or 'EM ESPERA',190,651,15,18,true)
         end
+        self:drawGreenStarReadouts()
     end
     self:finishFrame()
 end
 
 function TGGPSMonitorScreen:update(dt)
     if not valid(self.contentRoot) then return end
+    if self.greenStar then self.greenStar:update(dt) end
     self.elapsed = self.elapsed + math.max(0, dt or 0)
     if self.elapsed >= 250 then self.elapsed = self.elapsed % 250; self:refresh() end
 end

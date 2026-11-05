@@ -28,11 +28,13 @@ function createTransformGroup(name) return makeNode(name) end
 function clone(n)
     local result=makeNode(n.name)
     result.isShape=n.isShape
+    for _,field in ipairs({'x','y','z','rx','ry','rz','sx','sy','sz','visible','shapeSphere'}) do result[field]=n[field] end
     for _,child in ipairs(n.children) do link(result,clone(child)) end
     return result
 end
 function delete(n)
     if n.xml then n.closed=true; return end
+    if n.sample then n.deleted=true;return end
     if n.deleted then return end
     local children={unpack(n.children)}
     for _,c in ipairs(children) do delete(c) end
@@ -41,20 +43,67 @@ function delete(n)
     end
     n.deleted=true; n.children={}; n.parent=nil
 end
-function getWorldTranslation(n)
-    if n.parent then
-        local px,py,pz=getWorldTranslation(n.parent)
-        local fx,_,fz=localDirectionToWorld(n.parent,0,0,1)
-        return px+n.x*fz+n.z*fx, py+n.y, pz-n.x*fx+n.z*fz
-    end
-    return n.x,n.y,n.z
+local function rotate(n,x,y,z)
+    local cx,sx=math.cos(n.rx),math.sin(n.rx)
+    local cy,sy=math.cos(n.ry),math.sin(n.ry)
+    local cz,sz=math.cos(n.rz),math.sin(n.rz)
+    y,z=cx*y-sx*z,sx*y+cx*z
+    x,z=cy*x+sy*z,-sy*x+cy*z
+    return cz*x-sz*y,sz*x+cz*y,z
 end
+local function unrotate(n,x,y,z)
+    local cx,sx=math.cos(n.rx),math.sin(n.rx)
+    local cy,sy=math.cos(n.ry),math.sin(n.ry)
+    local cz,sz=math.cos(n.rz),math.sin(n.rz)
+    x,y=cz*x+sz*y,-sz*x+cz*y
+    x,z=cy*x-sy*z,sy*x+cy*z
+    return x,cx*y+sx*z,-sx*y+cx*z
+end
+function localToWorld(n,x,y,z)
+    x,y,z=rotate(n,x*n.sx,y*n.sy,z*n.sz)
+    x,y,z=x+n.x,y+n.y,z+n.z
+    if n.parent then return localToWorld(n.parent,x,y,z) end
+    return x,y,z
+end
+function getWorldTranslation(n) return localToWorld(n,0,0,0) end
+function worldToLocal(n,x,y,z)
+    if n.parent then x,y,z=worldToLocal(n.parent,x,y,z) end
+    x,y,z=unrotate(n,x-n.x,y-n.y,z-n.z)
+    return x/n.sx,y/n.sy,z/n.sz
+end
+function localToLocal(a,b,x,y,z) return worldToLocal(b,localToWorld(a,x,y,z)) end
 function localDirectionToWorld(n,x,y,z)
-    local yaw=n.ry or 0
-    local p=n.parent
-    while p do yaw=yaw+(p.ry or 0);p=p.parent end
-    return x*math.cos(yaw)+z*math.sin(yaw), y, z*math.cos(yaw)-x*math.sin(yaw)
+    x,y,z=rotate(n,x,y,z)
+    if n.parent then return localDirectionToWorld(n.parent,x,y,z) end
+    return x,y,z
 end
+function worldDirectionToLocal(n,x,y,z)
+    if n.parent then x,y,z=worldDirectionToLocal(n.parent,x,y,z) end
+    return unrotate(n,x,y,z)
+end
+function setDirection(n,zx,zy,zz,ux,uy,uz)
+    local length=math.sqrt(zx*zx+zy*zy+zz*zz);zx,zy,zz=zx/length,zy/length,zz/length
+    local xx,xy,xz=uy*zz-uz*zy,uz*zx-ux*zz,ux*zy-uy*zx
+    length=math.sqrt(xx*xx+xy*xy+xz*xz);xx,xy,xz=xx/length,xy/length,xz/length
+    local yy,yz=zz*xx-zx*xz,zx*xy-zy*xx
+    n.rx,n.ry,n.rz=math.atan2(yz,zz),math.asin(math.max(-1,math.min(1,-xz))),math.atan2(xy,xx)
+    n.sx,n.sy,n.sz=1,1,1
+end
+function getShapeGeometryBoundingSphere(node)
+    assert(node.isShape,'Geometry bounds queried on a transform group')
+    return unpack(node.shapeSphere)
+end
+samples,soundEvents={},{}
+function createSample(name)
+    local sample={sample=true,name=name};samples[#samples+1]=sample;return sample
+end
+function loadSample(sample,filename,is3D) sample.filename,sample.is3D=filename,is3D;return true end
+function playSample(sample,loops,volume,offset,delay,after)
+    assert(not sample.deleted);soundEvents[#soundEvents+1]={sample=sample,loops=loops,volume=volume}
+end
+function stopSample(sample) sample.stopped=true end
+function setSampleGroup(sample,group) sample.group=group end
+AudioGroup={VEHICLE=1}
 function getUserProfileAppPath() return '/test-profile/' end
 function createFolder() end
 function fileExists(path) return xmlFiles[path]~=nil or assetFiles[path]==true end

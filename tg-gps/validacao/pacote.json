@@ -1,0 +1,29 @@
+{
+  "file": "FS25_TG_GPS.zip",
+  "version": "0.9.3.0",
+  "files": 47,
+  "bytes": 5748641,
+  "sha256": "7e8f686aae26f1894ec589a734a2d8a2b57d9a5fa9005b293d1195ee017055a2",
+  "simulated_tests_passed": 104,
+  "zip_crc": "passed",
+  "missing_local_resources": [],
+  "original_assets_hashes": "models/greenstar/source-hashes.json",
+  "native_game_resource_references_unverified": [
+    "$data/shaders/glowShader.xml",
+    "$data/shaders/vehicleShader.xml",
+    "$data/shared/default_normal.png",
+    "$data/shared/default_vmask.png",
+    "$data/shared/detailLibrary/flat_normal.png",
+    "$data/shared/detailLibrary/metallic/clear_diffuse.png",
+    "$data/shared/detailLibrary/metallic/clear_specular.png",
+    "$data/shared/detailLibrary/nonMetallic/metal/metalPainted_diffuse.png",
+    "$data/shared/detailLibrary/nonMetallic/metal/metalPainted_specular.png",
+    "$data/shared/detailLibrary/nonMetallic/plastic/plasticPainted_diffuse.png",
+    "$data/shared/detailLibrary/nonMetallic/plastic/plasticPainted_specular.png",
+    "$data/shared/detailLibrary/nonMetallic/rubber/rubberBlack_diffuse.png",
+    "$data/shared/detailLibrary/nonMetallic/rubber/rubber_normal.png",
+    "$data/shared/detailLibrary/nonMetallic/rubber/rubber_specular.png",
+    "$data/shared/window_diffuse.png"
+  ],
+  "executed_in_fs25": false
+}

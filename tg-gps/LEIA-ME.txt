@@ -1,4 +1,25 @@
-TG GPS PRO 0.9.2.1 - TERMINAL, MINIMAPA PDA E TRAJETOS - FS25 - single-player
+TG GPS PRO 0.9.3.0 - MONITOR GREENSTAR 3, MINIMAPA PDA E TRAJETOS - FS25 - single-player
+
+MONITOR GREENSTAR 3 / GPS3000 - 0.9.3.0
+Monitor fisico substituido pelo modelo de GPS.zip enviado pelo usuario.
+DDS GPS3000, letras, menus, icones e geometria binaria originais preservados.
+Inicializacao com a arte enviada, barra progressiva e indicador giratorio.
+Depois de 1,8 segundo, o mapa e a pintura reais do TG GPS aparecem na janela.
+Indicador de trabalho gira quando o implemento trabalha e a maquina se move.
+O motor desligado apaga a tela; religar reinicia a sequencia.
+Sinais proprios de conexao/desconexao na inicializacao e nas mudancas do piloto.
+Ctrl+Alt+C > SONS DO MONITOR permite silenciar e salva a preferencia.
+Posicao inicial usa a camera interna e distingue trator de colheitadeira.
+Posicoes ja salvas sao respeitadas; Shift direito+M e Home restauram o padrao.
+Reconhece tipo da maquina, largura do implemento/plataforma e posicao real.
+Le o contorno nativo do campo e mostra distancia ate a borda e cabeceira.
+Mapas sem esse poligono ficam com borda nao informada, sem inventar limites.
+Gerar passadas e ativar manobras continuam nos controles existentes do TG.
+Os botoes impressos na textura 3D sao arte; comandos reais ficam no terminal TG
+e nos atalhos. Terminal 2D, biblioteca, perfis, pintura e piloto preservados.
+Pacote completo: instale FS25_TG_GPS.zip em mods, sem descompactar.
+104 testes simulados aprovados. O alinhamento fino da tela, a orientacao UV,
+shaders, som e posicionamento em cada cabine ainda precisam de teste no FS25.
 
 CORRECAO 0.9.2.1
 Ajustada a consulta de brilho: TransformGroups dos icones sao percorridos,
@@ -49,7 +70,7 @@ Os icones de trator e colheitadeira acompanham o zoom com limites de tamanho.
 O implemento levantado continua desenhado, usando sua posicao como referencia,
 sem produzir pintura. A area real ativa tem prioridade quando estiver trabalhando.
 A base do LCD foi escurecida e a area util ampliada para reduzir a borda clara.
-Foram aprovados 89 testes simulados; a renderizacao e o desempenho no FS25
+Foram aprovados 104 testes simulados; a renderizacao e o desempenho no FS25
 ainda precisam de confirmacao com o mapa e a cabine escolhidos.
 
 TERMINAL E PDA
@@ -121,7 +142,8 @@ Nomes novos nao substituem registros anteriores. Uma biblioteca invalida e
 preservada e o mod informa que nao conseguiu salvar, em vez de sobrescreve-la.
 
 MONITOR FISICO
-Monitor 3D dentro da cabine usando o curveGPSMonitor.i3d enviado pelo usuario.
+Monitor 3D dentro da cabine usando o GPS.i3d enviado em GPS.zip, adaptado para
+models/curveGPSMonitor.i3d com o binario e as imagens originais incluidos.
 HUDMonitor.lua foi adaptado para medir e desenhar a cobertura no TG GPS.
 CurveGPSMonitorScreen.lua e CurveGPSMonitorManager.lua foram adaptados para
 o TG GPS, sem exigir o CurveGPS instalado e sem alterar seus controles de piloto.

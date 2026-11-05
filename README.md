@@ -80,9 +80,13 @@ python package.py
 cp FS25_TransbordoInteligente.zip ../FS25_TransbordoInteligente.zip
 ```
 
-## TG GPS PRO — versão de teste 0.9.2.1
+## TG GPS PRO — monitor GreenStar 3, versão de teste 0.9.3.0
 
 [Baixar FS25_TG_GPS.zip](FS25_TG_GPS.zip) · [Instruções](tg-gps/LEIA-ME.txt) · [Fontes e testes](tg-gps/)
+
+O monitor da cabine agora usa o modelo de **GPS.zip** enviado pelo usuário. As texturas GPS3000, as letras e a geometria binária originais foram preservadas. A inicialização usa a arte GreenStar 3 com barra progressiva; o mapa e a pintura reais do TG ocupam a janela central. O indicador de trabalho anima com o implemento ativo e a máquina em movimento. Sons próprios acompanham conexão/desconexão e as mudanças do piloto; podem ser silenciados em **MONITOR**.
+
+O posicionamento inicial usa a câmera interna, com padrões para trator e colheitadeira e ajuste salvo por modelo. O reconhecimento lê a largura do implemento/plataforma, a posição da máquina e o contorno nativo do talhão, indicando distância da borda e cabeceira. Mapas sem polígono exibem a informação como indisponível. Os controles de geração e manobra continuam no terminal TG. [Detalhes e limites do novo monitor](tg-gps/MONITOR-GREENSTAR.md).
 
 Inclui monitor 3D na cabine, pintura da faixa trabalhada e destaque de sobreposições. Mantém o terminal verde e bege escolhido pelo usuário. O painel e a tela física usam o mesmo histórico do implemento e talhão selecionados. O modelo do monitor, as peças da tela e as letras estão incluídos; não exige o CurveGPS instalado.
 
@@ -112,7 +116,7 @@ Gere o talhão ou finalize uma reta A/B/curva, baixe/ligue o implemento e avance
 
 Feche o FS25, faça backup do ZIP anterior e substitua `FS25_TG_GPS.zip` na pasta `mods`, sem descompactar nem manter cópias duplicadas. Ative o mod em uma partida single-player.
 
-**89 testes simulados passaram**, incluindo a correção de `getHasShaderParameter` em ícones agrupados, os ícones de alta definição, seus arquivos DDS completos, geometria plana, rotação pelo centro, largura fracionada da pintura e histórico preservado. Mantêm as verificações de PNG/DDS, arquivos virtuais, recorte e rotação do PDA, limites de desenho, brilho, perfis, biblioteca, direção e cabeceira. Renderização, brilho, posicionamento, desempenho e física ainda precisam de validação no FS25. A cabeceira automática exige passadas geradas no modo TALHÃO; em A/B e curva gravada sem gerar o campo, o retorno continua manual.
+**104 testes simulados passaram**, incluindo o ciclo de energia e animação do GreenStar, sons, posicionamento, reconhecimento de borda e plataforma, e a correção de `getHasShaderParameter` em ícones agrupados, os ícones de alta definição, seus arquivos DDS completos, geometria plana, rotação pelo centro, largura fracionada da pintura e histórico preservado. Mantêm as verificações de PNG/DDS, arquivos virtuais, recorte e rotação do PDA, limites de desenho, brilho, perfis, biblioteca, direção e cabeceira. Renderização, brilho, posicionamento, desempenho e física ainda precisam de validação no FS25. A cabeceira automática exige passadas geradas no modo TALHÃO; em A/B e curva gravada sem gerar o campo, o retorno continua manual.
 
 Para desenvolver, use Python com `lupa==2.6`:
 

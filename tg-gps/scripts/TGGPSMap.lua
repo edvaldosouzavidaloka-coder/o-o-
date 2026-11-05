@@ -136,7 +136,9 @@ function TGGPSMap.getDrawCommands(owner, bounds, options)
     local box = {x = bounds.x + bounds.w * 0.025, y = bounds.y + bounds.h * 0.11,
         w = bounds.w * 0.95, h = bounds.h * 0.76}
     local paths = pathsOf(owner)
-    local boundary = type(owner.fieldBoundary) == "table" and #owner.fieldBoundary >= 3 and owner.fieldBoundary or nil
+    local observed=owner.recognition and owner.recognition.boundary
+    local candidate=owner.fieldBoundary or observed
+    local boundary = type(candidate) == "table" and #candidate >= 3 and candidate or nil
     local extent = {minX = math.huge, maxX = -math.huge, minZ = math.huge, maxZ = -math.huge}
     local function include(point)
         if validPoint(point) then

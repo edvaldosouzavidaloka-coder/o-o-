@@ -219,7 +219,8 @@ function TGGPSHud:getButtons()
         b("map_zoom_out","ZOOM -",214,400,252,38,"onZoomOut",TGGPSMap.getZoom(o)>1)
         b("map_fit","ZOOM PADRAO / SEGUIR MAQUINA",480,400,330,38,"onZoomFit")
         b("map_zoom_in","ZOOM +",824,400,196,38,"onZoomIn",TGGPSMap.getZoom(o)<12)
-        b("reset_coverage","ZERAR PINTURA DESTE IMPLEMENTO / TALHAO",214,468,806,40,"onResetCoverage",true,false,"red")
+        b("monitor_sounds",o.monitorSounds~=false and "SONS DO MONITOR: LIGADOS" or "SONS DO MONITOR: DESLIGADOS",214,442,806,28,"onToggleMonitorSounds")
+        b("reset_coverage","ZERAR PINTURA DESTE IMPLEMENTO / TALHAO",214,478,806,40,"onResetCoverage",true,false,"red")
     end
     return buttons
 end
@@ -368,7 +369,6 @@ function TGGPSHud:getDrawCommands()
         text("Arraste a barra verde para mover o painel.",230,225,16,COLORS.ink)
         rect(214,250,806,52,COLORS.card)
         text(string.format("Brilho da tela na cabine: %d%%",math.floor((o.monitorBrightness or 0.20)*100+0.5)),230,282,17,COLORS.ink,true)
-        text("A pintura e os hectares valem para a sessao atual.",214,448,14,COLORS.muted)
     end
     for _,b in ipairs(self:getButtons()) do
         local color=b.active and COLORS.active or COLORS.button

@@ -36,12 +36,24 @@ class MonitorTests(unittest.TestCase):
                 data = ET.parse(path).getroot()
             make = self.lua.globals().makeNode
             root = make('i3dRoot')
+            spheres = {}
+            for shape in data.findall('./Shapes/IndexedTriangleSet'):
+                spheres[shape.get('shapeId')] = [*map(float, shape.get('bvCenter', '0 0 0').split()), float(shape.get('bvRadius', '.15'))]
 
             def visit(element, parent):
                 node = make(element.get('name', element.tag), parent)
                 node.isShape = element.tag == 'Shape'
+                # The engine supplies bounds from the external binary. This
+                # representative contract deliberately uses a nonzero center.
+                if node.isShape:
+                    node.shapeSphere = self.lua.table_from(spheres.get(element.get('shapeId'), [.012, -.006, -.030, .15]))
+                for attr, fields in [('translation', ('x', 'y', 'z')), ('rotation', ('rx', 'ry', 'rz')), ('scale', ('sx', 'sy', 'sz'))]:
+                    if element.get(attr):
+                        for field, value in zip(fields, map(float, element.get(attr).split())):
+                            node[field] = math.radians(value) if attr == 'rotation' else value
+                node.visible = element.get('visibility', 'true') != 'false'
                 for child in element:
-                    if child.tag in ('TransformGroup', 'Shape'):
+                    if child.tag in ('TransformGroup', 'Shape', 'Light'):
                         visit(child, node)
 
             for element in data.find('Scene'):
@@ -272,13 +284,18 @@ class MonitorTests(unittest.TestCase):
         for path in (ROOT / 'models').glob('*.i3d'):
             data = ET.parse(path).getroot()
             for ref in data.findall('./Files/File'):
+                if ref.get('filename').startswith(('$data/', '$dataS/')):
+                    continue  # Native resources require validation in the game.
                 target=(path.parent/ref.attrib['filename']).resolve()
                 self.assertTrue(target.is_relative_to(ROOT) and target.is_file())
             shapes = {s.attrib['shapeId']: s for s in data.find('Shapes')}
+            external = data.find('Shapes').get('externalShapesFile')
+            if external:
+                self.assertTrue((path.parent/external).is_file())
             materials = {m.attrib['materialId'] for m in data.find('Materials')}
             for node in data.findall('.//Scene//Shape'):
-                self.assertIn(node.attrib['shapeId'], shapes)
-                self.assertTrue(set(node.attrib['materialIds'].split(',')) <= materials)
+                if not external: self.assertIn(node.attrib['shapeId'], shapes)
+                self.assertTrue(set(node.attrib['materialIds'].replace(',', ' ').split()) <= materials)
             for shape in shapes.values():
                 vertices, triangles = shape.find('Vertices'), shape.find('Triangles')
                 self.assertEqual(len(vertices), int(vertices.attrib['count']))

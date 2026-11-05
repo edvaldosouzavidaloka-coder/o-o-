@@ -72,11 +72,13 @@ function TGGPSMonitorManager:saveConfig()
     return result ~= false
 end
 
-function TGGPSMonitorManager:createDefaultPlacement(parentNode, reference)
+function TGGPSMonitorManager:createDefaultPlacement(parentNode, reference, vehicle)
     local x, y, z = -0.35, 1.80, 0.65
-    if valid(reference) and getParent(reference) == parentNode then
-        x, y, z = getTranslation(reference)
-        x, y, z = x - 0.35, y - 0.25, z + 0.65
+    if valid(reference) and localToLocal then
+        x, y, z = localToLocal(reference,parentNode,0,0,0)
+        if TGGPSContext.machineKind(vehicle)=='combine' then
+            x,y,z=x-0.42,y-0.30,z+0.75
+        else x, y, z = x - 0.35, y - 0.25, z + 0.65 end
     end
     return {positionX = x, positionY = y, positionZ = z,
         rotationX = -10, rotationY = 180, rotationZ = 0, scale = 1}
@@ -96,13 +98,15 @@ function TGGPSMonitorManager:attachMonitor(vehicle)
     if not valid(parent) then return false end
     local model = loadI3DFile(self.modDirectory .. "models/curveGPSMonitor.i3d", false, false, false)
     if not valid(model) then return false end
+    local layout=TGGPSGreenStar.prepare(model)
+    if layout==nil then delete(model);return false end
     link(parent, model)
     self.monitorNode, self.parentNode = model, parent
     self.vehicleKey = tostring(vehicle.configFileName or vehicle.typeName or "vehicle")
-    self.defaultPlacement = self:createDefaultPlacement(parent, reference)
+    self.defaultPlacement = self:createDefaultPlacement(parent, reference, vehicle)
     self.placement = copy(self.settings[self.vehicleKey] or self.defaultPlacement)
     self:applyPlacement()
-    if not self.screenRenderer:attach(model, vehicle) then
+    if not self.screenRenderer:attach(model, vehicle, layout) then
         self:removeMonitor()
         return false
     end

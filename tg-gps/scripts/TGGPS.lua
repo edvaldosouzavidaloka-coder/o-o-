@@ -6,7 +6,7 @@ TGGPS = {}
 TGGPS.MOD_NAME = g_currentModName
 TGGPS.MOD_DIRECTORY = g_currentModDirectory
 
-TGGPS.VERSION = "0.9.2.1"
+TGGPS.VERSION = "0.9.3.0"
 TGGPS.DEFAULT_WIDTH = 6.0
 TGGPS.MIN_WIDTH = 1.0
 TGGPS.MAX_WIDTH = 50.0
@@ -158,6 +158,7 @@ end
 
 function TGGPS:loadMap()
     if self.monitor ~= nil then self.monitor:delete() end
+    if self.audio ~= nil then self.audio:delete() end
     if self.hud ~= nil then
         self:closeHud()
         self.hud:delete()
@@ -167,6 +168,7 @@ function TGGPS:loadMap()
     self.trackOffset, self.activeCourseName, self.libraryFilter, self.libraryPage = 0, nil, "", 1
     self.mapZoom, self.contextTimer, self.monitorContext, self.dialogBusy = 1, 0, nil, false
     self.monitorBrightness=0.20
+    self.monitorSounds=true
     self.mapVehicleUp,self.mapViewport,self.mapTime=true,nil,nil
     self.activeImplementId,self.activeSessionKey,self.activeWorkAreaId,self.implementSessions,self.coverageSessions=nil,nil,nil,{},{}
     self.currentLane = 0
@@ -204,6 +206,8 @@ function TGGPS:loadMap()
 
     self.coverage = TGGPSHUDMonitor.new(self)
     self.widthProfiles = TGGPSWidthProfiles.new(self)
+    self.audio = TGGPSAudio.new(self, TGGPS.MOD_DIRECTORY)
+    self.recognition = TGGPSRecognition.new(self)
     self.monitor = TGGPSMonitorManager.new(self, TGGPS.MOD_DIRECTORY)
 
     self:loadCourse()
@@ -437,6 +441,12 @@ function TGGPS:onBrightnessUp()
     self:saveHudSettings()
 end
 
+function TGGPS:onToggleMonitorSounds()
+    self.monitorSounds=self.monitorSounds==false
+    self:saveHudSettings()
+    if self.monitorSounds and self.audio then self.audio:play('connect') end
+end
+
 local function isGameMenuVisible()
     return g_gui ~= nil and g_gui.getIsGuiVisible ~= nil and g_gui:getIsGuiVisible()
 end
@@ -564,6 +574,7 @@ function TGGPS:saveHudSettings()
     setXMLFloat(xml, "tgGpsHud#zoom", self.mapZoom or 1)
     setXMLFloat(xml,"tgGpsHud#brightness",self.monitorBrightness or 0.20)
     setXMLInt(xml,"tgGpsHud#vehicleUp",self.mapVehicleUp~=false and 1 or 0)
+    setXMLInt(xml,"tgGpsHud#monitorSounds",self.monitorSounds~=false and 1 or 0)
     saveXMLFile(xml)
     delete(xml)
     return true
@@ -584,6 +595,7 @@ function TGGPS:loadHudSettings()
     local brightness=getXMLFloat(xml,"tgGpsHud#brightness")
     self.monitorBrightness=finite(brightness) and math.max(0.05,math.min(1,brightness)) or 0.20
     self.mapVehicleUp=getXMLInt(xml,'tgGpsHud#vehicleUp')~=0
+    self.monitorSounds=getXMLInt(xml,'tgGpsHud#monitorSounds')~=0
     self.mapViewport=nil
     delete(xml)
     return true
@@ -1005,6 +1017,7 @@ function TGGPS:onClear(actionName, inputValue)
 end
 
 function TGGPS:stopAutosteer(message)
+    local wasEnabled=self.autosteerEnabled==true
     local hadRaised = self.turnState ~= nil and self.turnState.implements ~= nil
         and #self.turnState.implements.entries > 0 and TGImplementControl ~= nil
         and TGImplementControl.areRaised(self.turnState.implements)
@@ -1013,6 +1026,7 @@ function TGGPS:stopAutosteer(message)
     self.activeVehicle = nil
     self.travelDirection = nil
     self.steeringCommand = 0
+    if wasEnabled and self.audio then self.audio:play('disconnect') end
     if message ~= nil then
         if hadRaised then message = message .. " | implemento permanece levantado" end
         self:notify(message)
@@ -1223,6 +1237,7 @@ function TGGPS:onToggleAutosteer(actionName, inputValue)
     self.travelDirection = result.direction
     self.steeringCommand = 0
     self.autosteerEnabled = true
+    if self.audio then self.audio:play('connect') end
     self.completedSections = {}
     self.headlandBrakeHoldVehicle = nil
     self:notify("Piloto ligado - controle a velocidade; vire o volante para desligar")
@@ -1306,6 +1321,8 @@ function TGGPS:update(dt)
     if self.contextTimer>=500 then self.monitorContext=nil;self.contextTimer=0 end
     if self.pendingHudOpen and not isGameMenuVisible() then self.pendingHudOpen=false;self:openHud() end
     if self.coverage ~= nil then self.coverage:update(dt) end
+    if self.audio ~= nil then self.audio:update(dt) end
+    if self.recognition ~= nil then self.recognition:update(dt) end
     if self.monitor ~= nil then self.monitor:update(dt) end
     if self.hud ~= nil and self.hud.isOpen and (self:getControlledVehicle() ~= self.hudVehicle or isGameMenuVisible()) then
         self:closeHud(isGameMenuVisible())
@@ -1598,6 +1615,8 @@ function TGGPS:deleteMap()
         self.hud = nil
     end
     self:stopAutosteer()
+    if self.audio ~= nil then self.audio:delete();self.audio=nil end
+    self.recognition=nil
     if g_inputBinding ~= nil and self.actionEventIds ~= nil then
         for _, eventId in ipairs(self.actionEventIds) do
             g_inputBinding:removeActionEvent(eventId)
