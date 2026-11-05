@@ -11,7 +11,7 @@
                 float4 lcdBrightness;
             ]]></CodeInjection>
             <CodeInjection position="POST_DIFFUSE_COLOR_FS"><![CDATA[
-                diffuseColor.rgb *= object.lcdBrightness.x * 4.0;
+                diffuseColor.rgb = float3(0.0, 0.0, 0.0);
             ]]></CodeInjection>
             <CodeInjection position="EMISSIVE_FS"><![CDATA[
                 emissiveColor.rgb *= object.lcdBrightness.x;

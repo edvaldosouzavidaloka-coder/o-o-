@@ -27,7 +27,7 @@ function TGGPSAudio:play(name)
     if self.owner.monitorSounds==false or vehicle==nil or not vehicle.tgGpsSupported then return false end
     local sample=self.samples[name]
     if sample==nil or playSample==nil or (self.lastName==name and self.clock-self.lastTime<350) then return false end
-    for _,other in pairs(self.samples) do if stopSample then stopSample(other) end end
+    for _,other in pairs(self.samples) do if stopSample then stopSample(other,0,0) end end
     playSample(sample,1,0.35,0,0,0)
     self.lastName,self.lastTime=name,self.clock
     return true
@@ -35,7 +35,7 @@ end
 
 function TGGPSAudio:delete()
     for _,sample in pairs(self.samples) do
-        if stopSample then stopSample(sample) end
+        if stopSample then stopSample(sample,0,0) end
         delete(sample)
     end
     self.samples={}

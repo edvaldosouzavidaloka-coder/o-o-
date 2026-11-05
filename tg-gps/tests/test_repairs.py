@@ -157,8 +157,9 @@ class RepairTests(unittest.TestCase):
             self.assertIsNone(material.get('emissiveColor'))
             self.assertEqual(material.get('customShaderId'),'1')
             self.assertEqual(material.find('./CustomParameter[@name="lcdBrightness"]').get('value'),'0.05 0 0 0')
-        self.assertTrue(materials['panelCard'].find('./CustomParameter[@name="lcdTint"]').get('value').startswith('0.94'))
-        self.assertTrue(materials['text'].find('./CustomParameter[@name="lcdTint"]').get('value').startswith('0.04'))
+        card=float(materials['panelCard'].find('./CustomParameter[@name="lcdTint"]').get('value').split()[0])
+        self.assertTrue(.70<card<.90)
+        self.assertLess(float(materials['text'].find('./CustomParameter[@name="lcdTint"]').get('value').split()[0]),.05)
         self.assertTrue(materials['textWhite'].find('./CustomParameter[@name="lcdTint"]').get('value').startswith('0.94'))
 
     def test_hotkeys_register_for_active_input_and_open_settings_zoom_and_edit(self):

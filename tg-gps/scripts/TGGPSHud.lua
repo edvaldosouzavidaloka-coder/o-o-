@@ -145,7 +145,7 @@ function TGGPSHud:getButtons()
         buttons[#buttons+1]=v
     end
     b("close","X",1000,10,26,26,"close")
-    for i,item in ipairs({{"map","MAPA"},{"guide","LINHAS"},{"headland","CABECEIRA"},{"library","TRAJETOS"},{"settings","MONITOR"}}) do
+    for i,item in ipairs({{"map","MAPA"},{"guide","LINHAS"},{"headland",o.headlandControlRemoved and "BORDADURA" or "CABECEIRA"},{"library","TRAJETOS"},{"settings","MONITOR"}}) do
         b("tab_"..item[1],item[2],20+(i-1)*204,546,196,36,item[1],true,self.page==item[1])
     end
     if self.page=="map" then
@@ -158,7 +158,10 @@ function TGGPSHud:getButtons()
         b("map_zoom_out","-",820,345,52,32,"onZoomOut",TGGPSMap.getZoom(o)>1)
         b("map_fit","PADRAO",880,345,72,32,"onZoomFit")
         b("map_zoom_in","+",960,345,52,32,"onZoomIn",TGGPSMap.getZoom(o)<12)
+        if o.headlandControlRemoved then b('generate_border','BORDADURA',820,402,192,34,'onGenerateBorder',true,o.mode=='border')
+        else
         b("headland_toggle",o.headlandEnabled and "CABECEIRA: LIGADA" or "CABECEIRA: DESLIGADA",820,402,192,34,"onToggleHeadland",o.mode=="field",o.headlandEnabled)
+        end
         b("save","SALVAR LINHA",820,446,192,32,"onSaveNamedCourse",route)
         b("load","BUSCAR TRAJETO",820,488,192,32,"library")
         b("enable","LIGAR PILOTO",214,486,184,36,"onEnableAutosteer",route and not o.autosteerEnabled,o.autosteerEnabled,"green")
@@ -185,12 +188,20 @@ function TGGPSHud:getButtons()
         b("generate_straight","GERAR RETAS DO TALHAO",214,482,392,38,"onGenerateFieldStraight")
         b("generate_curved","GERAR CURVAS DO TALHAO",622,482,398,38,"onGenerateFieldCurve",o.mode=='curve' or (o.curveReference and #o.curveReference>=2) or (o.fieldCurveReference and #o.fieldCurveReference>=2))
     elseif self.page=="headland" then
+        if o.headlandControlRemoved then
+            b('generate_border','GERAR LINHA DE BORDADURA',214,140,806,48,'onGenerateBorder')
+            b('reverse_border','INVERTER SENTIDO DA BORDADURA',214,220,806,44,'onReverseBorder',o.mode=='border')
+            b('border_save','SALVAR LINHA DE BORDADURA',214,300,806,44,'onSaveNamedCourse',o.mode=='border')
+            b('border_field','GERAR PASSADAS INTERNAS DO TALHAO',214,430,806,44,'onGenerateFieldStraight')
+        else
+
         b("headland_toggle",o.headlandEnabled and "CABECEIRA AUTOMATICA LIGADA" or "ATIVAR CABECEIRA AUTOMATICA",214,120,806,40,"onToggleHeadland",o.mode=="field",o.headlandEnabled)
         for i,v in ipairs({{"headland_depth","onHeadlandDepthDown","onHeadlandDepthUp"},{"headland_speed","onTurnSpeedDown","onTurnSpeedUp"},{"headland_radius","onTurnRadiusDown","onTurnRadiusUp"}}) do
             b(v[1].."_down","-",814,190+(i-1)*82,90,44,v[2])
             b(v[1].."_up","+",918,190+(i-1)*82,90,44,v[3])
         end
         b("headland_direction","INVERTER LADO DA PROXIMA PASSADA",214,454,806,40,"onToggleTurnDirection")
+        end
     elseif self.page=="library" then
         b("save_named","SALVAR ATUAL",214,76,252,34,"onSaveNamedCourse",route)
         b("search_courses","BUSCAR NOME / TALHAO",480,76,330,34,"onSearchCourses")
@@ -340,6 +351,15 @@ function TGGPSHud:getDrawCommands()
         text(string.format("Largura %.2f m   |   Orientacao %.1f graus   |   Deslocamento %+.2f m",
             o.width,TGGPSContext.heading(o.basePath),o.trackOffset or 0),214,136,17,COLORS.green,true)
     elseif self.page=="headland" then
+        if o.headlandControlRemoved then
+            text('LINHA DE BORDADURA',214,90,19,COLORS.ink,true)
+            local w=TGGPSWidthProfiles.detect(o:getControlledVehicle()) or o.width
+            text(string.format('Centro da linha: %.2f m para dentro do contorno',w/2),214,122,15,COLORS.ink)
+            text('Gera uma volta fechada usando a largura real do equipamento.',214,380,15,COLORS.muted)
+            text('A manobra, a velocidade e o levantamento ficam sob seu controle.',214,402,15,COLORS.muted)
+            text('Se nao houver espaco ou contorno valido, o trajeto atual e preservado.',214,520,12,COLORS.muted)
+        else
+
         text("CONTROLE DE CABECEIRA",214,90,19,COLORS.ink,true)
         for i,v in ipairs({{"MARGEM",o.headlandDepth,"m"},{"VELOCIDADE DA CURVA",o.turnSpeed,"km/h"},{"RAIO MINIMO",o.turnRadius,"m"}}) do
             local y=182+(i-1)*82
@@ -348,6 +368,7 @@ function TGGPSHud:getDrawCommands()
         end
         text(o.mode=="field" and "Passadas do talhao: levantar, virar e baixar implementos compativeis."
             or "Gere o talhao para usar a cabeceira automatica. A/B e curvas usam retorno manual.",214,520,12,COLORS.muted)
+        end
     elseif self.page=="library" then
         local records=o.library:list(o.libraryFilter,o.libraryShowAll)
         for row=1,4 do

@@ -1,10 +1,10 @@
 {
   "file": "FS25_TG_GPS.zip",
-  "version": "0.9.4.0",
-  "files": 48,
-  "bytes": 5753824,
-  "sha256": "5e44100e8506f6f85d39f7e096303221710b3aceb5cb6c07d4dd5b9a2c6db3b1",
-  "simulated_tests_passed": 118,
+  "version": "0.9.6.0",
+  "files": 52,
+  "bytes": 6006140,
+  "sha256": "a1caeca5d98c0d3f700835b7e0749281603045515da61b002b3b736f90f4a5e0",
+  "simulated_tests_passed": 135,
   "zip_crc": "passed",
   "missing_local_resources": [],
   "original_assets_hashes": "models/greenstar/source-hashes.json",
@@ -26,6 +26,8 @@
     "$data/shared/window_diffuse.png"
   ],
   "executed_in_fs25": false,
-  "cab_display": "orientation_perspective_without_pda",
-  "paint": "blue_opaque"
+  "cab_display": "high_resolution_orientation_without_pda",
+  "paint": "strong_blue_worked_light_blue_unworked_continuous_triangles",
+  "automatic_headland": false,
+  "inset_border_line": true
 }

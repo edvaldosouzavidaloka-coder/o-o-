@@ -66,7 +66,7 @@ class MonitorTests(unittest.TestCase):
             self.lua.execute((ROOT / element.attrib['filename']).read_text())
         # Preserve explicit coverage of the older top-down renderer/texture
         # resolver; perspective is the production default and tested separately.
-        self.lua.execute('TGGPS:loadMap(); TGGPS.cabPerspective=false; route(TGGPS)')
+        self.lua.execute('TGGPS:loadMap(); TGGPS.cabPerspective=false; TGGPS.headlandControlRemoved=false; route(TGGPS)')
 
     def check(self, source):
         self.lua.execute(source)

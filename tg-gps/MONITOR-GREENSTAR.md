@@ -1,19 +1,31 @@
-# GreenStar 3 — TG GPS 0.9.4.0
+# TG GPS 0.9.6.0 — Orientação, pintura contínua e bordadura
 
-A tela da cabine usa o modelo e os DDS enviados. O GPS3000.dds reenviado é idêntico ao incluído: o modelo, a moldura e os arquivos originais foram preservados. O painel foi reorganizado conforme a referência Orientação enviada depois: dados da máquina à esquerda, visão azul central, ajustes de pista à direita e barra inferior de ícones. Os desenhos dos ícones originais são reaproveitados nessa barra. O PDA foi retirado da tela física. A janela central agora mostra guias azuis em perspectiva e a passada selecionada clara, calculadas a partir dos trajetos reais e da posição/orientação da máquina. A imagem do terreno continua disponível no terminal 2D (Ctrl+Alt+M).
+A interface foi redesenhada seguindo a última referência enviada: barra superior verde, painel de orientação escuro, dados nas colunas laterais, botões em relevo e barra inferior com ícones. O fundo estático usa DDS de 2048 × 2048 com a cadeia completa de mipmaps BC3. Os valores usam fonte proporcional com acentos e números em negrito; pontos decimais mantêm o tamanho correto. A janela central continua totalmente dinâmica, sem PDA na cabine. Os sete recursos originais enviados permanecem intactos, com hashes em models/greenstar/source-hashes.json.
 
-A pintura do trabalho é **azul**, com azul mais escuro para uma segunda passagem real. A tela usa células únicas do histórico e materiais opacos, redesenhados com objetos reutilizados em cada quadro. Atualizações consecutivas não acumulam transparência ou hectares. A projeção da grade é aproximada por faixas limitadas ao visor; não é uma captura 3D do terreno e não simula relevo.
+A camada refletiva e a imagem antiga sob a nova interface ficam ocultas durante a operação. Isso evita que o reflexo ou a arte anterior concorram com letras e guias. Modelo físico, inicialização e sons são preservados. O resultado visual desta revisão ainda precisa de confirmação na engine FS25.
 
-Os desenhos dos ícones de Mapping, Guidance, Resources, Equipment, Water, Document e Totals continuam recortes da própria textura. Recebem pulsos de brilho conforme trabalho, piloto, campo reconhecido, implemento, pulverização, gravação e área medida. O símbolo central muda entre trator/colheitadeira e reage ao comando de direção. Os botões impressos continuam arte; os comandos reais usam o terminal TG e os atalhos existentes.
+## Pintura
 
-Ao ligar o motor há inicialização com a arte original, barra progressiva e indicador giratório. Após 1,8 segundo aparece a orientação em perspectiva. Há sons próprios de conexão/desconexão e animação do indicador de trabalho; Ctrl+Alt+C permite silenciar. A cabine usa posição inicial conforme câmera interna e tipo de máquina. Shift direito+M, parado, permite ajustar; Home restaura o padrão e Enter salva por modelo.
+Azul **forte** identifica a área já trabalhada. O azul **claro** é o fundo ainda sem pintura; uma repassagem real usa azul mais escuro. A projeção usa os contornos contínuos do trabalho, incluindo larguras fracionadas, sem ampliar as bordas para células grandes. A grade de medição não foi alterada.
 
-O reconhecimento continua lendo tipo de máquina, largura do implemento/plataforma, posição e polígono nativo do talhão. Distâncias até a borda usam o centro da máquina; mapas sem polígono indicam indisponibilidade. Gerar trajetos e ativar manobra de cabeceira continuam ações explícitas do jogador.
+As faixas de projeção são unidas em polígonos inclinados e preenchidas com triângulos, de modo que uma passagem reta vira um trapézio com bordas contínuas. Os materiais são opacos, sem acumular transparência a cada quadro. A rasterização intermediária é limitada e serve ao cálculo dos contornos, não a desenhar quadrados grandes na tela. Curvas complexas, amostragem e histórico de geometria já removida da memória ainda têm limites de precisão; a tela não promete recuperar detalhes que o histórico antigo não guardou.
 
-Também foi corrigido Unknown entity id ao encerrar: consulta entityExists e libera o monitor no evento de exclusão do veículo. [Relatório do log](CORRECAO-ENCERRAMENTO.md). O log recebido é da 0.9.2.1; a foto posterior confirma a exibição do novo modelo, mas não informa a versão.
+## Bordadura
 
-Instale FS25_TG_GPS.zip em mods, sem descompactar nem manter cópias anteriores nessa pasta. O pacote contém todos os arquivos locais. Não exige o FS22. Uso single-player.
+Os controles de manobra automática de cabeceira foram retirados da interface padrão. Abra **Ctrl+Alt+M → BORDADURA → GERAR LINHA DE BORDADURA**. O GPS lê o contorno nativo e cria uma referência fechada a meia largura real do equipamento para dentro do talhão. Pode inverter o sentido, salvar a linha ou voltar a gerar passadas internas.
 
-**118 testes simulados passaram**, incluindo oito casos da perspectiva, ausência de PDA na cabine, pintura estável, cores azuis, animação dos ícones e seis casos de encerramento. As regressões do renderer anterior continuam testadas explicitamente; a perspectiva é o padrão de produção. ZIP e referências locais são conferidos pelo empacotador. Os binários e imagens originais mantêm os hashes de models/greenstar/source-hashes.json.
+A geração não altera a pintura. Contornos sem espaço, com interseções ou complexidade excessiva são recusados preservando o trajeto atual. Funciona quando o mapa fornece um polígono válido; não inventa o limite do campo. A linha pode ser usada com o piloto TG, mas velocidade, entrada nas curvas e levantamento continuam com o jogador. A biblioteca e o salvamento rápido guardam a bordadura e reconstroem a referência com a largura do equipamento em uso. Registros antigos não reativam a manobra automática na configuração padrão.
 
-Não houve execução local do FS25 ou GIANTS Editor. A foto enviada ajudou a identificar a mistura da imagem estática com o PDA. O resultado desta revisão, alinhamento fino, cores e animações ainda precisam de confirmação no jogo. Permanecem avisos de primitivas I3D em texto; o PDA físico deixa de ser criado no modo padrão.
+## Log e controles
+
+O log da versão 0.9.4.0 mostrou 14 repetições de uma chamada incorreta de som. A engine exige `stopSample(sampleId, delay, fadeTime)`; reprodução e limpeza agora fornecem os três argumentos. O teste nativo simulado também exige essa assinatura. [Diagnóstico completo e outros mods](CORRECAO-LOG-096.md).
+
+Os comandos continuam nos atalhos e no terminal TG. A arte dos botões físicos reproduz o formato da referência; o monitor 3D não ganhou interação por toque. **Ctrl+Alt+W** redetecta a largura, **Ctrl+Alt+P** alterna o piloto e **Shift direito+M**, parado, ajusta a posição física do monitor. O PDA geográfico permanece no terminal 2D.
+
+## Instalação e evidência
+
+Substitua **FS25_TG_GPS.zip** em `mods`, sem descompactar nem manter outra cópia do mod nessa pasta. Confirme **v0.9.6.0 carregado** no próximo log.
+
+**135 testes simulados aprovados**, incluindo assinatura real do som, largura 2,40/6,40/12,80 m em diferentes orientações, limites da sobreposição, triângulos de área correta, fonte, DDS, saída da partida e bordadura em campos retangulares e côncavos. O empacotador valida recursos locais e integridade integral do ZIP.
+
+A [prévia da interface](validacao/previa-orientacao.png) é gerada a partir da geometria e dos comandos reais do renderer com dados demonstrativos; não é uma captura do FS25. O FS25 e o GIANTS Editor não foram executados neste ambiente. Nitidez final, cores e alinhamento ainda dependem da resolução, distância e renderização da cabine no jogo. Permanecem os avisos de malhas I3D em texto carregadas uma vez; o PDA físico não é recriado a cada movimento.

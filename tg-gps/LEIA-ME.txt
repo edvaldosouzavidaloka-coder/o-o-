@@ -1,5 +1,34 @@
-TG GPS PRO 0.9.4.0 - MONITOR GREENSTAR 3, MINIMAPA PDA E TRAJETOS - FS25 - single-player
+TG GPS PRO 0.9.6.0 - ORIENTACAO E BORDADURA - FS25 single-player
 
+ATUALIZACAO ATUAL
+Interface refeita conforme a referencia: DDS 2048 com mipmaps completos,
+fonte proporcional e acentos, numeros em negrito, botoes em relevo e icones.
+Sem PDA na cabine. O PDA geografico permanece no terminal 2D.
+Azul FORTE = trabalhado; azul CLARO = fundo sem pintura.
+A pintura segue os contornos reais e usa triangulos com bordas continuas.
+Nao amplia largura para celulas grandes; evita acumulo de transparencia.
+A chamada de som stopSample foi corrigida para os tres argumentos do FS25.
+
+BORDADURA SUBSTITUI O CONTROLE DE CABECEIRA AUTOMATICA
+Ctrl+Alt+M > BORDADURA > GERAR LINHA DE BORDADURA.
+Gera uma volta fechada a meia largura real do implemento dentro do contorno.
+Pode inverter o sentido e salvar. Talhoes estreitos ou invalidos sao recusados
+sem apagar o trajeto atual. O mapa precisa disponibilizar um poligono valido.
+Velocidade, curvas de entrada e levantamento ficam sob controle do jogador.
+A/B, curvas, passadas internas, biblioteca e perfis por implemento continuam.
+Os textos antigos abaixo sao historico; os controles de cabeceira automatica
+nao estao disponiveis na configuracao atual.
+
+INSTALAR
+Substitua FS25_TG_GPS.zip na pasta mods, sem descompactar e sem duplicatas.
+Confirme [TG GPS PRO] v0.9.6.0 carregado no novo log.
+Ctrl+Alt+W detecta largura. Ctrl+Alt+P alterna piloto.
+Shift direito+M, parado, ajusta a posicao do monitor.
+135 testes simulados aprovados. Teste aparencia, cores e condução no FS25.
+A previa publicada usa dados demonstrativos; nao e captura do jogo.
+A arte dos botoes 3D nao recebeu toque; comandos usam terminal TG e atalhos.
+
+HISTORICO DAS VERSOES ANTERIORES
 CORRECAO DE ENCERRAMENTO 0.9.4.0
 Corrige Unknown entity id ao sair da partida quando o jogo ja apagou o veiculo.
 Confere entityExists antes de acessar/remover objetos e solta o monitor no

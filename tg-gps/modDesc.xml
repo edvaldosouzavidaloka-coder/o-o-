@@ -1,16 +1,16 @@
 <?xml version='1.0' encoding='utf-8'?>
 <modDesc descVersion="105">
     <author>Top Gamers</author>
-    <version>0.9.4.0</version>
+    <version>0.9.6.0</version>
     <title>
         <en>TG GPS PRO - Cab Monitor and Coverage</en>
         <pt>TG GPS PRO - Monitor na Cabine e Pintura</pt>
         <br>TG GPS PRO - Monitor na Cabine e Pintura</br>
     </title>
     <description>
-        <en>Ctrl+Alt+M opens the GPS terminal with a local view of the game's PDA. Ctrl+Alt+C opens monitor brightness and cab settings; Ctrl+Alt+PageUp/PageDown adjusts map zoom. Ctrl+Alt+F generates field lanes, preserving an active recorded curve. Choose straight or curved generation in LINES. COURSES saves and reuses named references without copying width or coverage. Width belongs to each implement; active guidance and session coverage are separate per implement and field. Ctrl+Alt+P toggles steering. Optional HEADLAND mode raises compatible implements, turns and lowers again. Lane speed remains under player control; maneuver speed is automatic.</en>
-        <pt>Ctrl+Alt+M abre o terminal GPS com um recorte local do PDA do jogo. Ctrl+Alt+C abre brilho e ajustes do monitor; Ctrl+Alt+PageUp/PageDown altera o zoom. Ctrl+Alt+F gera as passadas do talhão preservando uma curva gravada ativa. Escolha gerar retas ou curvas em LINHAS. TRAJETOS salva e reutiliza referências com nome sem copiar largura ou pintura. Cada implemento tem sua largura; linha ativa e pintura da sessão ficam separadas por implemento e talhão. Ctrl+Alt+P alterna o piloto. CABECEIRA levanta implementos compatíveis, faz a curva e baixa novamente. A velocidade nas passadas fica com o jogador; durante a manobra ela é automática.</pt>
-        <br>Ctrl+Alt+M abre o terminal GPS com um recorte local do PDA do jogo. Ctrl+Alt+C abre brilho e ajustes do monitor; Ctrl+Alt+PageUp/PageDown altera o zoom. Ctrl+Alt+F gera as passadas do talhão preservando uma curva gravada ativa. Escolha gerar retas ou curvas em LINHAS. TRAJETOS salva e reutiliza referências com nome sem copiar largura ou pintura. Cada implemento tem sua largura; linha ativa e pintura da sessão ficam separadas por implemento e talhão. Ctrl+Alt+P alterna o piloto. CABECEIRA levanta implementos compatíveis, faz a curva e baixa novamente. A velocidade nas passadas fica com o jogador; durante a manobra ela é automática.</br>
+        <en>Orientation display with perspective guidance, a high-resolution instrument UI and strong blue worked-area paint. Ctrl+Alt+M opens the terminal. BORDER creates a closed perimeter reference inset by half the real implement width. Ctrl+Alt+W detects width; Ctrl+Alt+P toggles steering. A/B, curves and the course library remain available. Speed, corner entry and implement lifting remain under player control.</en>
+        <pt>Tela de Orientação com guias em perspectiva sem PDA na cabine, interface em alta resolução e pintura azul forte para área trabalhada. Ctrl+Alt+M abre o terminal. BORDADURA gera uma volta fechada a meia largura real do implemento para dentro do contorno. Ctrl+Alt+W detecta largura; Ctrl+Alt+P alterna o piloto. A/B, curvas e biblioteca permanecem. Velocidade, curvas de entrada e levantamento dos implementos ficam com o jogador.</pt>
+        <br>Tela de Orientação com guias em perspectiva sem PDA na cabine, interface em alta resolução e pintura azul forte para área trabalhada. Ctrl+Alt+M abre o terminal. BORDADURA gera uma volta fechada a meia largura real do implemento para dentro do contorno. Ctrl+Alt+W detecta largura; Ctrl+Alt+P alterna o piloto. A/B, curvas e biblioteca permanecem. Velocidade, curvas de entrada e levantamento dos implementos ficam com o jogador.</br>
     </description>
     <iconFilename>icon.dds</iconFilename>
     <multiplayer supported="false" />
@@ -33,10 +33,12 @@
         <sourceFile filename="scripts/TGGPSRecognition.lua" />
         <sourceFile filename="scripts/TGGPSGreenStar.lua" />
         <sourceFile filename="scripts/TGGPSPerspective.lua" />
+        <sourceFile filename="scripts/TGGPSGlyphs.lua" />
         <sourceFile filename="scripts/CurveGPSMonitorScreen.lua" />
         <sourceFile filename="scripts/CurveGPSMonitorManager.lua" />
         <sourceFile filename="scripts/TGFieldCurves.lua" />
         <sourceFile filename="scripts/TGGPS.lua" />
+        <sourceFile filename="scripts/TGBorder.lua" />
     </extraSourceFiles>
     <specializations>
         <specialization name="tgGpsVehicle" className="TGGPSVehicle" filename="scripts/TGGPSVehicle.lua" />

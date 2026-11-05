@@ -3,7 +3,7 @@
 TGGPSGreenStar = {}
 TGGPSGreenStar.__index = TGGPSGreenStar
 TGGPSGreenStar.BOOT_MS = 1800
-TGGPSGreenStar.MAP_BOX = {x=.225,y=.19,w=.53,h=.62}
+TGGPSGreenStar.MAP_BOX = {x=90/440,y=38/330,w=263/440,h=180/330}
 
 local function valid(n) return n~=nil and n~=0 and entityExists(n) end
 local function finite(n) return type(n)=='number' and n==n and math.abs(n)<math.huge end
@@ -49,11 +49,18 @@ function TGGPSGreenStar.new(owner,model,vehicle,layout,directory,content)
     self.fill=TGGPSGreenStar.find(overlay,'BootProgressFill')
     self.workRing=TGGPSGreenStar.find(overlay,'GreenStarWorkRing')
     self.bootRing=TGGPSGreenStar.find(overlay,'GreenStarBootRing')
+    self.orientation=TGGPSGreenStar.find(overlay,'OrientationShellRoot')
     self.menuIcons={}
     for _,name in ipairs({'mapping','guidance','resources','equipment','water','document','totals'}) do
         self.menuIcons[name]=TGGPSGreenStar.find(overlay,'menu_'..name)
     end
     if owner.cabPerspective then
+        setVisibility(self.controls,false)
+        self.menuIcons={}
+        for _,name in ipairs({'mapping','guidance','resources','equipment','water','totals'}) do
+            self.menuIcons[name]=TGGPSGreenStar.find(overlay,'ori_'..name)
+        end
+    else
         for i=0,getNumOfChildren(self.controls)-1 do
             local node=getChildAt(self.controls,i)
             if getName(node):match('^originalControl') then setVisibility(node,false) end
@@ -64,10 +71,10 @@ function TGGPSGreenStar.new(owner,model,vehicle,layout,directory,content)
         for i,entry in ipairs(source) do
             local node=self.menuIcons[entry[1]]
             if node then
-                local sx,sy=48/entry[4],48/entry[5]
+                local sx,sy=64/entry[4],64/entry[5]
                 local cx,cy=(entry[2]+entry[4]/2)/1024-.5,.5-(entry[3]+entry[5]/2)/1024
                 setScale(node,sx,sy,1)
-                setTranslation(node,(265+(i-1)*99)/1024-.5-cx*sx,.5-943/1024-cy*sy,.008)
+                setTranslation(node,(265+(i-1)*99)/1024-.5-cx*sx,.5-930/1024-cy*sy,.008)
             end
         end
         setTranslation(self.workRing,.43,-.42,.008)
@@ -95,8 +102,12 @@ function TGGPSGreenStar:update(dt)
         elseif self.state=='off' and previous~='off' then self.owner.audio:play('disconnect') end
     end
     local ready,booting=self.state=='ready',self.state=='boot'
-    setVisibility(self.screen,ready);setVisibility(self.boot,booting)
-    setVisibility(self.controls,ready);setVisibility(self.bootProgress,booting)
+    setVisibility(self.screen,ready and not self.owner.cabPerspective);setVisibility(self.boot,booting)
+    local glass=TGGPSGreenStar.find(self.layout.root,'glass')
+    if glass and self.owner.cabPerspective then setVisibility(glass,false) end
+    setVisibility(self.controls,ready and not self.owner.cabPerspective)
+    if self.orientation then setVisibility(self.orientation,ready and self.owner.cabPerspective) end
+    setVisibility(self.bootProgress,booting)
     setVisibility(self.content,not booting)
     if valid(self.light) then setVisibility(self.light,ready) end
     self.progress=math.min(1,self.elapsed/TGGPSGreenStar.BOOT_MS)

@@ -83,10 +83,11 @@ def main(source):
     overlay = ET.Element('i3D', name='TG_GreenStarOverlay', version='1.6')
     f = ET.SubElement(overlay, 'Files')
     for fid, filename in ((1, '../shaders/tgGpsGreenStarShader.xml'), (2, 'greenstar/Textures/GPS3000.dds'),
-                          (3, 'greenstar/Textures/animated.dds'), (4, '../shaders/tgGpsLcdShader.xml')):
+                          (3, 'greenstar/Textures/animated.dds'), (4, '../shaders/tgGpsLcdShader.xml'),
+                          (5, 'textures/orientationShell.dds')):
         ET.SubElement(f, 'File', fileId=str(fid), filename=filename)
     materials = ET.SubElement(overlay, 'Materials')
-    for mid, texture in ((1, 2), (2, 3)):
+    for mid, texture in ((1, 2), (2, 3), (5, 5)):
         m = ET.SubElement(materials, 'Material', name=f'originalTexture{mid}', materialId=str(mid),
                           customShaderId='1', alphaBlending='true')
         ET.SubElement(m, 'Texture', fileId=str(texture));ET.SubElement(m, 'Emissivemap', fileId=str(texture))
@@ -120,6 +121,11 @@ def main(source):
     spin = quad(shapes, boot, 23, 'GreenStarBootRing', 2, (0,0,1024,1024), z=0.008)
     spin.set('translation', '0.326171875 -0.04296875 0.008')
     spin.set('scale', '0.03515625 0.03515625 1')
+    orientation=ET.SubElement(scene,'TransformGroup',name='OrientationShellRoot',nodeId='3000',visibility='false')
+    quad(shapes,orientation,100,'OrientationShell',5,(0,0,1024,1024),z=.0044)
+    for i,name in enumerate(['settings','mapping','guidance','resources','ab','iso','equipment','water','power','totals']):
+        quad(shapes,orientation,101+i,'ori_'+name,5,
+             (i*44/440*1024,295/330*1024,44/440*1024,34/330*1024),z=.008)
     write(ROOT/'models/tgGreenStarOverlay.i3d', overlay)
     (ROOT/'models/greenstar/source-hashes.json').write_text(json.dumps(hashes, indent=2)+'\n')
     print(f'Imported {len(hashes)} original assets without binary changes')

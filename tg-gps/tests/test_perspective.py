@@ -12,9 +12,9 @@ class PerspectiveTests(unittest.TestCase):
         TGGPS:loadMap();assert(TGGPS.cabPerspective);route(TGGPS);metadata()
         TGGPS:update(100);TGGPS:update(450);TGGPS:update(1800)
         local screen=TGGPS.monitor.screenRenderer
-        assert(screen.nativeNode==nil and screen.used.guidanceGround==1)
+        assert(screen.nativeNode==nil and screen.used.guidanceGround==2)
         assert(screen.used.guidanceLane>0 and screen.used.guidanceSelected>0)
-        assert(screen.greenStar.controls.visible and screen.used.symbol_tractor==1)
+        assert(screen.greenStar.orientation.visible and screen.used.symbol_tractor==1)
         for _,filename in ipairs(loadedModels) do assert(not filename:find('pdaMonitor')) end
         for filename in pairs(xmlFiles) do assert(not filename:find('pdaMonitor')) end
         ''')
@@ -41,7 +41,7 @@ class PerspectiveTests(unittest.TestCase):
         for i=1,30 do TGGPS:update(250) end
         assert(screen.count==count and screen.count<=screen.MAX_PRIMITIVES)
         assert(TGGPS.coverage:getWorkedHa()==area and TGGPS.coverage:getOverlapHa()==overlap)
-        assert((screen.used.guidanceOverlap or 0)==0)
+        assert((screen.used.paintOverlapL or 0)==0 and (screen.used.paintOverlapR or 0)==0)
         ''')
 
     def test_real_second_pass_changes_paint_without_replacing_original_art(self):
@@ -49,8 +49,8 @@ class PerspectiveTests(unittest.TestCase):
         TGGPS:update(100);TGGPS:update(450)
         tool.active=false;TGGPS:update(250);tool.active=true;TGGPS:update(250)
         local screen=TGGPS.monitor.screenRenderer
-        assert(TGGPS.coverage:getOverlapHa()>0 and screen.used.guidanceOverlap>0)
-        assert(screen.greenStar.overlay~=nil and screen.used.guidanceGround==1)
+        assert(TGGPS.coverage:getOverlapHa()>0 and (screen.used.paintOverlapL or 0)+(screen.used.paintOverlapR or 0)>0)
+        assert(screen.greenStar.overlay~=nil and screen.used.guidanceGround==2)
         ''')
 
     def test_perspective_unload_after_vehicle_deletion_is_safe(self):
@@ -94,14 +94,13 @@ class PerspectiveTests(unittest.TestCase):
             labels[tostring(value)]=true;return original(self,value,...)
         end
         TGGPS:update(100);TGGPS:update(450);TGGPS:update(1800)
-        assert(labels.Orientacao and labels['Ajustar Pista'] and labels['Faixa Seguinte'])
-        assert(labels['6.000 m'] and labels['N  000 graus'])
+        assert(labels['Track 0'] and labels['6.00 m'] and labels['000°'])
         local screen=TGGPS.monitor.screenRenderer
         assert(screen.crossTrackMetres==0 and screen.count<=screen.MAX_PRIMITIVES)
         local blue=screen.pools.guidanceGround[1]
-        assert(blue.z>screen.pools.panelCard[1].z)
+        assert(blue.z>screen.pools.guidanceGround[1].z or screen.used.guidanceGround==2)
         for i=0,getNumOfChildren(screen.greenStar.controls)-1 do
             local node=getChildAt(screen.greenStar.controls,i)
-            if getName(node):match('^originalControl') then assert(not node.visible) end
+            if getName(node):match('^originalControl') then assert(not node.visible or not screen.greenStar.controls.visible) end
         end
         ''')

@@ -6,7 +6,7 @@ TGGPS = {}
 TGGPS.MOD_NAME = g_currentModName
 TGGPS.MOD_DIRECTORY = g_currentModDirectory
 
-TGGPS.VERSION = "0.9.4.0"
+TGGPS.VERSION = "0.9.6.0"
 TGGPS.DEFAULT_WIDTH = 6.0
 TGGPS.MIN_WIDTH = 1.0
 TGGPS.MAX_WIDTH = 50.0
@@ -170,6 +170,7 @@ function TGGPS:loadMap()
     self.monitorBrightness=0.20
     self.monitorSounds=true
     self.cabPerspective=true
+    self.headlandControlRemoved=true
     self.mapVehicleUp,self.mapViewport,self.mapTime=true,nil,nil
     self.activeImplementId,self.activeSessionKey,self.activeWorkAreaId,self.implementSessions,self.coverageSessions=nil,nil,nil,{},{}
     self.currentLane = 0
@@ -607,6 +608,18 @@ function TGGPS:rebuildGuidance()
     self.guidanceSections = {}
     self.basePath = {}
 
+    if self.headlandControlRemoved then self.headlandEnabled=false;self.turnState=nil end
+    if self.mode=='border' and self.fieldBoundary then
+        local vehicle=self:getControlledVehicle()
+        local width=vehicle and TGGPSWidthProfiles.detect(vehicle) or self.width
+        local path,reason=TGBorder.create(self.fieldBoundary,(width or self.width)/2)
+        if not path then self:notify('Nao foi possivel reconstruir bordadura: '..tostring(reason));return false end
+        self.sourcePoints,self.basePath=path,path
+        self.guidanceLines[0]=path;self.guidanceSections[0]={path}
+        self.minLane,self.maxLane,self.currentLane,self.currentSection=0,0,0,1
+        self.autoLaneSelection=false;self.headlandEnabled=false
+        return true
+    end
     if self.mode=='field' and self.fieldBoundary and self.fieldCurveReference and #self.fieldCurveReference>=2 then
         local data,reason=TGFieldCurves.generate(self,self.fieldBoundary,self.fieldCurveReference,self.width,self.trackOffset or 0,
             self.headlandEnabled and self.headlandDepth or 0)
@@ -676,6 +689,7 @@ function TGGPS:rebuildGuidance()
 end
 
 function TGGPS:onToggleHeadland()
+    if self.headlandControlRemoved then return self:onGenerateBorder() end
     if self.mode ~= "field" or self.fieldBoundary == nil then
         self:notify("Gere o talhao antes de ativar a cabeceira automatica")
         return
@@ -723,7 +737,7 @@ function TGGPS:ensureLane(lane)
     if self.guidanceLines[lane] ~= nil then
         return self.guidanceLines[lane]
     end
-    if self.mode == "field" or #self.basePath < 2 or math.abs(lane) > TGGPS.MAX_DYNAMIC_LANE then
+    if self.mode == "field" or self.mode=="border" or #self.basePath < 2 or math.abs(lane) > TGGPS.MAX_DYNAMIC_LANE then
         return nil
     end
     self.guidanceLines[lane] = self:offsetPath(self.basePath, lane * self.width + (self.trackOffset or 0))
@@ -1036,6 +1050,7 @@ end
 
 -- Does not change speed, cruise control, brakes or the saved route.
 function TGGPS:getAutosteerProblem(vehicle)
+    if self.headlandControlRemoved then self.headlandEnabled=false;self.turnState=nil end
     if vehicle == nil or vehicle ~= self:getControlledVehicle() or not vehicle.tgGpsSupported then
         return "Entre em um trator compativel para usar o piloto"
     end
@@ -1247,6 +1262,7 @@ end
 -- Called by the vehicle specialization immediately before GIANTS physics.
 -- FS25 axisSide is positive LEFT; the controller is positive RIGHT.
 function TGGPS:applySteering(vehicle, axisForward, axisSide, doHandbrake, dt)
+    if self.headlandControlRemoved then self.headlandEnabled=false;self.turnState=nil end
     if not self.autosteerEnabled or vehicle ~= self.activeVehicle then
         return axisSide
     end
@@ -1403,13 +1419,15 @@ function TGGPS:saveCourse()
     setXMLFloat(xmlFile, "tgGps#turnRadius", self.turnRadius or 6)
     setXMLFloat(xmlFile, "tgGps#trackOffset", self.trackOffset or 0)
     setXMLInt(xmlFile, "tgGps#turnSide", self.turnSide or 1)
-    local boundary = self.mode == "field" and self.fieldBoundary or nil
+    local boundary = (self.mode == "field" or self.mode=="border") and self.fieldBoundary or nil
     setXMLInt(xmlFile, "tgGps#boundaryCount", boundary ~= nil and #boundary or 0)
     if boundary ~= nil then
+        if self.mode=='field' then
         setXMLFloat(xmlFile, "tgGps#originX", self.fieldOrigin.x)
         setXMLFloat(xmlFile, "tgGps#originZ", self.fieldOrigin.z)
         setXMLFloat(xmlFile, "tgGps#dirX", self.fieldDirection.dx)
         setXMLFloat(xmlFile, "tgGps#dirZ", self.fieldDirection.dz)
+        end
         for i, point in ipairs(boundary) do
             local key = string.format("tgGps.boundary(%d)", i - 1)
             setXMLFloat(xmlFile, key .. "#x", point.x)
@@ -1450,7 +1468,7 @@ function TGGPS:loadCourse()
     self.trackOffset=finite(offset) and math.max(-1000,math.min(1000,offset)) or 0
     if pointCount >= 2 and pointCount <= 10000 then
         self.mode = getXMLString(xmlFile, "tgGps#mode") or "curve"
-        if self.mode ~= "field" and self.mode ~= "straight" and self.mode ~= "curve" then
+        if self.mode ~= "field" and self.mode ~= "straight" and self.mode ~= "curve" and self.mode~="border" then
             self.mode = "curve"
         end
         self.headlandEnabled = self.mode == "field" and getXMLInt(xmlFile, "tgGps#headlandEnabled") == 1
@@ -1489,7 +1507,7 @@ function TGGPS:loadCourse()
             end
         end
 
-        if self.mode == "field" then
+        if self.mode == "field" or self.mode=="border" then
             local count = getXMLInt(xmlFile, "tgGps#boundaryCount") or 0
             local boundary = {}
             if count >= 3 and count <= 10000 then
@@ -1500,7 +1518,7 @@ function TGGPS:loadCourse()
             end
             local origin = {x = getXMLFloat(xmlFile, "tgGps#originX"), z = getXMLFloat(xmlFile, "tgGps#originZ")}
             local direction = {dx = getXMLFloat(xmlFile, "tgGps#dirX"), dz = getXMLFloat(xmlFile, "tgGps#dirZ")}
-            local valid = TGFieldBoundary.generateLanes(boundary, origin, direction, self.width)
+            local valid = self.mode=='border' and TGBorder.create(boundary,self.width/2) or TGFieldBoundary.generateLanes(boundary, origin, direction, self.width)
             if valid == nil then
                 self:onClear()
                 self:notify("Talhao salvo invalido: gere novamente com Ctrl+Alt+F")

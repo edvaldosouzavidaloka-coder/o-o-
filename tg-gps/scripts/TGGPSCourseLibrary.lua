@@ -18,7 +18,7 @@ end
 function TGGPSCourseLibrary.valid(record)
     if type(record) ~= "table" or type(record.name) ~= "string" or #record.name == 0 or #record.name > 192
         or not pointsValid(record.sourcePoints, 2) then return false end
-    if record.mode ~= "field" and record.mode ~= "straight" and record.mode ~= "curve" then return false end
+    if record.mode ~= "field" and record.mode ~= "straight" and record.mode ~= "curve" and record.mode~="border" then return false end
     for _, name in ipairs(NUMBERS) do if not finite(record[name]) then return false end end
     if record.width < 1 or record.width > 50 or math.abs(record.trackOffset) > 1000
         or math.abs(record.currentLane) > 1000 or record.currentLane % 1 ~= 0
@@ -26,6 +26,7 @@ function TGGPSCourseLibrary.valid(record)
         or record.headlandDepth < 6 or record.headlandDepth > 50
         or record.turnSpeed < 2 or record.turnSpeed > 8 or record.turnRadius < 5 or record.turnRadius > 15
         or (record.turnSide ~= 1 and record.turnSide ~= -1) then return false end
+    if record.mode=='border' and not pointsValid(record.fieldBoundary,3) then return false end
     if record.mode == "field" then
         if not pointsValid(record.fieldBoundary, 3) or not pointsValid({record.fieldOrigin}, 1)
             or type(record.fieldDirection) ~= "table" or not finite(record.fieldDirection.dx)
@@ -103,7 +104,10 @@ function TGGPSCourseLibrary:load(id,options)
         local curved=record.mode=='curve' or (record.fieldCurveReference and #record.fieldCurveReference>=2)
         local boundary=TGFieldBoundary.getAt(pose.x,pose.z)
         record.sourcePoints=moved
-        if boundary then
+        if record.mode=='border' then
+            if not boundary then return false,'Contorno indisponivel para usar bordadura aqui' end
+            record.fieldBoundary=boundary
+        elseif boundary then
             record.mode,record.fieldBoundary='field',boundary
             record.fieldOrigin={x=pose.x,z=pose.z}
             local heading=math.rad(record.heading);record.fieldDirection={dx=math.sin(heading),dz=math.cos(heading)}
@@ -115,7 +119,7 @@ function TGGPSCourseLibrary:load(id,options)
     for _, key in ipairs({"mode", "width", "currentLane", "currentSection", "trackOffset", "headlandEnabled",
         "headlandDepth", "turnSpeed", "turnRadius", "turnSide", "autoLaneSelection", "sourcePoints",
         "fieldBoundary", "fieldOrigin", "fieldDirection","fieldCurveReference"}) do candidate[key] = clone(record[key]) end
-    candidate.fieldBoundary = record.mode == "field" and record.fieldBoundary or nil
+    candidate.fieldBoundary = (record.mode == "field" or record.mode=="border") and record.fieldBoundary or nil
     candidate.fieldCurveReference=record.fieldCurveReference or {}
     candidate.width=o.width -- loading a route must not replace this vehicle/implement's width
     if options.onlyLine then
@@ -132,7 +136,7 @@ function TGGPSCourseLibrary:load(id,options)
         o[key] = candidate[key]
     end
     -- Explicitly clear inherited metadata for a non-field route.
-    if record.mode ~= "field" then o.fieldBoundary, o.fieldOrigin, o.fieldDirection, o.minLane, o.maxLane = nil,nil,nil,nil,nil end
+    if record.mode ~= "field" and record.mode~="border" then o.fieldBoundary, o.fieldOrigin, o.fieldDirection, o.minLane, o.maxLane = nil,nil,nil,nil,nil end
     o.pointA, o.isRecording, o.recordingVehicle, o.completedSections = nil, false, nil, {}
     o.recordedPoints, o.activeCourseName = {}, record.name
     if o.coverage then o.coverage:endRun() end

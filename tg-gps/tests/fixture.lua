@@ -102,7 +102,12 @@ function loadSample(sample,filename,is3D) sample.filename,sample.is3D=filename,i
 function playSample(sample,loops,volume,offset,delay,after)
     assert(not sample.deleted);soundEvents[#soundEvents+1]={sample=sample,loops=loops,volume=volume}
 end
-function stopSample(sample) sample.stopped=true end
+function stopSample(...)
+    assert(select('#',...)==3,'stopSample requires sampleId, delay, fadeTime')
+    local sample,delay,fade=...
+    assert(type(delay)=='number' and type(fade)=='number')
+    sample.stopped=true
+end
 function setSampleGroup(sample,group) sample.group=group end
 AudioGroup={VEHICLE=1}
 function getUserProfileAppPath() return '/test-profile/' end

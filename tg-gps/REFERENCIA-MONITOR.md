@@ -1,3 +1,7 @@
+# Estado atual — TG GPS 0.9.6.0
+
+[Interface, pintura contínua e bordadura](MONITOR-GREENSTAR.md). A referência mais recente define a interface atual. O monitor usa um shell 2K e valores proporcionais dinâmicos, sem PDA físico. São 135 testes simulados aprovados. A organização de minimapa abaixo descreve recursos e versões anteriores.
+
 # Monitor e minimapa — TG GPS 0.9.4.0
 
 O monitor físico atual é o GreenStar 3 enviado em `GPS.zip` e `GPS3000.dds`. A importação, animações, sons, três formas de reconhecimento, validação e limites estão em [MONITOR-GREENSTAR.md](MONITOR-GREENSTAR.md). As sete imagens/recursos binários originais permanecem idênticos. O terminal 2D conserva os controles TG. São **118 testes simulados aprovados**; o resultado visual precisa de confirmação no FS25.

@@ -5,6 +5,7 @@
         <File fileId="2" filename="greenstar/Textures/GPS3000.dds" />
         <File fileId="3" filename="greenstar/Textures/animated.dds" />
         <File fileId="4" filename="../shaders/tgGpsLcdShader.xml" />
+        <File fileId="5" filename="textures/orientationShell.dds" />
     </Files>
     <Materials>
         <Material name="originalTexture1" materialId="1" customShaderId="1" alphaBlending="true">
@@ -15,6 +16,11 @@
         <Material name="originalTexture2" materialId="2" customShaderId="1" alphaBlending="true">
             <Texture fileId="3" />
             <Emissivemap fileId="3" />
+            <CustomParameter name="lcdBrightness" value="0.05 0 0 0" />
+        </Material>
+        <Material name="originalTexture5" materialId="5" customShaderId="1" alphaBlending="true">
+            <Texture fileId="5" />
+            <Emissivemap fileId="5" />
             <CustomParameter name="lcdBrightness" value="0.05 0 0 0" />
         </Material>
         <Material name="bootProgress3" materialId="3" customShaderId="4">
@@ -312,6 +318,171 @@
                 <Subset firstVertex="0" numVertices="4" firstIndex="0" numIndices="6" uvDensity0="1" />
             </Subsets>
         </IndexedTriangleSet>
+        <IndexedTriangleSet name="OrientationShell" shapeId="100" meshUsage="0" bvCenter="0 0 0" bvRadius="0.708">
+            <Vertices count="4" normal="true" uv0="true">
+                <v p="-0.500000000 -0.500000000 0" n="0 0 1" t0="0.000000000 0.000000000" />
+                <v p="0.500000000 -0.500000000 0" n="0 0 1" t0="1.000000000 0.000000000" />
+                <v p="0.500000000 0.500000000 0" n="0 0 1" t0="1.000000000 1.000000000" />
+                <v p="-0.500000000 0.500000000 0" n="0 0 1" t0="0.000000000 1.000000000" />
+            </Vertices>
+            <Triangles count="2">
+                <t vi="0 1 2" />
+                <t vi="0 2 3" />
+            </Triangles>
+            <Subsets count="1">
+                <Subset firstVertex="0" numVertices="4" firstIndex="0" numIndices="6" uvDensity0="1" />
+            </Subsets>
+        </IndexedTriangleSet>
+        <IndexedTriangleSet name="ori_settings" shapeId="101" meshUsage="0" bvCenter="0 0 0" bvRadius="0.708">
+            <Vertices count="4" normal="true" uv0="true">
+                <v p="-0.500000000 -0.496969697 0" n="0 0 1" t0="0.000000000 0.003030303" />
+                <v p="-0.400000000 -0.496969697 0" n="0 0 1" t0="0.100000000 0.003030303" />
+                <v p="-0.400000000 -0.393939394 0" n="0 0 1" t0="0.100000000 0.106060606" />
+                <v p="-0.500000000 -0.393939394 0" n="0 0 1" t0="0.000000000 0.106060606" />
+            </Vertices>
+            <Triangles count="2">
+                <t vi="0 1 2" />
+                <t vi="0 2 3" />
+            </Triangles>
+            <Subsets count="1">
+                <Subset firstVertex="0" numVertices="4" firstIndex="0" numIndices="6" uvDensity0="1" />
+            </Subsets>
+        </IndexedTriangleSet>
+        <IndexedTriangleSet name="ori_mapping" shapeId="102" meshUsage="0" bvCenter="0 0 0" bvRadius="0.708">
+            <Vertices count="4" normal="true" uv0="true">
+                <v p="-0.400000000 -0.496969697 0" n="0 0 1" t0="0.100000000 0.003030303" />
+                <v p="-0.300000000 -0.496969697 0" n="0 0 1" t0="0.200000000 0.003030303" />
+                <v p="-0.300000000 -0.393939394 0" n="0 0 1" t0="0.200000000 0.106060606" />
+                <v p="-0.400000000 -0.393939394 0" n="0 0 1" t0="0.100000000 0.106060606" />
+            </Vertices>
+            <Triangles count="2">
+                <t vi="0 1 2" />
+                <t vi="0 2 3" />
+            </Triangles>
+            <Subsets count="1">
+                <Subset firstVertex="0" numVertices="4" firstIndex="0" numIndices="6" uvDensity0="1" />
+            </Subsets>
+        </IndexedTriangleSet>
+        <IndexedTriangleSet name="ori_guidance" shapeId="103" meshUsage="0" bvCenter="0 0 0" bvRadius="0.708">
+            <Vertices count="4" normal="true" uv0="true">
+                <v p="-0.300000000 -0.496969697 0" n="0 0 1" t0="0.200000000 0.003030303" />
+                <v p="-0.200000000 -0.496969697 0" n="0 0 1" t0="0.300000000 0.003030303" />
+                <v p="-0.200000000 -0.393939394 0" n="0 0 1" t0="0.300000000 0.106060606" />
+                <v p="-0.300000000 -0.393939394 0" n="0 0 1" t0="0.200000000 0.106060606" />
+            </Vertices>
+            <Triangles count="2">
+                <t vi="0 1 2" />
+                <t vi="0 2 3" />
+            </Triangles>
+            <Subsets count="1">
+                <Subset firstVertex="0" numVertices="4" firstIndex="0" numIndices="6" uvDensity0="1" />
+            </Subsets>
+        </IndexedTriangleSet>
+        <IndexedTriangleSet name="ori_resources" shapeId="104" meshUsage="0" bvCenter="0 0 0" bvRadius="0.708">
+            <Vertices count="4" normal="true" uv0="true">
+                <v p="-0.200000000 -0.496969697 0" n="0 0 1" t0="0.300000000 0.003030303" />
+                <v p="-0.100000000 -0.496969697 0" n="0 0 1" t0="0.400000000 0.003030303" />
+                <v p="-0.100000000 -0.393939394 0" n="0 0 1" t0="0.400000000 0.106060606" />
+                <v p="-0.200000000 -0.393939394 0" n="0 0 1" t0="0.300000000 0.106060606" />
+            </Vertices>
+            <Triangles count="2">
+                <t vi="0 1 2" />
+                <t vi="0 2 3" />
+            </Triangles>
+            <Subsets count="1">
+                <Subset firstVertex="0" numVertices="4" firstIndex="0" numIndices="6" uvDensity0="1" />
+            </Subsets>
+        </IndexedTriangleSet>
+        <IndexedTriangleSet name="ori_ab" shapeId="105" meshUsage="0" bvCenter="0 0 0" bvRadius="0.708">
+            <Vertices count="4" normal="true" uv0="true">
+                <v p="-0.100000000 -0.496969697 0" n="0 0 1" t0="0.400000000 0.003030303" />
+                <v p="0.000000000 -0.496969697 0" n="0 0 1" t0="0.500000000 0.003030303" />
+                <v p="0.000000000 -0.393939394 0" n="0 0 1" t0="0.500000000 0.106060606" />
+                <v p="-0.100000000 -0.393939394 0" n="0 0 1" t0="0.400000000 0.106060606" />
+            </Vertices>
+            <Triangles count="2">
+                <t vi="0 1 2" />
+                <t vi="0 2 3" />
+            </Triangles>
+            <Subsets count="1">
+                <Subset firstVertex="0" numVertices="4" firstIndex="0" numIndices="6" uvDensity0="1" />
+            </Subsets>
+        </IndexedTriangleSet>
+        <IndexedTriangleSet name="ori_iso" shapeId="106" meshUsage="0" bvCenter="0 0 0" bvRadius="0.708">
+            <Vertices count="4" normal="true" uv0="true">
+                <v p="0.000000000 -0.496969697 0" n="0 0 1" t0="0.500000000 0.003030303" />
+                <v p="0.100000000 -0.496969697 0" n="0 0 1" t0="0.600000000 0.003030303" />
+                <v p="0.100000000 -0.393939394 0" n="0 0 1" t0="0.600000000 0.106060606" />
+                <v p="0.000000000 -0.393939394 0" n="0 0 1" t0="0.500000000 0.106060606" />
+            </Vertices>
+            <Triangles count="2">
+                <t vi="0 1 2" />
+                <t vi="0 2 3" />
+            </Triangles>
+            <Subsets count="1">
+                <Subset firstVertex="0" numVertices="4" firstIndex="0" numIndices="6" uvDensity0="1" />
+            </Subsets>
+        </IndexedTriangleSet>
+        <IndexedTriangleSet name="ori_equipment" shapeId="107" meshUsage="0" bvCenter="0 0 0" bvRadius="0.708">
+            <Vertices count="4" normal="true" uv0="true">
+                <v p="0.100000000 -0.496969697 0" n="0 0 1" t0="0.600000000 0.003030303" />
+                <v p="0.200000000 -0.496969697 0" n="0 0 1" t0="0.700000000 0.003030303" />
+                <v p="0.200000000 -0.393939394 0" n="0 0 1" t0="0.700000000 0.106060606" />
+                <v p="0.100000000 -0.393939394 0" n="0 0 1" t0="0.600000000 0.106060606" />
+            </Vertices>
+            <Triangles count="2">
+                <t vi="0 1 2" />
+                <t vi="0 2 3" />
+            </Triangles>
+            <Subsets count="1">
+                <Subset firstVertex="0" numVertices="4" firstIndex="0" numIndices="6" uvDensity0="1" />
+            </Subsets>
+        </IndexedTriangleSet>
+        <IndexedTriangleSet name="ori_water" shapeId="108" meshUsage="0" bvCenter="0 0 0" bvRadius="0.708">
+            <Vertices count="4" normal="true" uv0="true">
+                <v p="0.200000000 -0.496969697 0" n="0 0 1" t0="0.700000000 0.003030303" />
+                <v p="0.300000000 -0.496969697 0" n="0 0 1" t0="0.800000000 0.003030303" />
+                <v p="0.300000000 -0.393939394 0" n="0 0 1" t0="0.800000000 0.106060606" />
+                <v p="0.200000000 -0.393939394 0" n="0 0 1" t0="0.700000000 0.106060606" />
+            </Vertices>
+            <Triangles count="2">
+                <t vi="0 1 2" />
+                <t vi="0 2 3" />
+            </Triangles>
+            <Subsets count="1">
+                <Subset firstVertex="0" numVertices="4" firstIndex="0" numIndices="6" uvDensity0="1" />
+            </Subsets>
+        </IndexedTriangleSet>
+        <IndexedTriangleSet name="ori_power" shapeId="109" meshUsage="0" bvCenter="0 0 0" bvRadius="0.708">
+            <Vertices count="4" normal="true" uv0="true">
+                <v p="0.300000000 -0.496969697 0" n="0 0 1" t0="0.800000000 0.003030303" />
+                <v p="0.400000000 -0.496969697 0" n="0 0 1" t0="0.900000000 0.003030303" />
+                <v p="0.400000000 -0.393939394 0" n="0 0 1" t0="0.900000000 0.106060606" />
+                <v p="0.300000000 -0.393939394 0" n="0 0 1" t0="0.800000000 0.106060606" />
+            </Vertices>
+            <Triangles count="2">
+                <t vi="0 1 2" />
+                <t vi="0 2 3" />
+            </Triangles>
+            <Subsets count="1">
+                <Subset firstVertex="0" numVertices="4" firstIndex="0" numIndices="6" uvDensity0="1" />
+            </Subsets>
+        </IndexedTriangleSet>
+        <IndexedTriangleSet name="ori_totals" shapeId="110" meshUsage="0" bvCenter="0 0 0" bvRadius="0.708">
+            <Vertices count="4" normal="true" uv0="true">
+                <v p="0.400000000 -0.496969697 0" n="0 0 1" t0="0.900000000 0.003030303" />
+                <v p="0.500000000 -0.496969697 0" n="0 0 1" t0="1.000000000 0.003030303" />
+                <v p="0.500000000 -0.393939394 0" n="0 0 1" t0="1.000000000 0.106060606" />
+                <v p="0.400000000 -0.393939394 0" n="0 0 1" t0="0.900000000 0.106060606" />
+            </Vertices>
+            <Triangles count="2">
+                <t vi="0 1 2" />
+                <t vi="0 2 3" />
+            </Triangles>
+            <Subsets count="1">
+                <Subset firstVertex="0" numVertices="4" firstIndex="0" numIndices="6" uvDensity0="1" />
+            </Subsets>
+        </IndexedTriangleSet>
     </Shapes>
     <Scene>
         <TransformGroup name="GreenStarOriginalControls" nodeId="1001">
@@ -338,6 +509,19 @@
             <Shape name="BootProgressMask" nodeId="21" shapeId="21" materialIds="3" castsShadows="false" receiveShadows="false" translation="0 0 0.0075" />
             <Shape name="BootProgressFill" nodeId="22" shapeId="22" materialIds="4" castsShadows="false" receiveShadows="false" translation="-0.197265625 -0.04296875 0.008" scale="0.00001 0.05859375 1" />
             <Shape name="GreenStarBootRing" nodeId="23" shapeId="23" materialIds="2" castsShadows="false" receiveShadows="false" translation="0.326171875 -0.04296875 0.008" scale="0.03515625 0.03515625 1" />
+        </TransformGroup>
+        <TransformGroup name="OrientationShellRoot" nodeId="3000" visibility="false">
+            <Shape name="OrientationShell" nodeId="100" shapeId="100" materialIds="5" castsShadows="false" receiveShadows="false" translation="0 0 0.0044" />
+            <Shape name="ori_settings" nodeId="101" shapeId="101" materialIds="5" castsShadows="false" receiveShadows="false" translation="0 0 0.008" />
+            <Shape name="ori_mapping" nodeId="102" shapeId="102" materialIds="5" castsShadows="false" receiveShadows="false" translation="0 0 0.008" />
+            <Shape name="ori_guidance" nodeId="103" shapeId="103" materialIds="5" castsShadows="false" receiveShadows="false" translation="0 0 0.008" />
+            <Shape name="ori_resources" nodeId="104" shapeId="104" materialIds="5" castsShadows="false" receiveShadows="false" translation="0 0 0.008" />
+            <Shape name="ori_ab" nodeId="105" shapeId="105" materialIds="5" castsShadows="false" receiveShadows="false" translation="0 0 0.008" />
+            <Shape name="ori_iso" nodeId="106" shapeId="106" materialIds="5" castsShadows="false" receiveShadows="false" translation="0 0 0.008" />
+            <Shape name="ori_equipment" nodeId="107" shapeId="107" materialIds="5" castsShadows="false" receiveShadows="false" translation="0 0 0.008" />
+            <Shape name="ori_water" nodeId="108" shapeId="108" materialIds="5" castsShadows="false" receiveShadows="false" translation="0 0 0.008" />
+            <Shape name="ori_power" nodeId="109" shapeId="109" materialIds="5" castsShadows="false" receiveShadows="false" translation="0 0 0.008" />
+            <Shape name="ori_totals" nodeId="110" shapeId="110" materialIds="5" castsShadows="false" receiveShadows="false" translation="0 0 0.008" />
         </TransformGroup>
     </Scene>
 </i3D>

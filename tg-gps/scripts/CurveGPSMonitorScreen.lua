@@ -7,7 +7,8 @@ TGGPSMonitorScreen.STYLES = {
     "background", "field", "headland", "boundary", "lane", "selected_lane",
     "planned_turn", "tractor", "implement", "coverage", "coverage_overlap", "off", "green",
     "combine", "vehicleWheel", "vehicleCab", "panelHeader", "panelCard",
-    "guidanceGround", "guidanceSky", "guidanceLane", "guidanceSelected", "guidancePaint", "guidanceOverlap"
+    "guidanceGround", "guidanceSky", "guidanceLane", "guidanceSelected", "guidancePaint", "guidanceOverlap", "guidanceGrid",
+    "paintBlueL", "paintBlueR", "paintOverlapL", "paintOverlapR"
 }
 TGGPSMonitorScreen.WIDTH, TGGPSMonitorScreen.HEIGHT = 0.258, 0.156
 TGGPSMonitorScreen.MAX_PRIMITIVES = 650
@@ -62,6 +63,10 @@ function TGGPSMonitorScreen:attach(monitorNode, vehicle, layout)
     for code = 32, 126 do
         self.templates["text_" .. code] = find(templates, "text_" .. code)
         self.templates["textWhite_" .. code] = find(templates,"textWhite_"..code)
+    end
+    for _,code in ipairs({176,193,195,201,211,199,225,224,227,226,233,234,237,243,244,245,250,231}) do
+        self.templates['text_'..code]=find(templates,'text_'..code)
+        self.templates['textWhite_'..code]=find(templates,'textWhite_'..code)
     end
     local symbols=loadI3DFile(self.modDirectory..'models/tgGPSVehicleSymbols.i3d',false,false,false)
     if not valid(symbols) then self:detach();return false end
@@ -145,15 +150,18 @@ function TGGPSMonitorScreen:applyBrightness(node)
     end
 end
 
-function TGGPSMonitorScreen:text(value, x, y, size, limit, white)
-    value=tostring(value) -- ASCII glyphs below; normalize complete UTF-8 sequences.
-    for from,to in pairs({["á"]="a",["à"]="a",["ã"]="a",["â"]="a",["é"]="e",["ê"]="e",["í"]="i",["ó"]="o",["ô"]="o",["õ"]="o",["ú"]="u",["ç"]="c",
-        ["Á"]="A",["Ã"]="A",["É"]="E",["Ó"]="O",["Ç"]="C"}) do value=value:gsub(from,to) end
-    value=value:gsub("[^\32-\126]","?"):sub(1,limit or 44)
-    for i = 1, #value do
-        local code = value:byte(i)
-        if code ~= 32 then self:quad((white and "textWhite_" or "text_") .. code, x, y, size, size, 0, 8) end
-        x = x + size * 0.64
+function TGGPSMonitorScreen:text(value,x,y,size,limit,white,xScale)
+    local count=0;xScale=xScale or 1
+    for char in tostring(value):gmatch('[%z\1-\127\194-\244][\128-\191]*') do
+        count=count+1;if count>(limit or 44) then break end
+        local code=char:byte()
+        if #char==2 then code=(code-192)*64+char:byte(2)-128
+        elseif #char==3 then code=(code-224)*4096+(char:byte(2)-128)*64+char:byte(3)-128
+        elseif #char>3 then code=63 end
+        local style=(white and 'textWhite_' or 'text_')..code
+        if self.templates[style]==nil then style=(white and 'textWhite_' or 'text_')..63 end
+        if code~=32 then self:quad(style,x,y,size*xScale,size,0,8) end
+        x=x+size*xScale*((TGGPSGlyphs and TGGPSGlyphs[code]) or .64)
     end
 end
 
@@ -205,53 +213,38 @@ function TGGPSMonitorScreen:drawGreenStarReadouts()
 end
 
 function TGGPSMonitorScreen:drawOrientationPanel()
-    local o=self.owner;local context=o:getMonitorContext()
-    local state=o.recognition and o.recognition.state
-    local function text(s,x,y,size,limit,white) self:pixelText(s,x,y,size or 20,limit or 24,white) end
-    self:pixelQuad('panelHeader',512,30,1024,60,3)
-    text('Orientacao',18,43,30,30,true)
-    self:pixelQuad('panelCard',112,482,206,820,3)
-    self:pixelQuad('panelCard',900,482,238,820,3)
-    self:pixelQuad('panelHeader',512,940,1024,168,3)
-    local function card(title,value,y)
-        self:pixelQuad('panelHeader',110,y-20,196,31,4)
-        text(title,19,y-12,15,23,true);text(value,19,y+23,21,22)
+    local o=self.owner;local c=o:getMonitorContext();local state=o.recognition and o.recognition.state
+    local function t(value,x,y,size,limit,white)
+        self:pixelText(value,x/440*1024,y/330*1024,size/330*1024,limit,white)
     end
-    card('Localizacao',context.farmName,106)
-    text(context.fieldName,19,163,18,23)
-    card('Maquina',context.kind=='combine' and 'Colheitadeira' or 'Trator',216)
-    text(context.machineName,19,269,16,22)
     local speed=self.vehicle.getLastSpeed and self.vehicle:getLastSpeed() or 0
     local fuel=self.vehicle.spec_motorized and self.vehicle.spec_motorized.lastFuelUsageDisplay
-    card('Velocidade',string.format('%.1f km/h',speed),317)
-    card('Consumo',type(fuel)=='number' and string.format('%.1f l/h',fuel) or '-- l/h',427)
-    card('Faixa Seguinte','Track '..tostring(o.currentLane or 0),537)
-    card('Implemento',context.implementName,647)
-    text(o.autosteerEnabled and 'AUTOTRAC LIGADO' or 'AUTOTRAC MANUAL',18,788,16,23)
+    local area=o.coverage and o.coverage:getWorkedHa() or 0
+    t(string.format('%.2f',area),14,60,13,7)
+    t(string.format('%.1f',speed),14,105,13,7)
+    t(o.activeCourseName or ('Track '..tostring(o.currentLane or 0)),8,150,10,14)
+    t(type(fuel)=='number' and string.format('%.1f',fuel) or '--',14,232,13,7)
+    t(c.machineName,6,270,8,16)
+    t(c.fieldName,6,285,8,16)
+    t(c.farmName,358,52,9,14);t(c.fieldName,358,65,9,14)
+    t(string.format('%.2f m',o.width or 6),360,143,10,12)
+    t(string.format('%.1f cm',math.abs(o.trackOffset or 0)*100),359,270,11,12)
+    local day=g_currentMission and g_currentMission.environment and g_currentMission.environment.dayTime or 0
+    t(string.format('%02d:%02d  GPS',math.floor(day/3600000)%24,math.floor(day/60000)%60),275,18,8,16,true)
     local pose=state and state.pose
     local heading=pose and (math.deg(math.atan2(pose.dx,pose.dz))+360)%360 or 0
-    self:pixelQuad('panelHeader',500,97,550,70,3)
-    text(string.format('N  %03.0f graus',heading),365,101,23,25,true)
+    local direction=({'N','NE','E','SE','S','SO','O','NO'})[math.floor((heading+22.5)%360/45)+1]
+    t(direction,214,47,12,3,true);t(string.format('%03.0f°',heading),204,64,13,7,true)
     local guidance=o:calculateSteering(self.vehicle,o.travelDirection)
     local deviation=guidance and pose and ((pose.x-guidance.nearest.x)*pose.dz-(pose.z-guidance.nearest.z)*pose.dx) or nil
     self.crossTrackMetres=deviation
-    text(deviation and string.format('%+.0f cm',deviation*100) or '-- cm',460,145,20,14,true)
-    text(tostring(o.currentLane or 0)..'L',480,192,19,14,true)
-    text('Orientacao',796,96,18,22)
-    text('Ajustar Pista',798,146,21,24)
-    text(string.format('%.3f m',o.width or 6),798,215,22,22)
-    text('Espac. Pistas',798,247,16,24)
-    text('Mudanca de Pista',790,308,17,26)
-    self:pixelQuad('panelHeader',896,385,208,90,4);text('<   |   >',827,400,30,24,true)
-    self:pixelQuad('panelHeader',896,505,208,90,4);text('|<     >|',813,521,30,24,true)
-    text(string.format('%+.2f m',o.trackOffset or 0),800,603,23,22)
-    text('Incremento 0.10 m',791,643,16,24)
-    text(state and state.borderDistance and string.format('Borda %.1f m',state.borderDistance) or 'Borda --',791,722,18,24)
-    text('AUTO',19,929,20,20,true);text('GRAVACAO',19,961,17,20,true)
-    for i,name in ipairs({'MAPA','AUTOTRAC','TALHAO','MAQUINA','TRABALHO','TRAJETO','TOTAIS'}) do
-        text(name,237+(i-1)*99,996,11,12,true)
-    end
-    if o.coverage then text(string.format('%.2f ha',o.coverage:getWorkedHa()),800,819,23,22) end
+    self:pixelQuad('green',222/440*1024,76/330*1024,45/440*1024,14/330*1024,4)
+    t(deviation and string.format('%+.0f cm',deviation*100) or '-- cm',204,81,9,8)
+    self:pixelQuad('panelHeader',222/440*1024,99/330*1024,27/440*1024,19/330*1024,4)
+    t(tostring(o.currentLane or 0)..'N',213,104,11,4,true)
+    t(c.fieldName,93,102,9,18,true)
+    local realWidth=o.coverage and o.coverage.footprint and o.coverage.footprint.width or TGGPSWidthProfiles.detect(self.vehicle)
+    t(realWidth and string.format('Real %.2f m',realWidth) or 'Real --',359,154,7,15)
 end
 
 function TGGPSMonitorScreen:refresh()
@@ -266,7 +259,7 @@ function TGGPSMonitorScreen:refresh()
     if valid(self.nativeNode) then setVisibility(self.nativeNode,false) end
     if not motorOn then self:quad('off',0,0,self.WIDTH,self.HEIGHT,0,0) end
     if motorOn and self.owner.cabPerspective then
-        self:quad('panelCard',0,0,self.WIDTH,self.HEIGHT,0,-2)
+        self:quad('guidanceGround',0,0,self.WIDTH,self.HEIGHT,0,-2)
         TGGPSPerspective.draw(self)
         self:drawGreenStarReadouts()
         if #self.owner.sourcePoints<2 then self:pixelText('MARQUE A/B OU GERE O TALHAO',150,430,16,32,true) end
