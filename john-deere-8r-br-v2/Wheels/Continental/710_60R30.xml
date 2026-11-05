@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<wheel xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://validation.gdn.giants-software.com/xml/fs25/wheel.xsd">
+    <metadata brand="CONTINENTAL" name="TractorMaster"/>
+
+    <default>
+        <physics radius="0.795" width="0.71" mass="0.294" tireType="mud" frictionScale="1.60" maxLongStiffness="11" maxLatStiffness="130" maxLatStiffnessLoad="2"/>
+        <tire filename="$data/shared/wheels/tires/continental/tractorMaster/R30_tractorMaster.i3d" nodeLeft="2|0" nodeRight="2|0" maxDeformation="0.083" tireTrackAtlasIndex="0"/>
+        <outerRim filename="$data/shared/wheels/rims/rim001.i3d" node="0|0" widthAndDiam="23 30"/>
+        <innerRim filename="$data/shared/wheels/rims/rim001.i3d" nodeLeft="2|0" nodeRight="2|1" widthAndDiam="23 30"/>
+    </default>
+    <configurations>
+        <configuration id="jd">
+            <innerRim filename="$data/shared/wheels/rims/rim006.i3d" nodeLeft="0|0" nodeRight="0|1"/>
+        </configuration>
+        <configuration id="dual">
+            <innerRim filename="-"/>
+        </configuration>
+    </configurations>
+</wheel>

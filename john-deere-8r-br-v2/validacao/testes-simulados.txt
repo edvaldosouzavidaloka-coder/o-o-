@@ -1,0 +1,25 @@
+test_axis_changes_are_transmitted_even_while_running (__main__.LuaTests.test_axis_changes_are_transmitted_even_while_running) ... ok
+test_clean_update_writes_only_presence_bit (__main__.LuaTests.test_clean_update_writes_only_presence_bit) ... ok
+test_client_does_not_advance_authoritative_pressure (__main__.LuaTests.test_client_does_not_advance_authoritative_pressure) ... ok
+test_collision_failure_and_existing_masks_are_preserved (__main__.LuaTests.test_collision_failure_and_existing_masks_are_preserved) ... ok
+test_collision_fix_runs_before_original_loading_callback (__main__.LuaTests.test_collision_fix_runs_before_original_loading_callback) ... ok
+test_enabled_configuration_and_initial_values (__main__.LuaTests.test_enabled_configuration_and_initial_values) ... ok
+test_inflation_and_deflation_stop_exactly_without_overshoot (__main__.LuaTests.test_inflation_and_deflation_stop_exactly_without_overshoot) ... ok
+test_invalid_limits_recover_and_log (__main__.LuaTests.test_invalid_limits_recover_and_log) ... ok
+test_invalid_numbers_and_event_targets_cannot_poison_state (__main__.LuaTests.test_invalid_numbers_and_event_targets_cannot_poison_state) ... ok
+test_join_while_inflating_gets_complete_state_and_audio (__main__.LuaTests.test_join_while_inflating_gets_complete_state_and_audio) ... ok
+test_missing_optional_sound_and_action_id_do_not_crash (__main__.LuaTests.test_missing_optional_sound_and_action_id_do_not_crash) ... ok
+test_native_fs25_color_reader_updates_paint_only (__main__.LuaTests.test_native_fs25_color_reader_updates_paint_only) ... ok
+test_no_option_disables_controls_audio_and_requests (__main__.LuaTests.test_no_option_disables_controls_audio_and_requests) ... ok
+test_original_fails_without_legacy_math_helper (__main__.LuaTests.test_original_fails_without_legacy_math_helper) ... ok
+test_save_reload_clamps_and_starts_with_pump_off (__main__.LuaTests.test_save_reload_clamps_and_starts_with_pump_off) ... ok
+test_server_stop_and_target_replicate_to_client (__main__.LuaTests.test_server_stop_and_target_replicate_to_client) ... ok
+test_all_provided_textures_present_and_shapes_indices_preserved (__main__.PackageTests.test_all_provided_textures_present_and_shapes_indices_preserved) ... ok
+test_geometry_is_byte_identical (__main__.PackageTests.test_geometry_is_byte_identical) ... ok
+test_wheel_inheritance_is_acyclic_and_keeps_all_four_representations (__main__.PackageTests.test_wheel_inheritance_is_acyclic_and_keeps_all_four_representations) ... ok
+test_wheels_motors_and_suspension_tuning_preserved (__main__.PackageTests.test_wheels_motors_and_suspension_tuning_preserved) ... ok
+
+----------------------------------------------------------------------
+Ran 20 tests in 0.173s
+
+OK

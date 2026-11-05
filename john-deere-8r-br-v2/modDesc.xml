@@ -1,0 +1,69 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<modDesc xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" descVersion="94" xsi:noNamespaceSchemaLocation="https://validation.gdn.giants-software.com/xml/fs25/modDesc.xsd">
+    <author>top_gamers</author>
+    <version>1.0.0.1</version>
+
+    <title>
+        <en>John Deere 8R Series BR v2</en>
+    </title>
+
+    <description>
+        <en>MOD BR </en>
+    </description>
+    <multiplayer supported="true"/>
+    <iconFilename>Textures/icon_series8R.dds</iconFilename>
+
+    <vehicleTypes>
+        <type name="JD_8R" className="Vehicle" filename="$dataS/scripts/vehicles/Vehicle.lua" parent="tractor">
+            <specialization name="tirePressure"/>
+        <specialization name="jd8rCompatibility"/></type>
+    </vehicleTypes>
+
+    <specializations>
+        <specialization name="tirePressure" className="TirePressure" filename="scripts/TirePressure.lua"/>
+    <specialization name="jd8rCompatibility" className="JD8RCompatibility" filename="scripts/JD8RCompatibility.lua"/></specializations>
+
+    <actions>
+        <action name="TP_AXIS_PRESSURE" axisType="FULL"/>
+        <action name="TP_TOGGLE_PRESSURE" axisType="HALF"/>
+    </actions>
+
+    <inputBinding>
+        <actionBinding action="TP_TOGGLE_PRESSURE">
+            <binding device="KB_MOUSE_DEFAULT" input="KEY_lctrl KEY_p"/>
+        </actionBinding>
+        <actionBinding action="TP_AXIS_PRESSURE">
+            <binding device="KB_MOUSE_DEFAULT" input="KEY_lctrl KEY_pageup" axisComponent="+"/>
+            <binding device="KB_MOUSE_DEFAULT" input="KEY_lctrl KEY_pagedown" axisComponent="-"/>
+        </actionBinding>
+    </inputBinding>
+
+    <l10n>
+        <text name="information_tirePressure">
+            <en>Tire pressure [target: %1.2f bar] [current: %1.2f bar]</en>
+            <de>Reifenluftdruck [Soll: %1.2f bar] [Ist: %1.2f bar]</de>
+        <br>Pressão dos pneus [alvo: %1.2f bar] [atual: %1.2f bar]</br></text>
+        <text name="action_toggleTirePressure">                 <en>Toggle pressure</en>                    <de>Druck ändern</de>                            <br>Ligar/desligar ajuste de pressão</br></text>
+        <text name="input_TP_TOGGLE_PRESSURE">                 <en>Update pressure</en>                    <de>Druck aktualisieren</de>                    <br>Ligar/desligar ajuste de pressão</br></text>
+        <text name="input_TP_AXIS_PRESSURE_1">                 <en>Inflate</en>                            <de>Aufpumpen</de>                                <br>Aumentar pressão</br></text>
+        <text name="input_TP_AXIS_PRESSURE_2">                 <en>Deflate</en>                            <de>Ablassen</de>                                <br>Diminuir pressão</br></text>
+
+        <text name="actionIC_beaconLightsOn">                 <en>IC: Beaconlights on</en>                 <de>IC: Rundumleuchten anschalten</de>          </text>
+        <text name="actionIC_beaconLightsOff">                 <en>IC: Beaconlight off</en>                 <de>IC: Rundumleuchten ausschalten</de>          </text>
+        <text name="actionIC_IC">                             <en>Interactive control</en>                 <de>Interactive Control</de>                      </text>
+        <text name="actionIC_MC">                             <en>Mouse control</en>                     <de>Maus Control</de>                              </text>
+        <text name="actionIC_Animation">                        <en>Animation</en>                            <de>Animationen</de>                              </text>
+        <text name="actionIC_rotateSteering">                  <en>IC: Rotate Steering Wheel</en>         <de>IC: Lenkrad drehen</de>                      </text>
+        <text name="actionIC_translationSteering">           <en>IC: Steering Wheel Translation</en>    <de>IC: Lenkrad Übersetzung</de>                  </text>
+        <text name="actionIC_TurnONcl">                         <en>IC: Turn ON Cabine Light</en>             <de>IC: Schalten Sie das Kabinenlicht ein</de>  </text>
+        <text name="actionIC_TurnOFFcl">                     <en>IC: Turn OFF Cabine Light</en>         <de>IC: Schalten Sie das Kabinenlicht aus</de>  </text>
+        <text name="actionIC_AddAB">                            <en>IC: Add Attacher Balls</en>            <de>IC: Fügen Sie Attacher-Kugeln hinzu</de>    </text>
+        <text name="actionIC_RemoveAB">                        <en>IC: Remove Attacher Balls</en>            <de>IC: Attacher-Kugeln entfernen</de>          </text>
+        <text name="actionIC_AddStickers">                     <en>IC: Add Stickers</en>                     <de>IC: Aufkleber hinzufügen</de>                  </text>
+        <text name="actionIC_RemoveStickers">                 <en>IC: Remove Stickers</en>               <de>IC: Aufkleber entfernen</de>                  </text>
+    </l10n>
+
+    <storeItems>
+         <storeItem rootNode="vehicle" xmlFilename="JohnDeere8R.xml"/>
+    </storeItems>
+</modDesc>

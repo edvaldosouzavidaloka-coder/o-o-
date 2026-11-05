@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<wheel xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://validation.gdn.giants-software.com/xml/fs25/wheel.xsd">
+    <metadata brand="BKT" name="AGRIMAX FORCE"/>
+
+    <default>
+        <physics radius="0.816" width="0.716" mass="0.326" tireType="mud" frictionScale="1.60" maxLongStiffness="11" maxLatStiffness="130" maxLatStiffnessLoad="2"/>
+        <tire filename="$data/shared/wheels/tires/bkt/agrimaxForce/R34_agrimaxForce.i3d" nodeLeft="3|0" nodeRight="3|0" maxDeformation="0.084" tireTrackAtlasIndex="0"/>
+        <outerRim filename="$data/shared/wheels/rims/rim001.i3d" node="1|0" widthAndDiam="25 34"/>
+        <innerRim filename="$data/shared/wheels/rims/rim001.i3d" nodeLeft="3|0" nodeRight="3|1" widthAndDiam="25 34"/>
+    </default>
+    <configurations>
+        <configuration id="jd">
+            <innerRim filename="$data/shared/wheels/rims/rim006.i3d" nodeLeft="0|0" nodeRight="0|1"/>
+        </configuration>
+        <configuration id="dual">
+            <innerRim filename="-"/>
+        </configuration>
+    </configurations>
+</wheel>

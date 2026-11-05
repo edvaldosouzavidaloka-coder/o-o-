@@ -1,0 +1,43 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<wheel xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://validation.gdn.giants-software.com/xml/fs25/wheel.xsd">
+    <metadata brand="MICHELIN" name="CEREXBIB2"/>
+
+    <default>
+        <physics radius="1.093" width="0.8" mass="0.397" tireType="mud" frictionScale="1.60" maxLongStiffness="8" maxLatStiffness="100" maxLatStiffnessLoad="2"/>
+        <tire filename="$data/shared/wheels/tires/michelin/cereXBib2/R42_cereXBib2.i3d" nodeLeft="3|0" nodeRight="3|0" maxDeformation="0.112" tireTrackAtlasIndex="0"/>
+        <outerRim filename="$data/shared/wheels/rims/rim001.i3d" node="1|0" widthAndDiam="27 42"/>
+        <innerRim filename="$data/shared/wheels/rims/rim001.i3d" nodeLeft="3|0" nodeRight="3|1" widthAndDiam="27 42"/>
+    </default>
+    <configurations>
+        <configuration id="dual">
+            <innerRim filename="-"/>
+        </configuration>
+        <configuration id="weight2">
+            <additional filename="$data/shared/wheels/weights/weight002.i3d" nodeLeft="1|0" nodeRight="1|1" offset="-0.04" scale="1.1 0.85 0.85" mass="0.7"/>
+        </configuration>
+        <configuration id="weight3">
+            <additional filename="$data/shared/wheels/weights/weight003.i3d" nodeLeft="0|0" nodeRight="0|1" offset="0.05" scale="0.55 0.95 0.95" mass="1.0"/>
+        </configuration>
+        <configuration id="jd">
+            <innerRim filename="$data/shared/wheels/rims/rim007.i3d" nodeLeft="0|0" nodeRight="0|1"/>
+            <additional filename="$data/shared/wheels/weights/weight004.i3d" nodeLeft="0|0" nodeRight="0|1" offset="0.05" scale="0.94 0.94 0.94" mass="1"/>
+            <additional filename="$data/shared/wheels/weights/weight006.i3d" nodeLeft="0|0" nodeRight="0|1" offset="-0.01" scale="1.10 1.10 1.10" mass="0.3"/>
+        </configuration>
+        <configuration id="jd2">
+            <innerRim filename="$data/shared/wheels/rims/rim008.i3d" nodeLeft="0|0" nodeRight="0|1"/>
+            <additional filename="$data/shared/wheels/weights/weight005.i3d" nodeLeft="0|0" nodeRight="0|1" offset="-0.006" scale="1.06 1.06 1.06" mass="1"/>
+            <additional filename="$data/shared/wheels/weights/weight005.i3d" nodeLeft="1|0" nodeRight="1|1" offset="-0.006" scale="1.06 1.06 1.06" mass="0.3"/>
+        </configuration>
+        <configuration id="jd2_1">
+            <innerRim filename="$data/shared/wheels/rims/rim008.i3d" nodeLeft="1|0" nodeRight="1|1"/>
+            <additional filename="$data/shared/wheels/weights/weight005.i3d" nodeLeft="3|0" nodeRight="3|1" offset="-0.006" scale="1 1.06 1.06" mass="1"/>
+            <additional filename="$data/shared/wheels/weights/weight005.i3d" nodeLeft="1|0" nodeRight="1|1" offset="-0.006" scale="1 1.06 1.06" mass="0.3"/>
+        </configuration>
+        <configuration id="jd3">
+            <innerRim filename="$data/shared/wheels/rims/rim008.i3d" nodeLeft="0|0" nodeRight="0|1"/>
+        </configuration>
+        <configuration id="jd_outer">
+            <innerRim filename="$data/shared/wheels/rims/rim009.i3d" nodeLeft="0|0" nodeRight="0|1"/>
+        </configuration>
+    </configurations>
+</wheel>

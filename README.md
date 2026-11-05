@@ -1,5 +1,13 @@
 # Mods para Farming Simulator 25
 
+## John Deere 8R Series BR v2 — correções FS25 1.0.0.1
+
+[Baixar FS25_JohnDeere8R_BR_V2.zip](FS25_JohnDeere8R_BR_V2.zip) · [Instruções e fontes](john-deere-8r-br-v2/LEIA-ME.md) · [Relatório de validação](john-deere-8r-br-v2/RELATORIO.md)
+
+Pacote completo reconstruído com correções de pressão dos pneus e sincronização, cores de carroceria/aros, referências de luzes, filtros de colisão, herança Michelin e caminhos de recursos. Mantém 56 opções de rodas e 25 de motor; os cinco sons de motor foram preparados em mono para áudio 3D.
+
+**20 testes simulados passaram; 132 imagens, cinco sons e a integridade do ZIP foram conferidos.** Física, renderização, buzina e recursos compartilhados ainda precisam de teste dentro do FS25. O controle interativo opcional depende de um mod externo compatível; não há certificação de funcionamento 100% no jogo.
+
 ## Transbordo Inteligente PRO — versão de teste 0.12.0.0
 
 [Baixar FS25_TransbordoInteligente.zip](FS25_TransbordoInteligente.zip) · [Instruções](transbordo-inteligente/LEIA-ME.md) · [Código Lua](transbordo-inteligente/TransbordoInteligente.lua)
