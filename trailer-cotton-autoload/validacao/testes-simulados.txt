@@ -1,0 +1,23 @@
+test_all_native_animation_names_resolve (__main__.LoaderTests.test_all_native_animation_names_resolve) ... ok
+test_color_selectors_are_native_and_keep_all_original_manual_choices (__main__.LoaderTests.test_color_selectors_are_native_and_keep_all_original_manual_choices) ... ok
+test_colors_apply_independently_to_body_chassis_sides_holders_and_old_rims (__main__.LoaderTests.test_colors_apply_independently_to_body_chassis_sides_holders_and_old_rims) ... ok
+test_fixed_trigger_includes_native_flags_and_preserves_existing_flags (__main__.LoaderTests.test_fixed_trigger_includes_native_flags_and_preserves_existing_flags) ... ok
+test_legacy_and_fs25_round_sizes_are_supported (__main__.LoaderTests.test_legacy_and_fs25_round_sizes_are_supported) ... ok
+test_local_custom_type_keeps_autoload_no_manual_option (__main__.LoaderTests.test_local_custom_type_keeps_autoload_no_manual_option) ... ok
+test_manual_trailer_keeps_color_support_without_autoload_callbacks (__main__.LoaderTests.test_manual_trailer_keeps_color_support_without_autoload_callbacks) ... ok
+test_native_bale_counter_type_and_capacities_are_preserved (__main__.LoaderTests.test_native_bale_counter_type_and_capacities_are_preserved) ... ok
+test_native_ownership_and_mounted_checks_remain_active (__main__.LoaderTests.test_native_ownership_and_mounted_checks_remain_active) ... ok
+test_native_pickup_placement_full_platform_and_unloading (__main__.LoaderTests.test_native_pickup_placement_full_platform_and_unloading) ... ok
+test_native_rim_material_recolors_both_loaded_wheel_models (__main__.LoaderTests.test_native_rim_material_recolors_both_loaded_wheel_models) ... ok
+test_native_trigger_detects_and_selects_round_cotton (__main__.LoaderTests.test_native_trigger_detects_and_selects_round_cotton) ... ok
+test_original_detectors_cannot_see_bales (__main__.LoaderTests.test_original_detectors_cannot_see_bales) ... ok
+test_original_exact_dimensions_reject_240_cotton (__main__.LoaderTests.test_original_exact_dimensions_reject_240_cotton) ... ok
+test_original_geometry_images_and_wheels_preserved (__main__.LoaderTests.test_original_geometry_images_and_wheels_preserved) ... ok
+test_other_crops_square_modules_and_oversize_bales_are_rejected (__main__.LoaderTests.test_other_crops_square_modules_and_oversize_bales_are_rejected) ... ok
+test_scene_topology_preserved_when_normalizing_material_lists (__main__.LoaderTests.test_scene_topology_preserved_when_normalizing_material_lists) ... ok
+test_work_position_and_capacity_are_required (__main__.LoaderTests.test_work_position_and_capacity_are_required) ... ok
+
+----------------------------------------------------------------------
+Ran 18 tests in 0.267s
+
+OK

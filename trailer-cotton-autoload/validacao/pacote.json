@@ -1,0 +1,12 @@
+{
+  "file": "FS25_Lizard_TrailerCotton_Autoload.zip",
+  "bytes": 14660461,
+  "files": 33,
+  "sha256": "7456453def85b8d3d97fabb3247f061fe60f660ca66c60b3d3470c913f825513",
+  "tests_passed": 18,
+  "xml_i3d_parsed": 7,
+  "missing_local_resources": [],
+  "unverified_shared_game_resources": 55,
+  "zip_crc": "passed",
+  "zip_content_matches_prepared_files": true
+}

@@ -1,0 +1,256 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<modDesc xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" descVersion="94" xsi:noNamespaceSchemaLocation="https://validation.gdn.giants-software.com/xml/fs25/modDesc.xsd">
+    <author>SrVertex, ZT MODDING, AGRO TONHO</author>
+    <contributors>Piazada Do Farm, Miotto Modding, Connect Modding</contributors>
+    <version>1.0.0.1</version>
+    <title>
+        <en>Trailer Bi-train Cotton Bales Autoload</en>
+        <de>Bi-Train Baumwollballen Autoload Anhänger</de>
+    <br>Bitrem de Algodão — Autoload</br></title>
+    <description>
+        <en><![CDATA[This Iconic FS19 Trailer is Back! Load and transport your cotton bales much faster with the Autoload system.
+
+Price: Front Trailer 15000€, Rear Trailer 12500€
+Category: Cotton Harvesting, Starter Pack Cotton
+Capacity: 9 Bales in Front Trailer, 11 Bales in Rear Trailer: 9+11= 20 Bales Total
+Bales Dimensions: 2.3m x 2.3m x 2.4m - Round Bales
+Configurations: Wheels, Lantern Position, Lanterns, Bale Separator, Autoload, Tensioning Straps, Board
+Colors: Base Color, Chassis Color, Bale Holder Color, Side Plate Color, Rim Color
+Animations: Stand Levers (With Sound)
+
+ATTENTION!
+The Autoload and Collision system are very sensitive so follow these guidelines:
+Do not load in places with clusters of bales; do not make sharp turns; do not use the belts while the bales are in Autoload, for this unload the bales on the trailer itself and then pass the belts;
+Don't use too many trailers; don't use trucks with very large cabins (If the bale touches the cabin, the collisions collide).
+Have fun!
+
+Use Autoload With Awareness!
+]]></en>
+        <de><![CDATA[Der kultige FS19-Trailer ist zurück! Laden und transportieren Sie Ihre Baumwollballen viel schneller mit dem Autoload-System.
+
+Preis: Vorderer Anhänger 15000 €, hinterer Anhänger 12500 €
+Kategorie: Baumwollernte, Starter Pack Baumwolle
+Kapazität: 9 Ballen auf dem voderen Anhänger, 11 ballen auf dem hinteren Anhänger: 9+11= 20 Ballen insgesamt
+Abmessungen der Ballen: 2,3 m x 2,3 m x 2,4 m - Rundballen
+Konfigurationen: Reifen, Position der Beleuchtung, Beleuchtung, Ballenteiler, Autoload, Spanngurte, Brett
+Farben: Hauptfarbe, Farbe des Fahrgestells, Farbe des Ballenhalters, Farbe des Seitenschilds, Farbe der Felgen
+Animationen: Stativhebel (mit Sound)
+
+WARNUNG!
+Das Autoload- und Kollisionssystem sind sehr empfindlich, daher sollten Sie die folgenden Hinweise beachten:
+Laden Sie nicht an Stellen mit vielen Ballen; machen Sie keine scharfen Kurven; benutzen Sie die Gurte nicht, während die Ballen im Autoload sind, laden Sie die Ballen auf dem Anhänger selbst ab und legen Sie dann die Gurte an;
+Verwenden Sie nicht zu viele Anhänger; verwenden Sie keine Lkw mit sehr großen Kabinen (wenn der Ballen die Kabine berührt, kommt es zu Kollisionen).
+Viel Spaß!
+
+Benutze den Autoload mit Bedacht!
+]]></de>
+    <br>Carretas dianteira e traseira para fardos redondos de algodão. Capacidade: 9 + 11 fardos. Selecione Autoload Sim na loja e coloque a carreta em posição de trabalho pelos controles F1. Não use correias enquanto o autoload estiver segurando os fardos. Módulos retangulares Case IH não cabem neste layout. Não requer Universal Autoload.</br></description>
+    <iconFilename>store/Icon.dds</iconFilename>
+    <multiplayer supported="true"/>
+    <specializations><specialization name="cottonAutoloadFix" className="CottonAutoloadFix" filename="scripts/CottonAutoloadFix.lua"/><specialization name="cottonTrailerColors" className="CottonTrailerColors" filename="scripts/CottonTrailerColors.lua"/></specializations><vehicleTypes><type name="cottonBaleAutoload" className="Vehicle" filename="$dataS/scripts/vehicles/Vehicle.lua" parent="baleLoader"><specialization name="cottonAutoloadFix"/><specialization name="cottonTrailerColors"/></type><type name="cottonBaleTrailer" className="Vehicle" filename="$dataS/scripts/vehicles/Vehicle.lua" parent="trailer"><specialization name="cottonTrailerColors"/></type></vehicleTypes><storeItems>
+        <storeItem rootNode="vehicle" xmlFilename="xml/trailerCottonFront.xml"/>
+        <storeItem rootNode="vehicle" xmlFilename="xml/trailerCottonRear.xml"/>
+    </storeItems>
+    <l10n>
+        <text name="configuration_autoload">
+            <en>Autoload</en>
+            <de>Autoload</de>
+        </text>
+        <text name="configuration_wheelOld">
+            <en>Old Wheels</en>
+            <de>Alte Reifen</de>
+            <br>Rodas Antigas</br>
+        </text>
+        <text name="configuration_separadorAlgodao">
+            <en>Bale Separator</en>
+            <de>Ballenteiler</de>
+            <br>Separador De Fardos</br>
+        </text>
+        <text name="configuration_lanternas">
+            <en>Lanterns</en>
+            <de>Beleuchtung</de>
+            <br>Lanternas</br>
+        </text>
+        <text name="configuration_posicaoLanternas">
+            <en>Lantern Position</en>
+            <de>Position der Beleuchtung</de>
+            <br>Posição das Lanternas</br>
+        </text>
+        <text name="configuration_correias">
+            <en>Tension Belts (DO NOT USE WITH AUTOLOAD)</en>
+            <de>Spanngurte (NICHT MIT AUTOLOAD verwenden)</de>
+            <br>Correias de Tensao (NAO UTILIZAR COM AUTOLOAD)</br>
+        </text>
+        <text name="configuration_valueYesAutoload">
+            <en>Autoload Yes (DONT USE BELTS)</en>
+            <de>Autoload Ja (KEINE SPANNGURTE VERWENDEN)</de>
+            <br>Autoload Sim (NAO UTILZE CORREIAS)</br>
+        </text>
+        <text name="configuration_balesColor">
+            <en>Bale Holders</en>
+            <de>Ballenhalter</de>
+            <br>Suportes Dos Fardos</br>
+        </text>
+        <text name="configuration_lateralColor">
+            <en>Side Plates</en>
+            <de>Seitenschilder</de>
+            <br>Chapas Laterais</br>
+        </text>
+        <!-- COLORS -->
+        <text name="configuration_PRATAMETALICO">
+            <en>Silver Metallic</en>
+            <de>Silber Metallic</de>
+            <br>Prata Metálico</br>
+        </text>
+        <text name="configuration_PRETOMETALICO">
+            <en>Black Metallic</en>
+            <de>Schwarz Metallic</de>
+            <br>Preto Metálico</br>
+        </text>
+        <text name="configuration_VERMELHO">
+            <en>Red</en>
+            <de>Rot</de>
+            <br>Vermelho</br>
+        </text>
+        <text name="configuration_VERMELHOMETALICO">
+            <en>Red Metalic</en>
+            <de>Rot Metallic</de>
+            <br>Vermelho Metálico</br>
+        </text>
+        <text name="configuration_VERMELHOCROMADO">
+            <en>Red Chrome</en>
+            <de>Rotes Chrom</de>
+            <br>Vermelho Cromado</br>
+        </text>
+        <text name="configuration_VERMELHOFOSCO">
+            <en>Red Matte</en>
+            <de>Rot Matt</de>
+            <br>Vermelho Fosco</br>
+        </text>
+        <text name="configuration_LARANJA">
+            <en>Orange</en>
+            <de>Orange</de>
+            <br>Laranja</br>
+        </text>
+        <text name="configuration_TANGERINA">
+            <en>Tangerine</en>
+            <de>Mandarine</de>
+            <br>Tangerina</br>
+        </text>
+        <text name="configuration_LARANJAFRUTA">
+            <en>Orange</en>
+            <de>Orange</de>
+            <br>Laranja Fruta</br>
+        </text>
+        <text name="configuration_AMARELO">
+            <en>Yellow</en>
+            <de>Gelb</de>
+            <br>Amarelo</br>
+        </text>
+        <text name="configuration_AMARELOACAFRAO">
+            <en>Saffron Yellow</en>
+            <de>Safrangelb</de>
+            <br>Amarelo Açafrão</br>
+        </text>
+        <text name="configuration_AMARELOMARACUJA">
+            <en>Passion Fruit Yellow</en>
+            <de>Passionsfrucht Gelb</de>
+            <br>Amarelo Maracuja</br>
+        </text>
+        <text name="configuration_VERDE">
+            <en>Green</en>
+            <de>Grün</de>
+            <br>Verde</br>
+        </text>
+        <text name="configuration_VERDEBANDEIRA">
+            <en>Green Flag</en>
+            <de>Grüne Flagge</de>
+            <br>Verde Bandeira</br>
+        </text>
+        <text name="configuration_VERDELIMONADA">
+            <en>Lemonade Green</en>
+            <de>Zitronengrün</de>
+            <br>Verde Limonada</br>
+        </text>
+        <text name="configuration_VERDEMENTA">
+            <en>Mint Green</en>
+            <de>Mintgrün</de>
+            <br>Verde Menta</br>
+        </text>
+        <text name="configuration_VERDEFOLHA">
+            <en>Leaf Green</en>
+            <de>Blattgrün</de>
+            <br>Verde Folha</br>
+        </text>
+        <text name="configuration_VERDEFLORESTA">
+            <en>Forest Green</en>
+            <de>Waldgrün</de>
+            <br>Verde Floresta</br>
+        </text>
+        <text name="configuration_VERDEAGUA">
+            <en>Green Water</en>
+            <de>Grünes Wasser</de>
+            <br>Verde Agua</br>
+        </text>
+        <text name="configuration_AZUL">
+            <en>Blue</en>
+            <de>Blau</de>
+            <br>Azul</br>
+        </text>
+        <text name="configuration_AZULMETALICO">
+            <en>Blue Metalic</en>
+            <de>Blau Metallic</de>
+            <br>Azul Metalico</br>
+        </text>
+        <text name="configuration_AZULFOSCO">
+            <en>Blue Matte</en>
+            <de>Blau Matt</de>
+            <br>Azul Fosco</br>
+        </text>
+        <text name="configuration_AZULMAR">
+            <en>Ocean Blue</en>
+            <de>Meeresblau</de>
+            <br>Azul Mar</br>
+        </text>
+        <text name="configuration_AZULCIANO">
+            <en>Cyan Blue</en>
+            <de>Cyanblau</de>
+            <br>Azul Ciano</br>
+        </text>
+        <text name="configuration_AZULPETROLEO">
+            <en>Petrol Blue</en>
+            <de>Petroleum Blau</de>
+            <br>Azul Petróleo</br>
+        </text>
+        <text name="configuration_AZULPERSA">
+            <en>Persian Blue</en>
+            <de>Persisch Blau</de>
+            <br>Azul Persa</br>
+        </text>
+        <text name="configuration_AZULMEIANOITE">
+            <en>Midnight Blue</en>
+            <de>Mitternachtsblau</de>
+            <br>Azul Meia Noite</br>
+        </text>
+        <text name="configuration_ROXOCEBOLA">
+            <en>Onion Purple</en>
+            <de>Zwiebel violett</de>
+            <br>Roxo Cebola</br>
+        </text>
+        <text name="configuration_ROXOMISTICO">
+            <en>Mystic Purple</en>
+            <de>Mystisch Violett</de>
+            <br>Roxo Místico</br>
+        </text>
+        <text name="configuration_MARROMBARRO">
+            <en>Brown Clay</en>
+            <de>Brauner Lehm</de>
+            <br>Marrom Barro</br>
+        </text>
+        <text name="configuration_MARROMMETALICO">
+            <en>Metallic Brown</en>
+            <de>Braun Metallic</de>
+            <br>Marrom Metálico</br>
+        </text>
+    </l10n>
+</modDesc>

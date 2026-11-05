@@ -1,5 +1,13 @@
 # Mods para Farming Simulator 25
 
+## Bitrem Lizard Cotton Autoload — correções FS25 1.0.0.1
+
+[Baixar FS25_Lizard_TrailerCotton_Autoload.zip](FS25_Lizard_TrailerCotton_Autoload.zip) · [Instruções e fontes](trailer-cotton-autoload/LEIA-ME.md) · [Relatório](trailer-cotton-autoload/RELATORIO.md)
+
+Corrige o detector dos fardos redondos de algodão, a compatibilidade de tamanho e o ciclo de coleta/descarga das duas carretas. Mantém capacidade de 9 + 11 fardos e acrescenta seletores funcionais de cores de rodas, carroceria, chassis, suportes e laterais, inclusive no modo manual.
+
+**18 testes simulados passaram; ZIP e referências locais conferidos.** Escolha Autoload Sim e ative a posição de trabalho pela ajuda F1. Não requer Universal Autoload. Física, renderização e multiplayer ainda precisam de teste dentro do FS25.
+
 ## John Deere 8R Series BR v2 — correções FS25 1.0.0.1
 
 [Baixar FS25_JohnDeere8R_BR_V2.zip](FS25_JohnDeere8R_BR_V2.zip) · [Instruções e fontes](john-deere-8r-br-v2/LEIA-ME.md) · [Relatório de validação](john-deere-8r-br-v2/RELATORIO.md)
