@@ -1,9 +1,12 @@
 {
   "file": "FS25_JohnDeere8R_BR_V2.zip",
-  "files": 165,
-  "bytes": 58510184,
-  "sha256": "9be148b7d037e36ecd18d67ecff0e44ee9892261dfd2710b99b80577ec0e46b4",
+  "version": "1.0.0.2",
+  "files": 172,
+  "bytes": 58573379,
+  "sha256": "1002e9933a0f808407f1ab2235cfbcf0ada8406447dcbe5907a139e96e1ac6e7",
+  "tests_passed": 25,
   "zip_crc": "passed",
   "all_members_match_prepared_files": true,
-  "modDesc_at_root": true
+  "missing_local_resources": [],
+  "shared_game_resources_unverified": 107
 }

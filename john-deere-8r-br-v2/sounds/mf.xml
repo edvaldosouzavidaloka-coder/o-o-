@@ -1,13 +1,13 @@
-<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
 <sounds xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://validation.gdn.giants-software.com/xml/fs25/vehicle_sounds.xsd">
     <motorized>
         <sounds>
             <motor template="indoorCabinRumble"/>
-            <motorStart template="LARGE_TRACTOR_MOTOR_START" file="sounds/start.ogg" volumeScale="1.8"/>
-            <motorStop template="LARGE_TRACTOR_MOTOR_STOP" file="sounds/stop.ogg" volumeScale="1.8"/>
-            <motor template="LARGE_TRACTOR_MOTOR_IDLE" file="sounds/idle.ogg" volumeScale="1.7"/>
-            <motor template="LARGE_TRACTOR_MOTOR_OFFLOAD_RUN" file="sounds/load.ogg" volumeScale="3.0"/>
-            <motor template="LARGE_TRACTOR_MOTOR_ONLOAD_RUN" file="sounds/run.ogg" volumeScale="3.0"/>
+            <motorStart file="sounds/start.ogg" volumeScale="1.0" innerRadius="5" outerRadius="80"/>
+            <motorStop file="sounds/stop.ogg" volumeScale="1.0" innerRadius="5" outerRadius="80"/>
+            <motor file="sounds/idle.ogg" volumeScale="1.0" innerRadius="5" outerRadius="80"><volume indoor="0.7" outdoor="1.0"><modifier type="JD8R_RPM" value="0" modifiedValue="1"/><modifier type="JD8R_RPM" value="0.25" modifiedValue="0.85"/><modifier type="JD8R_RPM" value="0.6" modifiedValue="0.15"/><modifier type="JD8R_RPM" value="1" modifiedValue="0.05"/></volume><pitch indoor="0.95" outdoor="0.95"><modifier type="JD8R_RPM" value="0" modifiedValue="0.92"/><modifier type="JD8R_RPM" value="1" modifiedValue="1.25"/></pitch></motor>
+            <motor file="sounds/load.ogg" volumeScale="1.0" innerRadius="5" outerRadius="80"><volume indoor="0.7" outdoor="1.0"><modifier type="JD8R_RPM" value="0" modifiedValue="0.05"/><modifier type="JD8R_RPM" value="0.25" modifiedValue="0.35"/><modifier type="JD8R_RPM" value="0.6" modifiedValue="0.75"/><modifier type="JD8R_RPM" value="1" modifiedValue="1"/><modifier type="JD8R_LOAD" value="0" modifiedValue="0.9"/><modifier type="JD8R_LOAD" value="0.5" modifiedValue="0.45"/><modifier type="JD8R_LOAD" value="1" modifiedValue="0.25"/></volume><pitch indoor="1" outdoor="1"><modifier type="JD8R_RPM" value="0" modifiedValue="0.75"/><modifier type="JD8R_RPM" value="1" modifiedValue="1.15"/></pitch></motor>
+            <motor file="sounds/run.ogg" volumeScale="1.0" innerRadius="5" outerRadius="80"><volume indoor="0.7" outdoor="1.0"><modifier type="JD8R_RPM" value="0" modifiedValue="0"/><modifier type="JD8R_RPM" value="0.2" modifiedValue="0.4"/><modifier type="JD8R_RPM" value="1" modifiedValue="1"/><modifier type="JD8R_LOAD" value="0" modifiedValue="0"/><modifier type="JD8R_LOAD" value="0.3" modifiedValue="0.3"/><modifier type="JD8R_LOAD" value="1" modifiedValue="0.9"/></volume><pitch indoor="1" outdoor="1"><modifier type="JD8R_RPM" value="0" modifiedValue="0.75"/><modifier type="JD8R_RPM" value="1" modifiedValue="1.15"/></pitch></motor>
             <gearbox file="$data/sounds/vehicles/transmission/newHollandTransmission.mp3" pitchScale="0.6" volumeScale="0.45" innerRadius="7.0" outerRadius="60.0">
                 <volume indoor="0.65" outdoor="1.5">
                     <modifier type="SPEED" value="4.0" modifiedValue="0.0"/>
@@ -55,25 +55,25 @@
 
     <lights>
         <sounds>
-            <toggleLights template="SWITCH_01"/>
-            <turnLight template="SWITCH_TURNLIGHT"/>
+            <toggleLights file="sounds/generated/switch.ogg" volumeScale="0.6" innerRadius="5" outerRadius="65" fadeIn="0.01" fadeOut="0.05"/>
+            <turnLight file="sounds/generated/turn.ogg" volumeScale="0.7" innerRadius="5" outerRadius="65" fadeIn="0.01" fadeOut="0.05"/>
         </sounds>
     </lights>
 
     <attacherJoints>
         <sounds>
-            <attach template="ATTACH_01" linkNode="0>"/>
-            <hydraulic template="defaultHydraulicSound" linkNode="0>"/>
+            <attach linkNode="0&gt;" file="sounds/generated/attach.ogg" volumeScale="0.7" innerRadius="5" outerRadius="65" fadeIn="0.01" fadeOut="0.05"/>
+            <hydraulic linkNode="0&gt;" file="sounds/generated/hydraulic.ogg" volumeScale="0.6" innerRadius="5" outerRadius="65" fadeIn="0.01" fadeOut="0.05"/>
         </sounds>
     </attacherJoints>
 
     <drivable>
         <sounds>
-            <waterSplash template="WATER_SPLASH_01"/>
+            <waterSplash file="sounds/generated/water.ogg" volumeScale="0.7" innerRadius="5" outerRadius="65" fadeIn="0.01" fadeOut="0.05"/>
         </sounds>
     </drivable>
 
     <honk>
-        <sound template="HONK_NEW_HOLLAND_TRACTOR" linkNode="0>"/>
+        <sound linkNode="0&gt;" file="sounds/generated/horn.ogg" volumeScale="1.0" innerRadius="5" outerRadius="65" fadeIn="0.01" fadeOut="0.05"/>
     </honk>
 </sounds>

@@ -8,13 +8,13 @@ Corrige o detector dos fardos redondos de algodão, a compatibilidade de tamanho
 
 **18 testes simulados passaram; ZIP e referências locais conferidos.** Escolha Autoload Sim e ative a posição de trabalho pela ajuda F1. Não requer Universal Autoload. Física, renderização e multiplayer ainda precisam de teste dentro do FS25.
 
-## John Deere 8R Series BR v2 — correções FS25 1.0.0.1
+## John Deere 8R Series BR v2 — correções FS25 1.0.0.2
 
 [Baixar FS25_JohnDeere8R_BR_V2.zip](FS25_JohnDeere8R_BR_V2.zip) · [Instruções e fontes](john-deere-8r-br-v2/LEIA-ME.md) · [Relatório de validação](john-deere-8r-br-v2/RELATORIO.md)
 
 Pacote completo reconstruído com correções de pressão dos pneus e sincronização, cores de carroceria/aros, referências de luzes, filtros de colisão, herança Michelin e caminhos de recursos. Mantém 56 opções de rodas e 25 de motor; os cinco sons de motor foram preparados em mono para áudio 3D.
 
-**20 testes simulados passaram; 132 imagens, cinco sons e a integridade do ZIP foram conferidos.** Física, renderização, buzina e recursos compartilhados ainda precisam de teste dentro do FS25. O controle interativo opcional depende de um mod externo compatível; não há certificação de funcionamento 100% no jogo.
+Atualização 1.0.0.2 baseada no log: sons sem templates obsoletos, shaders do painel no formato 5, câmera, combustível e engates corrigidos. **25 testes simulados passaram.** Instale o ZIP sem descompactar e atualize também o TG GPS 0.9.2.1 para corrigir o erro `symbol_tractor`. O novo teste no FS25 ainda é necessário; avisos de desempenho de texturas e malhas textuais permanecem.
 
 ## Transbordo Inteligente PRO — versão de teste 0.12.0.0
 
@@ -80,7 +80,7 @@ python package.py
 cp FS25_TransbordoInteligente.zip ../FS25_TransbordoInteligente.zip
 ```
 
-## TG GPS PRO — versão de teste 0.9.2.0
+## TG GPS PRO — versão de teste 0.9.2.1
 
 [Baixar FS25_TG_GPS.zip](FS25_TG_GPS.zip) · [Instruções](tg-gps/LEIA-ME.txt) · [Fontes e testes](tg-gps/)
 
@@ -112,7 +112,7 @@ Gere o talhão ou finalize uma reta A/B/curva, baixe/ligue o implemento e avance
 
 Feche o FS25, faça backup do ZIP anterior e substitua `FS25_TG_GPS.zip` na pasta `mods`, sem descompactar nem manter cópias duplicadas. Ative o mod em uma partida single-player.
 
-**88 testes simulados passaram**, incluindo os ícones de alta definição, seus arquivos DDS completos, geometria plana, rotação pelo centro, largura fracionada da pintura e histórico preservado. Mantêm as verificações de PNG/DDS, arquivos virtuais, recorte e rotação do PDA, limites de desenho, brilho, perfis, biblioteca, direção e cabeceira. Renderização, brilho, posicionamento, desempenho e física ainda precisam de validação no FS25. A cabeceira automática exige passadas geradas no modo TALHÃO; em A/B e curva gravada sem gerar o campo, o retorno continua manual.
+**89 testes simulados passaram**, incluindo a correção de `getHasShaderParameter` em ícones agrupados, os ícones de alta definição, seus arquivos DDS completos, geometria plana, rotação pelo centro, largura fracionada da pintura e histórico preservado. Mantêm as verificações de PNG/DDS, arquivos virtuais, recorte e rotação do PDA, limites de desenho, brilho, perfis, biblioteca, direção e cabeceira. Renderização, brilho, posicionamento, desempenho e física ainda precisam de validação no FS25. A cabeceira automática exige passadas geradas no modo TALHÃO; em A/B e curva gravada sem gerar o campo, o retorno continua manual.
 
 Para desenvolver, use Python com `lupa==2.6`:
 

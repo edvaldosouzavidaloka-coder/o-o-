@@ -126,6 +126,30 @@ class RepairTests(unittest.TestCase):
         assert(body.z>screen.nativeNode.z+0.0005)
         ''')
 
+    def test_brightness_never_queries_transform_group_shader_parameters(self):
+        self.check('''
+        local queries=0
+        function getHasShaderParameter(node,name)
+            assert(getHasClassId(node,ClassIds.SHAPE),"Shader queried on a transform group")
+            queries=queries+1;return name=="lcdBrightness"
+        end
+        function setShaderParameter(node,name,value) node.lcdIntensity=value end
+        metadata();TGGPS:update(100);TGGPS:update(450)
+        local screen=TGGPS.monitor.screenRenderer
+        local icon=screen.pools.symbol_tractor[1]
+        assert(not getHasClassId(icon,ClassIds.SHAPE) and #icon.children>0)
+        local function verify(node,value)
+            if getHasClassId(node,ClassIds.SHAPE) then
+                assert(math.abs(node.lcdIntensity-value)<0.00001)
+            end
+            for i=0,getNumOfChildren(node)-1 do verify(getChildAt(node,i),value) end
+        end
+        verify(icon,0.05)
+        local old=queries;screen:applyBrightness(icon);assert(queries==old)
+        TGGPS.monitorBrightness=0.8;screen:applyBrightness(icon)
+        verify(icon,0.2);assert(queries>old)
+        ''')
+
     def test_materials_use_controlled_shader_and_dark_text_on_light_cards(self):
         root=ET.parse(baseline.ROOT/'models/tgGPSMonitorPrimitives.i3d').getroot()
         materials={m.get('name'):m for m in root.find('Materials')}

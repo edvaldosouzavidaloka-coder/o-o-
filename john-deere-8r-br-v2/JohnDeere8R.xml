@@ -1347,7 +1347,7 @@
 
     <tirePressure min="90" max="200" configurationName="vehicleType" configurationIndices="2">
         <sounds>
-            <air template="DEFAULT_SOWING_AIR_BLOWER">
+            <air file="sounds/generated/air.ogg" volumeScale="0.8" innerRadius="5" outerRadius="65" fadeIn="0.01" fadeOut="0.05">
             <volume indoor="0.4" outdoor="0.85"/>
                 <pitch indoor="1.0" outdoor="1.0">
                     </pitch>
@@ -1478,12 +1478,12 @@
 
     <attacherJoints comboDuration="2">
         <attacherJoint node="attacherJointBack" upperRotationOffset="0.251" lowerRotationOffset="0.251" moveTime="2.5" comboTime="1">
-                    <bottomArm referenceNode="bottomArmBackRef2" rotationNode="attacherJointBackArmBottom" startRotation="-10 0 0" translationNode="bottomArmBack" zScale="-1"/>
+                    <bottomArm referenceNode="bottomArmBackRef2" rotationNode="attacherJointBackArmBottom" startRotation="-10 0 0" translationNode="bottomArmBack" zScale="-1" categoryRange="1 4"/>
                     <distanceToGround lower="0.31" upper="1.20"/>
                     <rotationNode lowerRotation="-22 0 0" node="attacherJointBackRot" upperRotation="25 0 0"/>
                     <rotationNode2 node="attacherJointBackRot2"/>
                     <schema invertX="false" position="1 0" rotation="0"/>
-                    <topArm baseNode="attacherJointBackArmTop" filename="$data/shared/assets/upperLinks/walterscheid04.i3d" zScale="-1" materialTemplateName="JOHNDEERE_GREEN1" materialTemplateName2="SHARED_WHITE1"/>
+                    <topArm baseNode="attacherJointBackArmTop" filename="$data/shared/assets/upperLinks/walterscheidHO_110_700.xml" zScale="-1" materialTemplateName="JOHNDEERE_GREEN1" materialTemplateName2="SHARED_WHITE1"/>
                     <objectChange node="trailerAttacherNode" visibilityActive="false" visibilityInactive="true"/>
                     <objectChange node="trailerLowNode" visibilityActive="false" visibilityInactive="true"/>
                 </attacherJoint>
@@ -1571,8 +1571,8 @@
             <distanceToGround lower="0.30" upper="1.01"/>
             <rotationNode node="attacherJointFrontRot2" lowerRotation="20 0 0" upperRotation="-35 0 0"/>
             <rotationNode2 node="attacherJointFrontRot22"/>
-            <bottomArm rotationNode="attacherJointFrontArmBottom2" translationNode="bottomArmFront2" referenceNode="bottomArmFrontRef2" zScale="1" startRotation="-38 0 0"/>
-            <topArm baseNode="attacherJointFrontArmTop2" filename="$data/shared/assets/upperLinks/johnDeereUpperlink.i3d" zScale="1" materialTemplateName="" materialTemplateName2=""/>
+            <bottomArm rotationNode="attacherJointFrontArmBottom2" translationNode="bottomArmFront2" referenceNode="bottomArmFrontRef2" zScale="1" startRotation="-38 0 0" categoryRange="1 4"/>
+            <topArm baseNode="attacherJointFrontArmTop2" filename="$data/shared/assets/upperLinks/johnDeereUpperlink.xml" zScale="1"/>
             <schema position="1 0" rotation="0" invertX="true"/>
         </attacherJoint>
 
@@ -3490,7 +3490,7 @@
                 <fillUnits>
                     <fillUnit capacity="675" fillTypes="DIESEL" showOnHud="false" showInShop="false" unitTextOverride="$l10n_unit_literShort">
                         <dashboard valueType="fillLevel" displayType="ANIMATION" groups="MOTOR_ACTIVE" animName="loadingBarFuel"/>
-                    </fillUnit>
+                    <exactFillRootNode node="series8R_main_component1"/></fillUnit>
                   <fillUnit unitTextOverride="$l10n_unit_literShort" showOnHud="false" showInShop="false" showOnInfoHud="false" fillTypes="def" capacity="37">
                       <dashboard displayType="ANIMATION" valueType="fillLevel" animName="loadingBarDef" groups="MOTOR_ACTIVE"/>
                   </fillUnit>
@@ -3506,7 +3506,7 @@
                 <fillUnits>
                     <fillUnit capacity="675" fillTypes="DIESEL" showOnHud="false" showInShop="false" unitTextOverride="$l10n_unit_literShort">
                         <dashboard valueType="fillLevel" displayType="ANIMATION" groups="MOTOR_ACTIVE" animName="loadingBarFuel"/>
-                    </fillUnit>
+                    <exactFillRootNode node="series8R_main_component1"/></fillUnit>
                   <fillUnit unitTextOverride="$l10n_unit_literShort" showOnHud="false" showInShop="false" showOnInfoHud="false" fillTypes="def" capacity="37">
                       <dashboard displayType="ANIMATION" valueType="fillLevel" animName="loadingBarDef" groups="MOTOR_ACTIVE"/>
                   </fillUnit>

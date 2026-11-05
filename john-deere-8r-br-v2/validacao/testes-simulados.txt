@@ -18,8 +18,13 @@ test_all_provided_textures_present_and_shapes_indices_preserved (__main__.Packag
 test_geometry_is_byte_identical (__main__.PackageTests.test_geometry_is_byte_identical) ... ok
 test_wheel_inheritance_is_acyclic_and_keeps_all_four_representations (__main__.PackageTests.test_wheel_inheritance_is_acyclic_and_keeps_all_four_representations) ... ok
 test_wheels_motors_and_suspension_tuning_preserved (__main__.PackageTests.test_wheels_motors_and_suspension_tuning_preserved) ... ok
+test_fuel_target_cpu_focus_mesh_and_hitches_are_explicit (__main__.RuntimeLogTests.test_fuel_target_cpu_focus_mesh_and_hitches_are_explicit) ... ok
+test_generated_cues_and_engine_samples_are_mono_and_decodable (__main__.RuntimeLogTests.test_generated_cues_and_engine_samples_are_mono_and_decodable) ... ok
+test_local_rpm_and_load_modifiers_are_registered_and_bounded (__main__.RuntimeLogTests.test_local_rpm_and_load_modifiers_are_registered_and_bounded) ... ok
+test_reported_and_latent_obsolete_sound_templates_are_gone (__main__.RuntimeLogTests.test_reported_and_latent_obsolete_sound_templates_are_gone) ... ok
+test_shader_version_matches_engine_requirement_without_changing_code (__main__.RuntimeLogTests.test_shader_version_matches_engine_requirement_without_changing_code) ... ok
 
 ----------------------------------------------------------------------
-Ran 20 tests in 0.173s
+Ran 25 tests in 1.589s
 
 OK

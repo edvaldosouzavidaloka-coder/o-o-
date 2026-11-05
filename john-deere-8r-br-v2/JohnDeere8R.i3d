@@ -6474,7 +6474,7 @@
                     <TransformGroup name="cameraRaycastNode1" translation="0 1.83952 2.5178" nodeId="763"/>
                     <TransformGroup name="cameraRaycastNode2" translation="0 3.39053 -0.234436" nodeId="764"/>
                     <TransformGroup name="cameraRaycastNode3" translation="0 1.78169 -2.92995" nodeId="765"/>
-                    <Shape shapeId="43" name="shadowFocusBox" translation="0 2.41235 -1.25211" visibility="false" clipDistance="150" nodeId="766" materialIds="72" castsShadows="true" receiveShadows="true" nonRenderable="true"/>
+                    <Shape shapeId="43" name="shadowFocusBox" translation="0 2.41235 -1.25211" visibility="false" clipDistance="150" nodeId="766" materialIds="72" castsShadows="true" receiveShadows="true" nonRenderable="true" cpuMesh="true"/>
                 </TransformGroup>
                 <TransformGroup name="lights" translation="1.42109e-16 -0.993276 1.14146" nodeId="767">
                     <TransformGroup name="sharedLights" nodeId="768">

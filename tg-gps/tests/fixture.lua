@@ -7,6 +7,8 @@ function makeNode(name, parent, x, y, z)
     if parent ~= nil then link(parent,n) end
     return n
 end
+ClassIds={SHAPE=1}
+function getHasClassId(node,id) return id==ClassIds.SHAPE and node.isShape==true end
 function link(parent,node)
     if node.parent then
         for i,n in ipairs(node.parent.children) do if n==node then table.remove(node.parent.children,i); break end end
@@ -25,6 +27,7 @@ function setVisibility(n,v) n.visible=v end
 function createTransformGroup(name) return makeNode(name) end
 function clone(n)
     local result=makeNode(n.name)
+    result.isShape=n.isShape
     for _,child in ipairs(n.children) do link(result,clone(child)) end
     return result
 end

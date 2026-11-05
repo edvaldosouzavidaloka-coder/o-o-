@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<CustomShader version="6">
+<CustomShader version="5">
 
     <Parameters>
         <Parameter name="blinkOffset"  target="blinkOffset"  type="float4" group="blink" defaultValue="0 0 0 0" minValue="0 0 0 0" maxValue="1 1 1 1"/>

@@ -130,7 +130,8 @@ function TGGPSMonitorScreen:applyBrightness(node)
     local value=self.owner.monitorBrightness or 0.20
     self.nodeBrightness=self.nodeBrightness or {}
     if self.nodeBrightness[node]~=value and getHasShaderParameter and setShaderParameter then
-        if getHasShaderParameter(node,"lcdBrightness") then
+        if getHasClassId and ClassIds and getHasClassId(node,ClassIds.SHAPE)
+            and getHasShaderParameter(node,"lcdBrightness") then
             setShaderParameter(node,"lcdBrightness",value*0.25,0,0,0,false)
         end
         for i=0,getNumOfChildren(node)-1 do self:applyBrightness(getChildAt(node,i)) end

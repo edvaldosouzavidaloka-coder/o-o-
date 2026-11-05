@@ -39,6 +39,7 @@ class MonitorTests(unittest.TestCase):
 
             def visit(element, parent):
                 node = make(element.get('name', element.tag), parent)
+                node.isShape = element.tag == 'Shape'
                 for child in element:
                     if child.tag in ('TransformGroup', 'Shape'):
                         visit(child, node)

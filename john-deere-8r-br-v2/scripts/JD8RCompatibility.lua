@@ -2,11 +2,31 @@
 -- No global Vehicle functions or other vehicles are modified.
 JD8RCompatibility = {}
 
+local function normalizedMotorValue(vehicle, method)
+    if vehicle == nil or vehicle.spec_motorized == nil or vehicle.spec_motorized.motor == nil
+        or vehicle[method] == nil then return 0 end
+    local value = vehicle[method](vehicle)
+    if type(value) ~= "number" or value ~= value or value == math.huge or value == -math.huge then return 0 end
+    return math.min(1, math.max(0, value))
+end
+
+function JD8RCompatibility.soundRpm(vehicle)
+    return normalizedMotorValue(vehicle, "getMotorRpmPercentage")
+end
+
+function JD8RCompatibility.soundLoad(vehicle)
+    return normalizedMotorValue(vehicle, "getMotorLoadPercentage")
+end
+
 function JD8RCompatibility.prerequisitesPresent(specializations)
     return true
 end
 
 function JD8RCompatibility.initSpecialization()
+    if g_soundManager ~= nil and g_soundManager.registerModifierType ~= nil then
+        g_soundManager:registerModifierType("JD8R_RPM", JD8RCompatibility.soundRpm)
+        g_soundManager:registerModifierType("JD8R_LOAD", JD8RCompatibility.soundLoad)
+    end
     local schema = Vehicle.xmlSchema
     schema:setXMLSpecializationType("JD8RCompatibility")
     schema:register(XMLValueType.NODE_INDEX, "vehicle.jd8rCompatibility.paintSurface(?)#node", "Painted shape")
@@ -54,7 +74,14 @@ function JD8RCompatibility:onPreLoad(savegame)
                 CollisionFlag.STATIC_OBJECT, CollisionFlag.DYNAMIC_OBJECT,
                 CollisionFlag.TREE, CollisionFlag.PLAYER, CollisionFlag.ANIMAL,
                 CollisionFlag.TRIGGER)
-            repairZeroFilter(childPath(i3dNode, {0}), group, mask)
+            local root = childPath(i3dNode, {0})
+            repairZeroFilter(root, group, mask)
+            -- The original model has no separate fuel fill trigger. Use its
+            -- existing physical component as the exact fuel target, preserving
+            -- all vehicle bits, before FillUnit registers its node mapping.
+            if root ~= nil then
+                setCollisionFilterGroup(root, bit32.bor(getCollisionFilterGroup(root), CollisionFlag.FILLABLE))
+            end
             repairZeroFilter(childPath(i3dNode, {0, 0, 13, 0}), group, mask)
             repairZeroFilter(childPath(i3dNode, {0, 0, 16}), CollisionFlag.TRIGGER, CollisionFlag.PLAYER)
         end
