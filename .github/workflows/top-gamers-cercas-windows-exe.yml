@@ -1,0 +1,53 @@
+name: Compilar TOP GAMERS Criador de Cercas EXE Windows
+
+on:
+  push:
+    branches: [tg-cerca-editor-fs25-v0-2]
+    paths:
+      - 'TG_Cerca_Editor_GE10_v0.2/**'
+      - '.github/workflows/top-gamers-cercas-windows-exe.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  exe-windows:
+    name: Build e teste no Windows
+    runs-on: windows-latest
+    steps:
+      - name: Obter codigo do GitHub
+        uses: actions/checkout@v4
+      - name: Preparar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Descompactar versao 0.2
+        shell: pwsh
+        run: |
+          Expand-Archive -LiteralPath 'TG_Cerca_Editor_GE10_v0.2/TG_Cerca_Editor_GE10_v0.2_I3D_TESTE.zip' -DestinationPath './work' -Force
+      - name: Executar testes de I3D e XML
+        working-directory: work/TG_Cerca_Editor_GE10_v0.2
+        shell: pwsh
+        run: python TESTAR.py
+      - name: Instalar PyInstaller
+        shell: pwsh
+        run: python -m pip install --disable-pip-version-check pyinstaller
+      - name: Criar EXE de Windows
+        working-directory: work/TG_Cerca_Editor_GE10_v0.2
+        shell: pwsh
+        run: python -m PyInstaller --noconfirm --clean --onefile --windowed --name TOP_GAMERS_Criador_Cercas_FS25 TG_Cerca_Editor.py
+      - name: Empacotar EXE com instrucoes
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path './publicar' | Out-Null
+          Copy-Item './work/TG_Cerca_Editor_GE10_v0.2/dist/TOP_GAMERS_Criador_Cercas_FS25.exe' './publicar/'
+          Copy-Item './work/TG_Cerca_Editor_GE10_v0.2/LEIA-ME.txt' './publicar/'
+          Copy-Item './work/TG_Cerca_Editor_GE10_v0.2/CREDITOS.txt' './publicar/'
+          Compress-Archive -Path './publicar/*' -DestinationPath './TOP_GAMERS_Criador_Cercas_FS25_v0.2_EXE.zip' -Force
+      - name: Disponibilizar EXE para download em Actions
+        uses: actions/upload-artifact@v4
+        with:
+          name: TOP_GAMERS_Criador_Cercas_FS25_v0.2_EXE
+          path: TOP_GAMERS_Criador_Cercas_FS25_v0.2_EXE.zip
+          retention-days: 90
