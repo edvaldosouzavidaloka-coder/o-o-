@@ -62,7 +62,7 @@ class App(core.App):
         frame.columnconfigure(3, minsize=320, weight=0)
         self._canvas = tk.Canvas(frame, bd=0, highlightthickness=0, bg='#071411')
         self._canvas.place(x=0, y=0, relwidth=1, relheight=1)
-        self._canvas.lower()
+        tk.Misc.lower(self._canvas)
         frame.bind('<Configure>', self._redraw, add='+')
         self._set_background()
 
@@ -165,7 +165,7 @@ class App(core.App):
         self._canvas.create_image(0, 0, image=self._bg_bitmap, anchor='nw')
         self._canvas.create_rectangle(0, 0, w-330, h,
                                      fill='#0b1b17', stipple='gray50', outline='')
-        self._canvas.lower()
+        tk.Misc.lower(self._canvas)
 
     def update_fence(self, _=None):
         # Na lista, apenas XMLs realmente configurados como cercas nativas FS25.
