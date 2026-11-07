@@ -70,6 +70,10 @@ def test_gui(mod,xml,i3d_path):
     app=App()
     try:
         app.update_idletasks()
+        app.update()
+        print('TK mapped:',app.winfo_ismapped(),'root:',app.winfo_geometry(),
+              'frame:',app.log.master.winfo_geometry(),
+              'canvas:',app.preview_canvas.winfo_geometry())
         assert not hasattr(app,'_image_src')
         assert not hasattr(app,'_bg_bitmap')
         assert app.preview_canvas.winfo_width()>=250, app.preview_canvas.winfo_width()
