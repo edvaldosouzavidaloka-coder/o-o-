@@ -11,13 +11,14 @@ import xml.etree.ElementTree as ET
 
 from TG_Cerca_Editor_v09 import App as FenceApp
 import TG_PCObjects_Core_v11 as pc
+import TG_PCObjects_Localizador_v12 as locator
 
 
 class PCObjectsWindow(tk.Toplevel):
     def __init__(self, owner):
         super().__init__(owner)
         self.owner=owner
-        self.title("TG + EDVALDO | Adicionar PC Objects no mapa FS25")
+        self.title("TG + EDVALDO | Adicionar PC Objects no mapa FS25 v1.2")
         self.geometry("1260x800")
         self.minsize(1000,700)
         self.map_i3d=tk.StringVar()
@@ -81,7 +82,7 @@ class PCObjectsWindow(tk.Toplevel):
         frame.rowconfigure(10,weight=1)
         ttk.Label(frame,text="TG + EDVALDO — PC OBJECTS",font=("Segoe UI",16,"bold")).grid(
             row=0,column=0,columnspan=3,sticky="w",pady=(0,8))
-        self._line(frame,1,"I3D do mapa (sem spline)",self.map_i3d)
+        self._line(frame,1,"I3D do MAPA ou objeto (sem spline)",self.map_i3d)
         self._line(frame,2,"Pasta raiz do mapa (modDesc.xml)",self.maproot,True)
         self._line(frame,3,"placeables.xml do MAPA",self.placeables)
         self._line(frame,4,"storeItems.xml do MAPA",self.storeitems)
@@ -89,6 +90,8 @@ class PCObjectsWindow(tk.Toplevel):
         row.grid(row=5,column=0,columnspan=3,sticky="ew",pady=5)
         ttk.Button(row,text="Localizar XMLs do mapa",command=self.auto_destinations).pack(side="left",padx=2)
         ttk.Button(row,text="Ler objetos do I3D",command=self.load_objects).pack(side="left",padx=2)
+        ttk.Button(row,text="Encontrar I3D principal do mapa",
+                   command=self.load_main_map).pack(side="left",padx=2)
         ttk.Label(row,text="Origem dos XMLs:").pack(side="left",padx=(15,4))
         self.source_combo=ttk.Combobox(row,textvariable=self.source,state="readonly",width=34)
         self.source_combo.pack(side="left",padx=2)
@@ -129,7 +132,8 @@ class PCObjectsWindow(tk.Toplevel):
         self.log=tk.Text(frame,height=6,bg="#091a13",fg="#e4f5e8",
                          font=("Consolas",10),wrap="word")
         self.log.grid(row=14,column=0,columnspan=3,sticky="ew",pady=4)
-        self._log("Selecione o I3D do mapa e os dois arquivos XML. O botão seleciona um ou todos.")
+        self._log("v1.2: selecionar UM/TODOS carrega objetos automaticamente se a lista estiver vazia.")
+        self._log("I3D do abatedouro/casa não guarda posição no mapa. Posso procurar a importação no I3D principal.")
 
     def _log(self,value):
         self.log.insert("end",str(value)+"\n")
@@ -163,17 +167,71 @@ class PCObjectsWindow(tk.Toplevel):
                             obj["kind"],label,obj.get("reference","")))
         self.table.selection_set([k for k in prior if self.table.exists(k)])
 
+    def load_main_map(self):
+        try:
+            scenes=locator.main_map_scenes(self.maproot.get(),
+                                           exclude=self.map_i3d.get() or None)
+            if not scenes:
+                raise ValueError("Não encontrei um I3D principal na pasta do mapa. "
+                                 "Selecione o arquivo principal do mapa exportado pelo GE.")
+            self.map_i3d.set(str(scenes[0]))
+            self._log("I3D principal escolhido: "+str(scenes[0]))
+            return self.load_objects()
+        except Exception as exc:
+            self._log("Não consegui localizar o I3D principal: "+str(exc))
+            messagebox.showwarning("PC Objects",str(exc),parent=self)
+            return 0
+
     def load_objects(self):
         try:
-            self.entries=pc.scan_map_i3d(self.map_i3d.get())
+            chosen=Path(self.map_i3d.get().strip())
+            if not chosen.is_file():
+                raise ValueError("Selecione primeiro um I3D válido do mapa ou do objeto.")
+            if locator.is_model_i3d(chosen,self.maproot.get()):
+                self.entries,scenes,errors=locator.find_imported_model_in_map(
+                    chosen,self.maproot.get())
+                self._log(f"Arquivo {chosen.name} é um modelo, não a cena do mapa.")
+                if self.entries:
+                    self._log(f"Encontrei {len(self.entries)} instância(s) de "
+                              f"{chosen.stem} posicionada(s) no I3D principal.")
+                else:
+                    self._log("O modelo não foi localizado na cena principal. "
+                              "Sem referência no mapa não é possível calcular a posição.")
+                    self.assignment={}
+                    self._reload()
+                    messagebox.showwarning("PC Objects — posição não encontrada",
+                        f"Você selecionou o modelo {chosen.name}, mas não achei onde "
+                        "ele foi importado no I3D principal do mapa.\n\n"
+                        "Clique 'Encontrar I3D principal do mapa' e veja os objetos "
+                        "da cena. Se o abatedouro só existe como arquivo isolado, "
+                        "importe/posicione-o primeiro no GIANTS Editor. "
+                        "Não vou inventar coordenadas.",parent=self)
+                    return 0
+            else:
+                self.entries=pc.scan_map_i3d(chosen)
+                if not self.entries:
+                    self._log(f"Nenhum objeto importado encontrado em {chosen.name}.")
+                    self.assignment={}
+                    self._reload()
+                    messagebox.showwarning("PC Objects — lista vazia",
+                       "O I3D selecionado não contém referências/grupos de placeables "
+                       "com posição reconhecível.\n\n"
+                       "Selecione o I3D principal do mapa ou clique "
+                       "'Encontrar I3D principal do mapa'.",parent=self)
+                    return 0
             self.assignment={}
             self._reload()
-            self._log(f"Encontrados {len(self.entries)} objetos importados/candidatos no I3D.")
-            if not self.entries:
-                self._log("Nenhum Reference ou grupo com nome de placeable encontrado. "
-                          "Confira se os objetos foram importados no GE.")
+            self._log(f"Objetos disponíveis para selecionar: {len(self.entries)}.")
+            if self.inventory:
+                self.autolink()
+            return len(self.entries)
         except Exception as exc:
+            self.entries=[]
+            self.assignment={}
+            self._reload()
+            self._log("ERRO ao ler I3D: "+str(exc))
             messagebox.showerror("PC Objects",str(exc),parent=self)
+            return 0
 
     def load_catalog(self):
         try:
@@ -225,24 +283,37 @@ class PCObjectsWindow(tk.Toplevel):
         self._log(f"XML associado a {len(selected)} objeto(s) selecionado(s).")
 
     def select_all(self):
+        if not self.entries and not self.load_objects():
+            return
         self.table.selection_set(self.table.get_children())
         self._log(f"Selecionados todos os {len(self.entries)} objetos.")
 
     def select_one(self):
+        if not self.entries and not self.load_objects():
+            return
+        kids=self.table.get_children()
+        if not kids:
+            self._log("Não há objetos na lista. Selecione o I3D principal do mapa.")
+            return
+        selected=self.table.selection()
         focus=self.table.focus()
-        if not focus:
-            kids=self.table.get_children()
-            focus=kids[0] if kids else None
-        if focus:
-            self.table.selection_set((focus,))
-            self.table.focus(focus)
-        self._log("Apenas um objeto selecionado.")
+        if not focus or focus not in kids:
+            focus=selected[0] if selected else kids[0]
+        self.table.selection_set((focus,))
+        self.table.focus(focus)
+        self.table.see(focus)
+        self._log("Selecionado UM objeto: "+str(self.table.item(focus,"values")[0]))
 
     def register(self):
         try:
             selected=self._selected_objects()
             if not selected:
-                raise ValueError("Selecione UM ou TODOS os objetos antes de registrar.")
+                if not self.entries:
+                    self.load_objects()
+                raise ValueError("Não há objeto selecionado. Primeiro carregue a cena "
+                                 "com o botão 'Ler objetos do I3D' ou "
+                                 "'Encontrar I3D principal do mapa'; em seguida "
+                                 "use Selecionar UM ou TODOS.")
             placeables=Path(self.placeables.get())
             stores=Path(self.storeitems.get())
             maproot=Path(self.maproot.get())
