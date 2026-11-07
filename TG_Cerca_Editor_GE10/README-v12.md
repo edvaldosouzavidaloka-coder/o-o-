@@ -28,3 +28,19 @@ Na v1.1, clicar em **Selecionar UM** quando a tabela de objetos estava vazia reg
 - O programa não consegue transformar uma malha 3D isolada num placeable com todas as funcionalidades sem um **XML real do objeto**, com configuração FS25.
 - A presença do objeto como malha estática no I3D pode causar sobreposição quando registrado como placeable; teste sempre em cópia completa do mapa.
 - A v1.2 tem testes automatizados com mapa e referências sintéticas, mas o resultado precisa ser validado no seu mapa real do FS25.
+
+## Atualização: três caminhos separados
+
+A janela PC Objects da v1.2 agora possui três campos **independentes**:
+
+1. **I3D do MAPA (posição do objeto)** — o arquivo de cena principal (por exemplo, mapUS.i3d ou mapBR.i3d), onde o GIANTS Editor guarda as coordenadas da importação.
+2. **I3D do OBJETO** — o modelo placeables/abatedouro1/abatedouro.i3d, ou o de uma casa/barracão/silo.
+3. **XML do OBJETO** — o XML de configuração real do abatedouro, com raiz placeable e atributo type. Pode estar dentro da pasta do mapa ou de uma pasta de mod reconhecida.
+
+O botão **Ler objetos do MAPA** cruza a cena principal com o I3D do objeto, inclusive quando a importação está num grupo chamado abatedouro. Se o modelo aparecer várias vezes no mapa, cada posição será uma linha independente.
+
+O botão **Usar XML do OBJETO** lê o XML informado diretamente, sem depender de Carregar XMLs da origem. Se o catálogo ficar vazio, selecione o XML do OBJETO explicitamente e use o botão próprio. Quando existe um I3D específico selecionado, o XML pode ser associado a todas as instâncias dele.
+
+O programa registra no placeables.xml e storeItems.xml e prepara a referência da loja no map.xml, fazendo backup antes de gravar. O modo Somente conferir/prévia não escreve arquivos.
+
+**Limite:** se o objeto não estiver importado na cena do mapa, o I3D individual não fornece sua posição global. Coloque o objeto no GE e salve o mapa antes de executar o programa. 
