@@ -9,7 +9,8 @@ import tkinter as tk
 from tkinter import messagebox
 from xml.etree import ElementTree as ET
 
-from TG_Cerca_Editor_v08 import App as PreviousApp, build_fence_v08
+from TG_Cerca_Editor_v08 import App as PreviousApp
+from TG_Cerca_Segmentos_Originais_v091 import build_fence_v08
 from TG_Cerca_AntiDuplicatas_v09 import (
     scan_overlapping_fences, remove_confirmed_duplicates)
 import TG_Cerca_Editor_v05 as core
