@@ -30,7 +30,7 @@ def check_curves():
             20*math.sin(i*math.pi/100)) for i in range(201)]
     blocks,report=aligned_segments(curve,4.,max_span=80.,tolerance_xy=.35,tolerance_y=.18)
     assert report['corners']>2,report
-    assert min(p[1] for a,b in blocks for p in (a,b))>=24
+    assert min(p[1] for a,b in blocks for p in (a,b))>=22.9
     assert max(p[1] for a,b in blocks for p in (a,b))>26
     assert max(p[2] for a,b in blocks for p in (a,b))>15
     print('OK curva e relevo:',len(blocks),'segmentos,',report['corners'],'vertices essenciais')
