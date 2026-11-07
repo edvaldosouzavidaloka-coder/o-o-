@@ -1,0 +1,30 @@
+name: Inspect original I3D importer for v0.4
+
+on:
+  push:
+    branches: [tg-cerca-editor-fs25-v0-4-i3d]
+    paths:
+      - '.github/workflows/tg-inspect-i3d.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Unpack and show included parser
+        run: |
+          mkdir extracted
+          python - <<'PY'
+          import zipfile
+          z = zipfile.ZipFile('TG_Cerca_Editor_GE10_v0.2/TG_Cerca_Editor_GE10_v0.2_I3D_TESTE.zip')
+          z.extractall('extracted')
+          for name in ('tg_i3d.py', 'TG_Cerca_Editor.py', 'TESTAR.py'):
+              path = 'extracted/TG_Cerca_Editor_GE10_v0.2/' + name
+              print('========== BEGIN ' + name + ' ==========')
+              print(open(path,encoding='utf-8-sig').read())
+              print('========== END ' + name + ' ==========')
+          PY
