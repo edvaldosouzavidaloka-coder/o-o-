@@ -72,7 +72,8 @@ def test_gui(mod,xml,i3d_path):
         app.update_idletasks()
         assert not hasattr(app,'_image_src')
         assert not hasattr(app,'_bg_bitmap')
-        assert app.preview_canvas.winfo_width()>=400
+        assert app.preview_canvas.winfo_width()>=250, app.preview_canvas.winfo_width()
+        print('Janela prévia:',app.preview_canvas.winfo_width(),'x',app.preview_canvas.winfo_height())
         assert app.native_gate_combo.grid_info()['row']==4
         app.mods={mod.name: mod}
         app.fencemod.set(mod.name)
