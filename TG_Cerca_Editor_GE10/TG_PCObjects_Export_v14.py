@@ -194,7 +194,7 @@ def build_xml_entries(*,maproot,object_i3d,object_xml,placeables_path,
             raise ValueError("Selecione I3D do OBJETO ou informe o XML do item.")
         item,asset_entries=generated_decorative_xml(object_i3d,root)
         generated=True
-    if do_placeables and item["tag"]!="placeable":
+    if do_placeables and item.get("tag","placeable")!="placeable":
         raise ValueError("Somente XML <placeable> pode ser registrado em placeables.xml.")
     summary={"placeables_new":0,"placeables_existing":0,
              "store_new":0,"store_existing":0,"map_link_changed":False,
