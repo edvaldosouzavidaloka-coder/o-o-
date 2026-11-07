@@ -105,3 +105,74 @@ def find_imported_model_in_map(model_i3d,maproot,limit=15):
             place["object_i3d"]=str(model)
             found.append(place)
     return found,scenes,errors
+
+
+def _canonical_name(value):
+    """Remove número de cópia do GE e normaliza o nome sem confundir outros objetos."""
+    name=Path((value or "").replace("\\","/")).stem.casefold()
+    return re.sub(r"[\s_.-]*(?:copy[\s_.-]*)?\d+$","",name)
+
+
+def find_model_in_scene(map_i3d,model_i3d):
+    """Procura objetos realmente POSICIONADOS na cena do mapa, mesmo se o nome
+    do TransformGroup não estiver na lista de barracões/silos/casas.
+
+    Não usa as coordenadas do I3D isolado como posição global. Só retorna
+    nós cujo fileId aponta ao modelo ou cujo nome é igual ao modelo.
+    """
+    scene_path=Path(map_i3d).resolve()
+    model_path=Path(model_i3d).resolve()
+    if not scene_path.is_file() or not model_path.is_file():
+        raise ValueError("Informe dois arquivos I3D existentes: mapa e objeto.")
+    if scene_path==model_path:
+        raise ValueError("I3D do mapa e I3D do objeto não podem ser o mesmo arquivo.")
+    root=ET.parse(scene_path).getroot()
+    scene=root.find("Scene")
+    if scene is None:
+        raise ValueError("O I3D do mapa selecionado não contém <Scene>.")
+    file_table={}
+    for node in root.findall("./Files/File"):
+        val=node.get("filename","")
+        file_table[node.get("fileId")]=val
+    answer=[]
+    target=_canonical_name(model_path.name)
+    def visit(element,xyz,yaw,scale,route):
+        if element.tag not in ("TransformGroup","Reference","Shape"):
+            for i,ch in enumerate(element):
+                visit(ch,xyz,yaw,scale,route+(i,))
+            return
+        if element.tag=="Shape":
+            return
+        loc=core.parts3(element.get("translation"))
+        rot=core.parts3(element.get("rotation"))
+        size=core.parts3(element.get("scale"),(1.,1.,1.))
+        if abs(rot[0])>.01 or abs(rot[2])>.01:
+            return  # Inclinação complexa: nunca gravar posição aproximada.
+        position,heading=core.yaw_world(xyz,yaw,loc,rot[1],scale)
+        worldscale=tuple(scale[j]*size[j] for j in range(3))
+        filename=file_table.get(element.get("fileId"),element.get("filename",""))
+        reference_is_model=False
+        if element.tag=="Reference" and filename:
+            reference=(scene_path.parent/filename.replace("\\","/")).resolve()
+            reference_is_model=(reference==model_path or
+                (reference.name.casefold()==model_path.name.casefold()
+                 and _canonical_name(reference.name)==target))
+        label=_canonical_name(element.get("name",""))
+        name_matches=(label==target and bool(label))
+        # Dá prioridade a referência exata em relação a wrapper.
+        has_descendant_reference=any(
+            c.tag=="Reference" and _canonical_name(file_table.get(c.get("fileId"),""))==target
+            for c in element.iter() if c is not element)
+        match=reference_is_model or (
+            name_matches and not has_descendant_reference)
+        if match:
+            key="ref:"+"/".join(str(i) for i in route)
+            answer.append(dict(id=key,name=element.get("name") or model_path.stem,
+                 position=position,rotation=(0.,heading,0.),
+                 reference=filename,kind="objeto posicionado no I3D do mapa",
+                 map_scene=str(scene_path),object_i3d=str(model_path)))
+        for i,ch in enumerate(element):
+            visit(ch,position,heading,worldscale,route+(i,))
+    for i,ch in enumerate(scene):
+        visit(ch,(0.,0.,0.),0.,(1.,1.,1.),(i,))
+    return answer
