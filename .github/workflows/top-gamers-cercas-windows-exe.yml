@@ -1,9 +1,9 @@
-name: TG + EDVALDO Criador de Cercas e Porteiras FS25 v0.9 AntiDuplicatas Windows
+name: TG + EDVALDO Criador de Cercas e Porteiras FS25 v0.9.1 Segmentos Originais Windows
 
 on:
   push:
     branches:
-      - tg-cerca-editor-fs25-v0-9-anti-duplicatas
+      - tg-cerca-fs25-v0-9-1-segmentos-original
     paths:
       - 'TG_Cerca_Editor_GE10/**'
       - '.github/workflows/top-gamers-cercas-windows-exe.yml'
@@ -38,7 +38,7 @@ jobs:
       - name: Sintaxe do codigo
         shell: pwsh
         run: |
-          python -m py_compile TG_Cerca_Editor_GE10/TG_Cerca_Editor.py TG_Cerca_Editor_GE10/TG_Cerca_Editor_v05.py TG_Cerca_Editor_GE10/TG_Cerca_Editor_v06.py TG_Cerca_Editor_GE10/TG_Cerca_Editor_v07.py TG_Cerca_Editor_GE10/TG_Cerca_Geometria_v07.py TG_Cerca_Editor_GE10/TG_Cerca_Editor_v08.py TG_Cerca_Editor_GE10/TG_Cerca_Editor_v09.py TG_Cerca_Editor_GE10/TG_Cerca_AntiDuplicatas_v09.py TG_Cerca_Editor_GE10/tg_brand_photo_v06.py TG_Cerca_Editor_GE10/tg_i3d.py
+          python -m py_compile TG_Cerca_Editor_GE10/TG_Cerca_Editor.py TG_Cerca_Editor_GE10/TG_Cerca_Editor_v05.py TG_Cerca_Editor_GE10/TG_Cerca_Editor_v06.py TG_Cerca_Editor_GE10/TG_Cerca_Editor_v07.py TG_Cerca_Editor_GE10/TG_Cerca_Geometria_v07.py TG_Cerca_Editor_GE10/TG_Cerca_Editor_v08.py TG_Cerca_Editor_GE10/TG_Cerca_Editor_v09.py TG_Cerca_Editor_GE10/TG_Cerca_AntiDuplicatas_v09.py TG_Cerca_Editor_GE10/TG_Cerca_Segmentos_Originais_v091.py TG_Cerca_Editor_GE10/tg_brand_photo_v06.py TG_Cerca_Editor_GE10/tg_i3d.py
 
       - name: Teste real do formato da spline I3D e shapes
         shell: pwsh
@@ -72,6 +72,11 @@ jobs:
         shell: pwsh
         run: python TESTAR_v09.py
 
+      - name: Testar segmentos originais v0.1 com interface v0.9 preservada
+        working-directory: TG_Cerca_Editor_GE10
+        shell: pwsh
+        run: python TESTAR_v091.py
+
       - name: Criar icone da marca TG + EDVALDO
         working-directory: TG_Cerca_Editor_GE10
         shell: pwsh
@@ -84,39 +89,39 @@ jobs:
       - name: Compilar EXE independente do Python
         shell: pwsh
         run: |
-          python -m PyInstaller --noconfirm --clean --onefile --windowed --icon TG_Cerca_Editor_GE10/tg_edvaldo.ico --name TG_EDVALDO_Cercas_FS25_v09_I3D TG_Cerca_Editor_GE10/TG_Cerca_Editor_v09.py
+          python -m PyInstaller --noconfirm --clean --onefile --windowed --icon TG_Cerca_Editor_GE10/tg_edvaldo.ico --name TG_EDVALDO_Cercas_FS25_v091_I3D TG_Cerca_Editor_GE10/TG_Cerca_Editor_v09.py
 
       - name: Preparar arquivos para download
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path 'publicar' | Out-Null
-          Copy-Item dist/TG_EDVALDO_Cercas_FS25_v09_I3D.exe publicar/
-          Copy-Item TG_Cerca_Editor_GE10/README-v09.md publicar/
+          Copy-Item dist/TG_EDVALDO_Cercas_FS25_v091_I3D.exe publicar/
+          Copy-Item TG_Cerca_Editor_GE10/README-v091.md publicar/
           Copy-Item TG_Cerca_Editor_GE10/MIT_TERCEIROS.txt publicar/
-          Compress-Archive -Path publicar/* -DestinationPath TG_EDVALDO_Cercas_FS25_v09_I3D_Windows.zip -Force
+          Compress-Archive -Path publicar/* -DestinationPath TG_EDVALDO_Cercas_FS25_v091_I3D_Windows.zip -Force
 
       - name: Enviar EXE ao GitHub Actions
         uses: actions/upload-artifact@v4
         with:
-          name: TG_EDVALDO_Cercas_FS25_v09_I3D
-          path: TG_EDVALDO_Cercas_FS25_v09_I3D_Windows.zip
+          name: TG_EDVALDO_Cercas_FS25_v091_I3D
+          path: TG_EDVALDO_Cercas_FS25_v091_I3D_Windows.zip
           retention-days: 90
 
       - name: Publicar Release beta no GitHub
         uses: softprops/action-gh-release@v3
         with:
-          tag_name: tg-cercas-fs25-v0.9-antiduplicatas-i3d-beta
+          tag_name: tg-cercas-fs25-v0.9.1-segmentos-originais-beta
           target_commitish: ${{ github.sha }}
-          name: TG + EDVALDO — Criador de Cercas e PORTEIRAS FS25 v0.9 (I3D Beta)
+          name: TG + EDVALDO — Criador de Cercas e PORTEIRAS FS25 v0.9.1 (I3D Beta)
           prerelease: true
           make_latest: false
           body: |
-            v0.9 detecta cercas do mesmo modelo/traçado e pede confirmacao para substituir; sem foto de fundo.
+            v0.9.1 restaura o passo de ~2 metros nos segmentos da primeira versao; interface v0.9 inalterada.
             Marca TG + EDVALDO no titulo e icone. Leitura somente I3D + i3d.shapes.
-            Mantem porteira por clique no I3D e bloqueia sobreposicao parcial/modelos diferentes, sem alterar a animacao.
+            Mantem porteira por clique, demolição, animacao e protecao contra duplicatas do programa v0.9.
             Ainda requer teste real no FS25: fios e demolicao por trecho nao sao garantidos.
             Faca backup de savegame e confira o log.txt.
           files: |
-            publicar/TG_EDVALDO_Cercas_FS25_v09_I3D.exe
-            TG_EDVALDO_Cercas_FS25_v09_I3D_Windows.zip
+            publicar/TG_EDVALDO_Cercas_FS25_v091_I3D.exe
+            TG_EDVALDO_Cercas_FS25_v091_I3D_Windows.zip
           fail_on_unmatched_files: true
