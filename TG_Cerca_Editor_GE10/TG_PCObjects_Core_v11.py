@@ -115,8 +115,9 @@ def _mod_files(mod):
         return [(x.relative_to(mod).as_posix(),x.read_bytes)
                 for x in mod.rglob("*.xml")]
     with zipfile.ZipFile(mod) as z:
-        names=[s for s in z.namelist() if s.lower().endswith(".xml")]
-        return [(name,lambda name=name: z.read(name)) for name in names]
+        names=[n for n in z.namelist() if n.lower().endswith(".xml")]
+        payload=[(name,z.read(name)) for name in names]
+    return [(name,lambda data=data: data) for name,data in payload]
 
 
 def source_inventory(source, kind, root=None):
