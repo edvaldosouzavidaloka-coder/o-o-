@@ -74,7 +74,7 @@ def test_gui(maproot,i3d,model):
         # Busca I3D principal do mapa mesmo depois de selecionar o modelo.
         loaded=win.load_main_map()
         assert loaded>=2
-        assert Path(win.map_i3d.get())==i3d
+        assert Path(win.map_i3d.get()).resolve()==i3d.resolve()
         # Ao selecionar um com lista previamente carregada, não reler I3D.
         with patch.object(win,"load_objects",side_effect=AssertionError("Recarregou ao escolher UM")):
             win.select_one()
