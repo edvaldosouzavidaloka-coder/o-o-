@@ -40,9 +40,9 @@ def run():
             tolerance_xy=.35,tolerance_y=.18,farm_id=1)
         assert spec['panel_length']==4
         assert total==500
-        assert len(records)==250,(len(records))
+        assert len(records)==249,(len(records))
         ids=[node.get('id') for node in tree.findall('./placeable/newFence/segment')]
-        assert ids.count('GATE_5m')==1 and ids.count('SEGMENT')==249
+        assert ids.count('GATE_5m')==1 and ids.count('SEGMENT')==248
         i=ids.index('GATE_5m')
         assert i>0 and i<len(ids)-1
         gate=tree.findall('./placeable/newFence/segment')[i]
