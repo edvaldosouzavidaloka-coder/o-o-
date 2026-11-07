@@ -435,12 +435,12 @@ class PCObjectsWindow(tk.Toplevel):
 class App(FenceApp):
     def __init__(self):
         super().__init__()
-        self.title("TG + EDVALDO | Cercas, Porteiras e PC Objects FS25 v1.1")
+        self.title("TG + EDVALDO | Cercas, Porteiras e PC Objects FS25 v1.2")
         frame=self.log.master
         ttk.Button(frame,text="ADICIONAR PC OBJECTS",
                    command=self.open_pcobjects).grid(row=1,column=1,sticky="ew",padx=6)
         self.pc_window=None
-        self.log_message("v1.1: novo botão ADICIONAR PC OBJECTS. Cercas e porteiras preservadas.")
+        self.log_message("v1.2: campos separados para I3D do mapa, I3D do item e XML do item; cercas preservadas.")
 
     def open_pcobjects(self):
         if self.pc_window is None or not self.pc_window.winfo_exists():
