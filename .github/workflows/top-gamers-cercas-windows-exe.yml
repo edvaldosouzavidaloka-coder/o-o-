@@ -1,10 +1,11 @@
-name: Compilar TOP GAMERS Criador de Cercas EXE Windows
+name: TOP GAMERS - EXE Windows Cercas FS25 v0.3
 
 on:
   push:
-    branches: [tg-cerca-editor-fs25-v0-2]
+    branches:
+      - tg-cerca-editor-fs25-v0-2
     paths:
-      - 'TG_Cerca_Editor_GE10_v0.2/**'
+      - 'TG_Cerca_Editor_GE10/**'
       - '.github/workflows/top-gamers-cercas-windows-exe.yml'
   workflow_dispatch:
 
@@ -13,41 +14,41 @@ permissions:
 
 jobs:
   exe-windows:
-    name: Build e teste no Windows
+    name: Compilar e verificar EXE no Windows
     runs-on: windows-latest
     steps:
-      - name: Obter codigo do GitHub
+      - name: Baixar código
         uses: actions/checkout@v4
-      - name: Preparar Python
+      - name: Instalar Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Descompactar versao 0.2
+      - name: Verificar sintaxe Python
         shell: pwsh
         run: |
-          Expand-Archive -LiteralPath 'TG_Cerca_Editor_GE10_v0.2/TG_Cerca_Editor_GE10_v0.2_I3D_TESTE.zip' -DestinationPath './work' -Force
-      - name: Executar testes de I3D e XML
-        working-directory: work/TG_Cerca_Editor_GE10_v0.2
+          python -m py_compile TG_Cerca_Editor_GE10/TG_Cerca_Editor.py TG_Cerca_Editor_GE10/TG_Cerca_Editor_v03.py
+      - name: Verificar importações da interface
         shell: pwsh
-        run: python TESTAR.py
+        run: |
+          $env:PYTHONPATH = "TG_Cerca_Editor_GE10"
+          python -c "import TG_Cerca_Editor_v03 as m; print('App:', m.App.__name__)"
       - name: Instalar PyInstaller
         shell: pwsh
         run: python -m pip install --disable-pip-version-check pyinstaller
-      - name: Criar EXE de Windows
-        working-directory: work/TG_Cerca_Editor_GE10_v0.2
-        shell: pwsh
-        run: python -m PyInstaller --noconfirm --clean --onefile --windowed --name TOP_GAMERS_Criador_Cercas_FS25 TG_Cerca_Editor.py
-      - name: Empacotar EXE com instrucoes
+      - name: Compilar executável
         shell: pwsh
         run: |
-          New-Item -ItemType Directory -Force -Path './publicar' | Out-Null
-          Copy-Item './work/TG_Cerca_Editor_GE10_v0.2/dist/TOP_GAMERS_Criador_Cercas_FS25.exe' './publicar/'
-          Copy-Item './work/TG_Cerca_Editor_GE10_v0.2/LEIA-ME.txt' './publicar/'
-          Copy-Item './work/TG_Cerca_Editor_GE10_v0.2/CREDITOS.txt' './publicar/'
-          Compress-Archive -Path './publicar/*' -DestinationPath './TOP_GAMERS_Criador_Cercas_FS25_v0.2_EXE.zip' -Force
-      - name: Disponibilizar EXE para download em Actions
+          python -m PyInstaller --noconfirm --clean --onefile --windowed --name TOP_GAMERS_Cercas_FS25_v03 TG_Cerca_Editor_GE10/TG_Cerca_Editor_v03.py
+      - name: Criar pacote para download
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path publicar | Out-Null
+          Copy-Item dist/TOP_GAMERS_Cercas_FS25_v03.exe publicar/
+          Copy-Item TG_Cerca_Editor_GE10/README-v03.md publicar/
+          Compress-Archive -Path publicar/* -DestinationPath TOP_GAMERS_Cercas_FS25_v03_Windows.zip -Force
+      - name: Enviar EXE para o GitHub Actions
         uses: actions/upload-artifact@v4
         with:
-          name: TOP_GAMERS_Criador_Cercas_FS25_v0.2_EXE
-          path: TOP_GAMERS_Criador_Cercas_FS25_v0.2_EXE.zip
+          name: TOP_GAMERS_Cercas_FS25_v03_EXE
+          path: TOP_GAMERS_Cercas_FS25_v03_Windows.zip
           retention-days: 90
