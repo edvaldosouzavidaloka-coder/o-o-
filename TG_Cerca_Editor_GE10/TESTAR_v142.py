@@ -117,7 +117,7 @@ def test_output_and_legacy(folder):
     assert all(math.dist(a,b)<=4.8+1e-5 for a,b,kind in rows if kind=="SEGMENT")
     assert all(math.dist(a[1],b[0])<1e-9 for a,b in zip(rows,rows[1:]))
     tags=newtree.findall("./placeable/newFence/segment")
-    assert len(tags)==len(rows)*2-1 or len(tags)==len(rows)  # old + new
+    assert len(tags)==len(oldrows)+len(rows), (len(tags),len(oldrows),len(rows))
     duplicates,conflicts=scan_overlapping_fences(newtree,newtree.getroot()[-1])
     assert len(duplicates)==1 and not conflicts,(duplicates,conflicts)
     assert ET.parse(save).findall("./placeable/newFence/segment")
