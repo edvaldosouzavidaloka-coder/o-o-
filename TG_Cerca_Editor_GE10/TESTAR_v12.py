@@ -40,7 +40,7 @@ def test_locator(maproot,i3d,model):
     assert is_model_i3d(model,maproot)
     assert not is_model_i3d(i3d,maproot)
     scenes=main_map_scenes(maproot,exclude=model)
-    assert i3d in scenes,scenes
+    assert any(p.resolve()==i3d.resolve() for p in scenes),(str(i3d.resolve()),[str(p.resolve()) for p in scenes])
     found, scenes, errors=find_imported_model_in_map(model,maproot)
     assert len(found)==2,found
     assert all(x["map_scene"]==str(i3d) for x in found)
