@@ -41,12 +41,31 @@ class PCObjectsWindow(tk.Toplevel):
     def _pick(self,var,folder=False):
         if folder:
             value=filedialog.askdirectory(title="Selecione a pasta raiz do mapa")
+        elif var is self.storeitems:
+            value=filedialog.asksaveasfilename(title="Escolher/criar storeItems.xml",
+                defaultextension=".xml",filetypes=[("XML","*.xml")])
         else:
             kinds=[("Arquivos XML","*.xml")] if var is not self.map_i3d else [
                 ("Cena do mapa I3D","*.i3d")]
             value=filedialog.askopenfilename(filetypes=kinds)
         if value:
             var.set(value)
+            if var is self.maproot:
+                self.auto_destinations()
+
+    def auto_destinations(self):
+        try:
+            place,store,main=pc.guess_map_xml_paths(self.maproot.get())
+            if place and not self.placeables.get():
+                self.placeables.set(place)
+            if store and not self.storeitems.get():
+                self.storeitems.set(store)
+            if main:
+                self._log("map.xml identificado: "+str(main))
+            else:
+                self._log("Não encontrei o map.xml no modDesc. Confira a pasta raiz.")
+        except Exception as exc:
+            self._log("Auto detectar: "+str(exc))
 
     def _line(self,parent,row,title,var,folder=False):
         ttk.Label(parent,text=title).grid(row=row,column=0,sticky="w",padx=5,pady=3)
@@ -68,6 +87,7 @@ class PCObjectsWindow(tk.Toplevel):
         self._line(frame,4,"storeItems.xml do MAPA",self.storeitems)
         row=ttk.Frame(frame)
         row.grid(row=5,column=0,columnspan=3,sticky="ew",pady=5)
+        ttk.Button(row,text="Localizar XMLs do mapa",command=self.auto_destinations).pack(side="left",padx=2)
         ttk.Button(row,text="Ler objetos do I3D",command=self.load_objects).pack(side="left",padx=2)
         ttk.Label(row,text="Origem dos XMLs:").pack(side="left",padx=(15,4))
         self.source_combo=ttk.Combobox(row,textvariable=self.source,state="readonly",width=34)
@@ -232,24 +252,31 @@ class PCObjectsWindow(tk.Toplevel):
                 raise ValueError("O placeables.xml precisa ficar dentro da pasta do mapa.")
             if not stores.resolve().is_relative_to(maproot.resolve()):
                 raise ValueError("O storeItems.xml precisa ficar dentro da pasta do mapa.")
-            config_issue=pc.check_storeitems_reference(maproot,stores)
-            if config_issue:
-                raise ValueError(config_issue+" Corrija o caminho antes de gravar.")
             a,b,summary=pc.make_map_updates(selected,self.assignment,self.inventory,
                                              placeables,stores)
+            mapxml,config_tree,change_link=pc.prepare_map_config(maproot,stores)
             self._log(f"Prévia: {len(summary['inserted'])} objeto(s) novos, "
                       f"{len(summary['already'])} já registrados, "
                       f"{len(summary['stores'])} referência(s) novas na loja.")
+            if change_link:
+                self._log("map.xml: a referência StoreItems será corrigida automaticamente.")
             if self.dryrun.get():
                 self._log("SOMENTE PRÉVIA: arquivos não foram alterados.")
+                return
+            if not (summary["inserted"] or summary["stores"] or change_link):
+                self._log("Nada a atualizar: objetos e registros já estão presentes.")
                 return
             if not messagebox.askyesno("Confirmar PC Objects",
                       f"Registrar {len(summary['inserted'])} objeto(s) no placeables.xml "
                       f"e {len(summary['stores'])} entrada(s) no storeItems.xml?\n"
-                      "Será criado backup de ambos. Prossseguir?",
+                      +("Também corrigir a referência no map.xml.\n" if change_link else "")
+                      +"Backups automáticos antes de gravar. Prosseguir?",
                       parent=self):
                 return
-            backups=pc.write_two_with_backups(placeables,stores,a,b)
+            entries=[(placeables,a),(stores,b)]
+            if change_link:
+                entries.append((mapxml,config_tree))
+            backups=pc.write_map_bundle(entries)
             self._log("Arquivos atualizados. Backups: "+", ".join(str(p) for p in backups))
             messagebox.showinfo("TG + EDVALDO",
                 "Placeables e StoreItems gravados com backup. Teste o mapa no FS25.",
