@@ -51,6 +51,12 @@ jobs:
         shell: pwsh
         run: python TESTAR_v06.py
 
+      - name: Testar abertura da interface Tkinter
+        working-directory: TG_Cerca_Editor_GE10
+        shell: pwsh
+        run: |
+          python -c "from TG_Cerca_Editor_v06 import App; a=App(); a.update_idletasks(); a.destroy(); print('Interface v0.6 iniciou e fechou corretamente')"
+
       - name: Criar icone da marca TG + EDVALDO
         working-directory: TG_Cerca_Editor_GE10
         shell: pwsh
