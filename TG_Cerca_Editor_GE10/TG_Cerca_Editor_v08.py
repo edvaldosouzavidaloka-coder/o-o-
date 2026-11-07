@@ -12,7 +12,73 @@ import xml.etree.ElementTree as ET
 
 import TG_Cerca_Editor as base
 import TG_Cerca_Editor_v05 as core
-import TG_Cerca_Editor_v07 as engine
+from TG_Cerca_Geometria_v07 import aligned_segments
+import uuid
+
+
+def model_details(mod, xml):
+    root=base.check_mod_xml(mod,xml,'fence')
+    if root.get('type')!='newFence':
+        raise ValueError('O XML escolhido nao e uma cerca nativa newFence.')
+    panel_length, gates=core.fence_spec(mod,xml)
+    segment=root.find("./fence/segment[@id='SEGMENT']")
+    if segment is None or segment.get('class')!='FenceSegment':
+        raise ValueError('Falta segmento class=FenceSegment no mod.')
+    return dict(panel_length=panel_length,gates=gates,
+                registered=base.registered_in_mod(mod,xml),
+                can_sell=root.findtext('./storeData/canBeSold','true').lower()!='false')
+
+
+def build_fence_v08(points, mod, xml, target, gate_id='', gate_pct=50.0,
+                    max_span=80.0,tolerance_xy=0.35,tolerance_y=0.18,farm_id=1):
+    """Adiciona uma fence nativa com porteira do mesmo XML ao savegame."""
+    spec=model_details(mod,xml)
+    panel=spec['panel_length']
+    if gate_id and gate_id not in spec['gates']:
+        raise ValueError('Porteira nao declarada neste XML.')
+    if not isinstance(farm_id,int) or not 0<=farm_id<=255:
+        raise ValueError('Farm ID deve estar entre 0 e 255.')
+    acc=base.cumulative(points)
+    total=acc[-1]
+    if total<=panel:
+        raise ValueError('Spline curta demais para criar a cerca.')
+    if gate_id:
+        gate_len=spec['gates'][gate_id]
+        lo,mid,hi,total=gate_interval(points,gate_pct,gate_len,margin=panel)
+        pieces=[(base.between(points,acc,0,lo),'SEGMENT'),
+                ([base.at_distance(points,acc,lo),base.at_distance(points,acc,hi)],gate_id),
+                (base.between(points,acc,hi,total),'SEGMENT')]
+    else:
+        pieces=[(points,'SEGMENT')]
+    records=[]
+    reports=[]
+    for path, segment_id in pieces:
+        if segment_id=='SEGMENT':
+            edges, report=aligned_segments(path,panel,max_span,tolerance_xy,tolerance_y)
+            reports.append(report)
+            records.extend((a,b,segment_id) for a,b in edges)
+        else:
+            records.append((path[0],path[1],segment_id))
+    if not records:
+        raise ValueError('A spline nao gerou segmentos.')
+    tree=ET.parse(target)
+    root=tree.getroot()
+    if root.tag!='placeables':
+        raise ValueError('Selecione um XML com raiz <placeables>.')
+    obj=ET.SubElement(root,'placeable',{
+        'filename':base.as_network_filename(mod,xml),
+        'modName':base.modname(mod),
+        'uniqueId':'placeable'+uuid.uuid4().hex,
+        'position':'0.000 -151.000 0.000',
+        'rotation':'0.000 0.000 0.000',
+        'age':'0.000000',
+        'price':'100.000000',
+        'farmId':str(farm_id)
+    })
+    fence=ET.SubElement(obj,'newFence')
+    for a,b,segment_id in records:
+        ET.SubElement(fence,'segment',{'start':base.pos(a),'end':base.pos(b),'id':segment_id})
+    return tree,records,reports,total,spec
 
 
 def closest_distance_along_path(points, px, pz):
@@ -319,8 +385,47 @@ class App(core.App):
                 return
         if self._preview_file!=str(Path(self.spline.get()).resolve()):
             self.show_preview(silent=True)
-        # Mesma lógica validada de geração e backup da versão 0.7.
-        return engine.App.generate(self)
+        try:
+            mod=self.mods.get(self.fencemod.get())
+            xml=self.fencexml.get()
+            if mod is None or not xml:
+                raise ValueError('Selecione um mod de cerca e um XML de cerca.')
+            pts,name,kind=core.load_i3d_points(Path(self.spline.get()))
+            path=Path(self.placeables.get())
+            if not path.is_file():
+                raise ValueError('Selecione placeables.xml de um savegame de TESTE.')
+            gate_id=self.native_gate.get()
+            if gate_id=='(sem porteira)':
+                gate_id=''
+            tree,records,reports,total,spec=build_fence_v08(
+                pts,mod,xml,path,gate_id,float(self.gate_pct.get()),
+                float(self.max_span.get()),float(self.tolerance_xy.get()),
+                float(self.tolerance_y.get()),int(self.farm_id.get()))
+            self.log_message(f'I3D {name}: {total:.1f} metros; '
+                             f'{len(records)} registros XML; painel {spec["panel_length"]:g} m.')
+            if gate_id:
+                width=spec['gates'][gate_id]
+                self.log_message(f'PORTEIRA {gate_id}: {width:g} metros, '
+                                 f'posicao {self.gate_pct.get():.2f}% da spline.')
+            if kind=='cubic':
+                self.log_message('Aviso: spline cubica interpolada por aproximacao.')
+            if not spec['registered']:
+                self.log_message('AVISO: XML nao consta no modDesc/storeItems.')
+            if not spec['can_sell']:
+                self.log_message('AVISO: mod declara canBeSold=false.')
+            if self.storeitems.get().strip():
+                if ET.parse(self.storeitems.get()).getroot().tag!='storeItems':
+                    raise ValueError('O storeItems.xml selecionado e invalido.')
+            if self.dryrun.get():
+                self.log_message('SO PREVIA: nenhum arquivo alterado.')
+                return
+            backup=base.backup_and_write(path,tree)
+            self.log_message('GRAVADO em '+str(path)+'; BACKUP: '+str(backup))
+            messagebox.showinfo('TG + EDVALDO',
+                'Porteira e cerca registradas no XML. Teste no FS25 e verifique o log.')
+        except Exception as exc:
+            self.log_message('ERRO ao gerar porteira: '+str(exc))
+            messagebox.showerror('TG + EDVALDO',str(exc))
 
 
 if __name__=='__main__':
