@@ -1,9 +1,9 @@
-name: TG + EDVALDO Criador de Cercas e Porteiras FS25 v1.4 PC Objects I3D Exportado Windows
+name: TG + EDVALDO Criador de Cercas e Porteiras FS25 v1.4.1 PC Objects Foco Janelas Windows
 
 on:
   push:
     branches:
-      - tg-edvaldo-v1-4-exportar-i3d-posicao
+      - tg-edvaldo-v1-4-1-foco-janelas
     paths:
       - 'TG_Cerca_Editor_GE10/**'
       - '.github/workflows/top-gamers-cercas-windows-exe.yml'
@@ -38,7 +38,7 @@ jobs:
       - name: Sintaxe do codigo
         shell: pwsh
         run: |
-          python -m py_compile TG_Cerca_Editor_GE10/TG_Cerca_Editor.py TG_Cerca_Editor_GE10/TG_Cerca_Editor_v05.py TG_Cerca_Editor_GE10/TG_Cerca_Editor_v06.py TG_Cerca_Editor_GE10/TG_Cerca_Editor_v07.py TG_Cerca_Editor_GE10/TG_Cerca_Geometria_v07.py TG_Cerca_Editor_GE10/TG_Cerca_Editor_v08.py TG_Cerca_Editor_GE10/TG_Cerca_Editor_v09.py TG_Cerca_Editor_GE10/TG_Cerca_AntiDuplicatas_v09.py TG_Cerca_Editor_GE10/TG_Cerca_Segmentos_Originais_v091.py TG_Cerca_Editor_GE10/TG_Cerca_Editor_v11.py TG_Cerca_Editor_GE10/TG_PCObjects_Core_v11.py TG_Cerca_Editor_GE10/TG_PCObjects_Localizador_v12.py TG_Cerca_Editor_GE10/TG_Cerca_Editor_v13.py TG_Cerca_Editor_GE10/TG_PCObjects_Registros_v13.py TG_Cerca_Editor_GE10/TG_PCObjects_Export_v14.py TG_Cerca_Editor_GE10/TG_Cerca_Editor_v14.py TG_Cerca_Editor_GE10/tg_brand_photo_v06.py TG_Cerca_Editor_GE10/tg_i3d.py
+          python -m py_compile TG_Cerca_Editor_GE10/TG_Cerca_Editor.py TG_Cerca_Editor_GE10/TG_Cerca_Editor_v05.py TG_Cerca_Editor_GE10/TG_Cerca_Editor_v06.py TG_Cerca_Editor_GE10/TG_Cerca_Editor_v07.py TG_Cerca_Editor_GE10/TG_Cerca_Geometria_v07.py TG_Cerca_Editor_GE10/TG_Cerca_Editor_v08.py TG_Cerca_Editor_GE10/TG_Cerca_Editor_v09.py TG_Cerca_Editor_GE10/TG_Cerca_AntiDuplicatas_v09.py TG_Cerca_Editor_GE10/TG_Cerca_Segmentos_Originais_v091.py TG_Cerca_Editor_GE10/TG_Cerca_Editor_v11.py TG_Cerca_Editor_GE10/TG_PCObjects_Core_v11.py TG_Cerca_Editor_GE10/TG_PCObjects_Localizador_v12.py TG_Cerca_Editor_GE10/TG_Cerca_Editor_v13.py TG_Cerca_Editor_GE10/TG_PCObjects_Registros_v13.py TG_Cerca_Editor_GE10/TG_PCObjects_Export_v14.py TG_Cerca_Editor_GE10/TG_Cerca_Editor_v14.py TG_Cerca_Editor_GE10/TG_Cerca_Editor_v141.py TG_Cerca_Editor_GE10/tg_brand_photo_v06.py TG_Cerca_Editor_GE10/tg_i3d.py
 
       - name: Teste real do formato da spline I3D e shapes
         shell: pwsh
@@ -92,6 +92,11 @@ jobs:
         shell: pwsh
         run: python TESTAR_v14.py
 
+      - name: Testar foco de PC Objects e minimizacao da janela principal no Windows
+        working-directory: TG_Cerca_Editor_GE10
+        shell: pwsh
+        run: python TESTAR_v141.py
+
       - name: Criar icone da marca TG + EDVALDO
         working-directory: TG_Cerca_Editor_GE10
         shell: pwsh
@@ -104,39 +109,39 @@ jobs:
       - name: Compilar EXE independente do Python
         shell: pwsh
         run: |
-          python -m PyInstaller --noconfirm --clean --onefile --windowed --icon TG_Cerca_Editor_GE10/tg_edvaldo.ico --name TG_EDVALDO_FS25_v14_PCObjects TG_Cerca_Editor_GE10/TG_Cerca_Editor_v14.py
+          python -m PyInstaller --noconfirm --clean --onefile --windowed --icon TG_Cerca_Editor_GE10/tg_edvaldo.ico --name TG_EDVALDO_FS25_v141_PCObjects TG_Cerca_Editor_GE10/TG_Cerca_Editor_v141.py
 
       - name: Preparar arquivos para download
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path 'publicar' | Out-Null
-          Copy-Item dist/TG_EDVALDO_FS25_v14_PCObjects.exe publicar/
-          Copy-Item TG_Cerca_Editor_GE10/README-v14.md publicar/
+          Copy-Item dist/TG_EDVALDO_FS25_v141_PCObjects.exe publicar/
+          Copy-Item TG_Cerca_Editor_GE10/README-v141.md publicar/
           Copy-Item TG_Cerca_Editor_GE10/MIT_TERCEIROS.txt publicar/
-          Compress-Archive -Path publicar/* -DestinationPath TG_EDVALDO_FS25_v14_PCObjects_Windows.zip -Force
+          Compress-Archive -Path publicar/* -DestinationPath TG_EDVALDO_FS25_v141_PCObjects_Windows.zip -Force
 
       - name: Enviar EXE ao GitHub Actions
         uses: actions/upload-artifact@v4
         with:
-          name: TG_EDVALDO_FS25_v14_PCObjects
-          path: TG_EDVALDO_FS25_v14_PCObjects_Windows.zip
+          name: TG_EDVALDO_FS25_v141_PCObjects
+          path: TG_EDVALDO_FS25_v141_PCObjects_Windows.zip
           retention-days: 90
 
       - name: Publicar Release beta no GitHub
         uses: softprops/action-gh-release@v3
         with:
-          tag_name: tg-edvaldo-fs25-v1.4-i3d-exportado-posicao-beta
+          tag_name: tg-edvaldo-fs25-v1.4.1-foco-janelas-beta
           target_commitish: ${{ github.sha }}
-          name: TG + EDVALDO — Criador de Cercas e PORTEIRAS FS25 v1.4 PC Objects (I3D Beta)
+          name: TG + EDVALDO — Criador de Cercas e PORTEIRAS FS25 v1.4.1 PC Objects (I3D Beta)
           prerelease: true
           make_latest: false
           body: |
-            v1.4: permite registrar I3D exportado sem a cena principal, com XYZ e rotacao editaveis.
+            v1.4.1: minimiza janela principal ao abrir PC Objects e mantém seletores vinculados à janela secundária.
             Marca TG + EDVALDO no titulo e icone. Leitura somente I3D + i3d.shapes.
             XML decorativo e icone PNG opcionais; permanece necessario XML proprio para silos/fabricas funcionais. Registros separados e confirmados.
             Ainda requer teste real no FS25: fios e demolicao por trecho nao sao garantidos.
             Faca backup de savegame e confira o log.txt.
           files: |
-            publicar/TG_EDVALDO_FS25_v14_PCObjects.exe
-            TG_EDVALDO_FS25_v14_PCObjects_Windows.zip
+            publicar/TG_EDVALDO_FS25_v141_PCObjects.exe
+            TG_EDVALDO_FS25_v141_PCObjects_Windows.zip
           fail_on_unmatched_files: true
