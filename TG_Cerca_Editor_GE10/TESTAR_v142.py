@@ -16,8 +16,8 @@ from TG_Cerca_AntiDuplicatas_v09 import scan_overlapping_fences
 
 def mod_fixture(folder, panel="4"):
     mod=folder/"FS25_RealPanelTest"
-    (mod/"xml").mkdir(parents=True)
-    (mod/"i3d").mkdir()
+    (mod/"xml").mkdir(parents=True,exist_ok=True)
+    (mod/"i3d").mkdir(exist_ok=True)
     xml="xml/fence.xml"
     (mod/"modDesc.xml").write_text(
         '<modDesc><storeItems><storeItem xmlFilename="xml/fence.xml" />'
