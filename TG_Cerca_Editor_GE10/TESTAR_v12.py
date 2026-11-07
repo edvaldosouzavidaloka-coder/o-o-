@@ -43,7 +43,7 @@ def test_locator(maproot,i3d,model):
     assert any(p.resolve()==i3d.resolve() for p in scenes),(str(i3d.resolve()),[str(p.resolve()) for p in scenes])
     found, scenes, errors=find_imported_model_in_map(model,maproot)
     assert len(found)==2,found
-    assert all(x["map_scene"]==str(i3d) for x in found)
+    assert all(Path(x["map_scene"]).resolve()==i3d.resolve() for x in found)
     assert all(x["kind"]=="instância importada no mapa" for x in found)
     assert len({x["id"] for x in found})==2
     assert abs(found[0]["position"][0]-100)<.001
