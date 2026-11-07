@@ -22,6 +22,8 @@ class PCObjectsWindow(tk.Toplevel):
         self.geometry("1260x800")
         self.minsize(1000,700)
         self.map_i3d=tk.StringVar()
+        self.object_i3d=tk.StringVar()
+        self.object_xml=tk.StringVar()
         self.maproot=tk.StringVar()
         self.placeables=tk.StringVar()
         self.storeitems=tk.StringVar()
@@ -46,13 +48,15 @@ class PCObjectsWindow(tk.Toplevel):
             value=filedialog.asksaveasfilename(title="Escolher/criar storeItems.xml",
                 defaultextension=".xml",filetypes=[("XML","*.xml")])
         else:
-            kinds=[("Arquivos XML","*.xml")] if var is not self.map_i3d else [
-                ("Cena do mapa I3D","*.i3d")]
+            kinds=[("Arquivo I3D","*.i3d")] if var in (self.map_i3d,self.object_i3d) else [
+                ("Arquivos XML","*.xml")]
             value=filedialog.askopenfilename(filetypes=kinds)
         if value:
             var.set(value)
             if var is self.maproot:
                 self.auto_destinations()
+            elif var is self.object_xml:
+                self.load_direct_xml()
 
     def auto_destinations(self):
         try:
@@ -82,20 +86,23 @@ class PCObjectsWindow(tk.Toplevel):
         frame.rowconfigure(10,weight=1)
         ttk.Label(frame,text="TG + EDVALDO — PC OBJECTS",font=("Segoe UI",16,"bold")).grid(
             row=0,column=0,columnspan=3,sticky="w",pady=(0,8))
-        self._line(frame,1,"I3D do MAPA ou objeto (sem spline)",self.map_i3d)
-        self._line(frame,2,"Pasta raiz do mapa (modDesc.xml)",self.maproot,True)
-        self._line(frame,3,"placeables.xml do MAPA",self.placeables)
-        self._line(frame,4,"storeItems.xml do MAPA",self.storeitems)
+        self._line(frame,1,"I3D do MAPA (posição do objeto)",self.map_i3d)
+        self._line(frame,2,"I3D do OBJETO (abatedouro/casa/silo)",self.object_i3d)
+        self._line(frame,3,"XML do OBJETO (arquivo de configuração)",self.object_xml)
+        self._line(frame,4,"Pasta raiz do mapa (modDesc.xml)",self.maproot,True)
+        self._line(frame,5,"placeables.xml do MAPA",self.placeables)
+        self._line(frame,6,"storeItems.xml do MAPA",self.storeitems)
         row=ttk.Frame(frame)
-        row.grid(row=5,column=0,columnspan=3,sticky="ew",pady=5)
+        row.grid(row=7,column=0,columnspan=3,sticky="ew",pady=5)
         ttk.Button(row,text="Localizar XMLs do mapa",command=self.auto_destinations).pack(side="left",padx=2)
-        ttk.Button(row,text="Ler objetos do I3D",command=self.load_objects).pack(side="left",padx=2)
+        ttk.Button(row,text="Ler objetos do MAPA",command=self.load_objects).pack(side="left",padx=2)
         ttk.Button(row,text="Encontrar I3D principal do mapa",
                    command=self.load_main_map).pack(side="left",padx=2)
         ttk.Label(row,text="Origem dos XMLs:").pack(side="left",padx=(15,4))
         self.source_combo=ttk.Combobox(row,textvariable=self.source,state="readonly",width=34)
         self.source_combo.pack(side="left",padx=2)
         ttk.Button(row,text="Carregar XMLs da origem",command=self.load_catalog).pack(side="left",padx=3)
+        ttk.Button(row,text="Usar XML do OBJETO",command=self.load_direct_xml).pack(side="left",padx=3)
         ttk.Button(row,text="Associar automaticamente",command=self.autolink).pack(side="left",padx=3)
         tableframe=ttk.Frame(frame)
         tableframe.grid(row=10,column=0,columnspan=3,sticky="nsew",pady=6)
@@ -132,8 +139,8 @@ class PCObjectsWindow(tk.Toplevel):
         self.log=tk.Text(frame,height=6,bg="#091a13",fg="#e4f5e8",
                          font=("Consolas",10),wrap="word")
         self.log.grid(row=14,column=0,columnspan=3,sticky="ew",pady=4)
-        self._log("v1.2: selecionar UM/TODOS carrega objetos automaticamente se a lista estiver vazia.")
-        self._log("I3D do abatedouro/casa não guarda posição no mapa. Posso procurar a importação no I3D principal.")
+        self._log("v1.2: use I3D do MAPA + I3D do OBJETO + XML do OBJETO em campos separados.")
+        self._log("Selecionar UM/TODOS carrega a cena se estiver vazia. Só grava com posição encontrada no mapa.")
 
     def _log(self,value):
         self.log.insert("end",str(value)+"\n")
