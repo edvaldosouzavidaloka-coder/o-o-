@@ -92,14 +92,14 @@ def gate_span(mod,xml,gate_id):
         positions=[]
         for part in node:
             if "poste" in (part.get("name") or "").casefold():
-                raw=part.get("translation")
-                if raw:
-                    try:
-                        pos=tuple(float(x) for x in raw.split())
-                        if len(pos)==3 and all(math.isfinite(x) for x in pos):
-                            positions.append(pos)
-                    except ValueError:
-                        pass
+                # Em I3D GIANTS, nó sem "translation" fica na origem (0,0,0).
+                raw=part.get("translation","0 0 0")
+                try:
+                    pos=tuple(float(x) for x in raw.split())
+                    if len(pos)==3 and all(math.isfinite(x) for x in pos):
+                        positions.append(pos)
+                except ValueError:
+                    pass
         if len(positions)>=2:
             physical=math.hypot(positions[-1][0]-positions[0][0],
                                 positions[-1][2]-positions[0][2])
