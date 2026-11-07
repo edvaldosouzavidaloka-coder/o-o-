@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   exe-windows:
@@ -52,3 +52,21 @@ jobs:
           name: TOP_GAMERS_Cercas_FS25_v03_EXE
           path: TOP_GAMERS_Cercas_FS25_v03_Windows.zip
           retention-days: 90
+      - name: Publicar EXE no GitHub Releases (BETA)
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: tg-cercas-fs25-v0.3-beta
+          target_commitish: ${{ github.sha }}
+          name: TOP GAMERS Criador de Cercas FS25 v0.3 Beta
+          prerelease: true
+          make_latest: false
+          body: |
+            Versão beta de teste para Windows. Mod Brazilian Fences não incluído.
+            Leitura dos comprimentos reais dos painéis (3.8, 4 e 6.7 m);
+            seleção de porteiras nativas. Requer arquivo de spline CSV.
+            Ainda não validado no FS25 quanto aos fios e à demolição.
+            Faça backup do savegame e teste em terreno comprado.
+          files: |
+            publicar/TOP_GAMERS_Cercas_FS25_v03.exe
+            TOP_GAMERS_Cercas_FS25_v03_Windows.zip
+          fail_on_unmatched_files: true
