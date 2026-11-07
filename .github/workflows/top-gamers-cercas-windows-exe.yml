@@ -1,9 +1,8 @@
-name: TOP GAMERS - EXE Windows Cercas FS25 v0.4 inspection
+name: TOP GAMERS Cercas FS25 - Windows I3D v0.4
 
 on:
   push:
-    branches:
-      - tg-cerca-editor-fs25-v0-4-i3d
+    branches: [tg-cerca-editor-fs25-v0-4-i3d]
     paths:
       - 'TG_Cerca_Editor_GE10/**'
       - '.github/workflows/top-gamers-cercas-windows-exe.yml'
@@ -14,51 +13,75 @@ permissions:
 
 jobs:
   exe-windows:
-    name: Compilar e verificar EXE no Windows
+    name: Compilar TOP GAMERS v0.4 I3D
     runs-on: windows-latest
     steps:
-      - name: Baixar código
+      - name: Obter codigo
         uses: actions/checkout@v4
+
       - name: Instalar Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Show existing I3D reader for integration
+
+      - name: Extrair leitor I3D v0.2 ja testado
         shell: pwsh
         run: |
-          Expand-Archive -LiteralPath 'TG_Cerca_Editor_GE10_v0.2/TG_Cerca_Editor_GE10_v0.2_I3D_TESTE.zip' -DestinationPath './inspect' -Force
-          Write-Host '===I3D_READER_BEGIN==='
-          Get-Content './inspect/TG_Cerca_Editor_GE10_v0.2/tg_i3d.py' -Raw
-          Write-Host '===I3D_READER_END==='
-          Write-Host '===I3D_GUI_BEGIN==='
-          Get-Content './inspect/TG_Cerca_Editor_GE10_v0.2/TG_Cerca_Editor.py' -Raw
-          Write-Host '===I3D_GUI_END==='
-      - name: Verificar sintaxe Python
+          Expand-Archive -LiteralPath 'TG_Cerca_Editor_GE10_v0.2/TG_Cerca_Editor_GE10_v0.2_I3D_TESTE.zip' -DestinationPath './leitor-i3d' -Force
+          Copy-Item 'leitor-i3d/TG_Cerca_Editor_GE10_v0.2/tg_i3d.py' 'TG_Cerca_Editor_GE10/tg_i3d.py'
+          Copy-Item 'leitor-i3d/TG_Cerca_Editor_GE10_v0.2/MIT_TERCEIROS.txt' 'TG_Cerca_Editor_GE10/MIT_TERCEIROS.txt'
+
+      - name: Conferir sintaxe e importacoes
         shell: pwsh
         run: |
-          python -m py_compile TG_Cerca_Editor_GE10/TG_Cerca_Editor.py TG_Cerca_Editor_GE10/TG_Cerca_Editor_v03.py
-      - name: Verificar importações da interface
+          python -m py_compile TG_Cerca_Editor_GE10/TG_Cerca_Editor.py TG_Cerca_Editor_GE10/TG_Cerca_Editor_v03.py TG_Cerca_Editor_GE10/TG_Cerca_Editor_v04.py TG_Cerca_Editor_GE10/tg_i3d.py
+          $env:PYTHONPATH = 'TG_Cerca_Editor_GE10'
+          python -c "import TG_Cerca_Editor_v04 as a; print('Janela:', a.App.__name__)"
+
+      - name: Testar I3D real e shapes vinculado
         shell: pwsh
         run: |
-          $env:PYTHONPATH = "TG_Cerca_Editor_GE10"
-          python -c "import TG_Cerca_Editor_v03 as m; print('App:', m.App.__name__)"
+          $env:PYTHONPATH = 'TG_Cerca_Editor_GE10'
+          python -c "from pathlib import Path; from TG_Cerca_Editor_v04 import load_i3d_points; p=Path('leitor-i3d/TG_Cerca_Editor_GE10_v0.2/EXEMPLO/sa.i3d'); pts,nome,kind=load_i3d_points(p); assert len(pts)>26, len(pts); print('OK I3D:',nome,kind,len(pts),'amostras')"
+
       - name: Instalar PyInstaller
         shell: pwsh
         run: python -m pip install --disable-pip-version-check pyinstaller
-      - name: Compilar executável
+
+      - name: Gerar EXE standalone
         shell: pwsh
         run: |
-          python -m PyInstaller --noconfirm --clean --onefile --windowed --name TOP_GAMERS_Cercas_FS25_v03 TG_Cerca_Editor_GE10/TG_Cerca_Editor_v03.py
-      - name: Criar pacote para download
+          python -m PyInstaller --noconfirm --clean --onefile --windowed --name TOP_GAMERS_Cercas_FS25_v04_I3D TG_Cerca_Editor_GE10/TG_Cerca_Editor_v04.py
+
+      - name: Empacotar aplicativo e instrucoes
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path publicar | Out-Null
-          Copy-Item dist/TOP_GAMERS_Cercas_FS25_v03.exe publicar/
-          Copy-Item TG_Cerca_Editor_GE10/README-v03.md publicar/
-          Compress-Archive -Path publicar/* -DestinationPath TOP_GAMERS_Cercas_FS25_v03_Windows.zip -Force
-      - name: Enviar EXE para o GitHub Actions
+          Copy-Item dist/TOP_GAMERS_Cercas_FS25_v04_I3D.exe publicar/
+          Copy-Item TG_Cerca_Editor_GE10/README-v04.md publicar/
+          Copy-Item TG_Cerca_Editor_GE10/MIT_TERCEIROS.txt publicar/
+          Compress-Archive -Path publicar/* -DestinationPath TOP_GAMERS_Cercas_FS25_v04_I3D_Windows.zip -Force
+
+      - name: Disponibilizar EXE pelo Actions
         uses: actions/upload-artifact@v4
         with:
-          name: TOP_GAMERS_Cercas_FS25_v03_EXE
-          path: TOP_GAMERS_Cercas_FS25_v03_Windows.zip
+          name: TOP_GAMERS_Cercas_FS25_v04_I3D
+          path: TOP_GAMERS_Cercas_FS25_v04_I3D_Windows.zip
           retention-days: 90
+
+      - name: Publicar EXE no Releases BETA
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: tg-cercas-fs25-v0.4-i3d-beta
+          target_commitish: ${{ github.sha }}
+          name: TOP GAMERS Criador de Cercas FS25 v0.4 I3D Beta
+          prerelease: true
+          make_latest: false
+          body: |
+            Esta versao recebe arquivos .i3d e .i3d.shapes, sem CSV.
+            Modelo Brazilian Fences nao incluso. Use copia de um save.
+            Curvas cubicas aproximadas; fios e demolicao ainda exigem teste no FS25.
+          files: |
+            publicar/TOP_GAMERS_Cercas_FS25_v04_I3D.exe
+            TOP_GAMERS_Cercas_FS25_v04_I3D_Windows.zip
+          fail_on_unmatched_files: true
