@@ -416,3 +416,56 @@ def write_map_bundle(entries):
         for path in tmp_paths:
             path.unlink(missing_ok=True)
     return backups
+
+
+def placeable_item_from_xml(xml_path,maproot,mods=None):
+    """Carrega manualmente um placeable XML sem exigir nome igual ao I3D.
+
+    Só usa arquivos dentro da raiz do mapa ou de um mod conhecido com modDesc.
+    """
+    xml_path=Path(xml_path).resolve()
+    if not xml_path.is_file() or xml_path.suffix.lower()!=".xml":
+        raise ValueError("Selecione um XML real do objeto.")
+    try:
+        doc=ET.parse(xml_path).getroot()
+    except ET.ParseError as exc:
+        raise ValueError("XML do objeto inválido: "+str(exc)) from exc
+    if doc.tag!="placeable":
+        raise ValueError("O arquivo do item precisa começar com <placeable>.")
+    obj_type=doc.get("type","").strip()
+    if not obj_type:
+        raise ValueError("XML sem <placeable type='...'>. Escolha o XML de configuração FS25, não só o I3D.")
+    maproot=Path(maproot).resolve()
+    if xml_path.is_relative_to(maproot):
+        relative=xml_path.relative_to(maproot).as_posix()
+        source=maproot
+        kind="map"
+        name=maproot.name
+        filename="$mapdir$/"+relative
+        storeref=relative
+    else:
+        source=None
+        for key,mod in (mods or {}).items():
+            mod=Path(mod).resolve()
+            if mod.is_dir() and xml_path.is_relative_to(mod):
+                source=mod
+                break
+        if source is None:
+            # Usuário pode escolher pasta de mod não carregado na janela principal.
+            for ancestor in xml_path.parents:
+                if (ancestor/"modDesc.xml").is_file() and xml_path.is_relative_to(ancestor):
+                    source=ancestor
+                    break
+        if source is None:
+            raise ValueError("XML escolhido está fora do mapa e não pertence a uma pasta de mod "
+                             "com modDesc.xml. Escolha a raiz do mod ou um XML dentro do mapa.")
+        relative=xml_path.relative_to(source).as_posix()
+        kind="mod"
+        name=source.name
+        filename="$moddir$"+name+"/"+relative
+        storeref=filename
+    model=(doc.findtext("./base/filename") or doc.findtext("./filename") or "").strip()
+    show=(doc.findtext("./storeData/showInStore","true") or "true").strip().lower()
+    return dict(id="manual:"+str(xml_path),label=relative,mod=name,origin=kind,
+                xml=relative,i3d=model,basename=PurePosixPath(model.replace("\\","/")).stem.casefold(),
+                filename=filename,store_ref=storeref,show_in_store=show!="false",type=obj_type)
