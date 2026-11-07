@@ -166,8 +166,8 @@ def generated_decorative_xml(i3d_file,maproot):
     return item,assets
 
 
-def build_xml_entries(*,maproot,object_i3d,object_xml,placeables_path,
-                      storeitems_path,position,rotation,do_placeables,do_store,
+def build_xml_entries(*,maproot,object_i3d,object_xml,placeables_path=None,
+                      storeitems_path=None,position,rotation,do_placeables,do_store,
                       mods=None):
     """Plano sem gravar: (arquivos a escrever, sumário).
 
