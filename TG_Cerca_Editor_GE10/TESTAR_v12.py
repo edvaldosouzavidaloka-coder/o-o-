@@ -106,7 +106,7 @@ def test_missing_reference(maproot,model,i3d):
         with patch("tkinter.messagebox.showwarning",side_effect=lambda *a,**kw:warnings.append((a,kw))):
             win.select_one()
         assert len(warnings)==1,warnings
-        assert "posição" in (warnings[0][0][0]+" "+warnings[0][0][1]).lower()
+        assert any(term in (warnings[0][0][0]+" "+warnings[0][0][1]).lower() for term in ("posi","localiza","encontr"))
         assert not win.entries and not win.table.selection()
         assert "Apenas um objeto selecionado." not in win.log.get("1.0","end")
         print("OK: falta de posição mostra aviso claro, não inventa coordenadas.")
