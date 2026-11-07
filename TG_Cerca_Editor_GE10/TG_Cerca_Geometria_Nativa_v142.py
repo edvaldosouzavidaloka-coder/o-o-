@@ -8,7 +8,7 @@ A abertura da porteira segue a MESMA spline, e seu tamanho é estimado
 pela distância entre os postes reais do I3D, não só pelo XML do mod.
 """
 from __future__ import annotations
-from bisect import bisect_right
+from bisect import bisect_left, bisect_right
 from pathlib import Path
 import math
 import uuid
@@ -108,42 +108,102 @@ def gate_span(mod,xml,gate_id):
     return configured,"XML"
 
 
-def panel_segments(points,panel,max_scale):
-    """Alinha intervalos sucessivos SEM deixar vão menor que o painel.
+def _distance_to_line(a,b,p):
+    """Desvio lateral do traçado até a corda real do painel FS25."""
+    dx,dz=b[0]-a[0],b[2]-a[2]
+    den=dx*dx+dz*dz
+    if den<1e-12:
+        return float("inf")
+    t=max(0.,min(1.,((p[0]-a[0])*dx+(p[2]-a[2])*dz)/den))
+    return math.hypot(p[0]-a[0]-t*dx,p[2]-a[2]-t*dz)
 
-    Começa em floor(total/panel) intervalos. Se a corda numa curva for
-    menor que o painel, usa um intervalo a menos (vãos ligeiramente maiores).
-    Só aceita se TODOS os vãos estiverem no limite do modelo. Senão aborta
-    com mensagem em vez de gerar postes sem fios.
+
+def panel_segments(points,panel,max_scale):
+    """Reposiciona postes ADAPTATIVAMENTE na spline, sem ultrapassar maxScale.
+
+    Não usa um espaçamento global constante. Procura uma sequência contínua
+    de vãos onde todas as cordas entre postes caibam nos painéis do mod,
+    distribuindo sobras ao longo do trecho e preservando as curvas.
+    Nenhum segmento menor que o comprimento nativo do painel é gravado.
+
+    A busca usa programação dinâmica num grid fino de distância percorrida.
+    O custo penaliza deformação do painel e afastamento da curva original.
     """
     if len(points)<2:
         raise ValueError("Trecho de cerca sem dois pontos.")
     acc=base.cumulative(points)
     total=acc[-1]
-    if total < panel-1e-6:
-        raise ValueError(f"Trecho de {total:.2f} m é menor que o painel "
-                         f"de {panel:g} m: produziria postes sem fios.")
-    high=int(math.floor(total/panel+1e-7))
-    if high>16000:
-        raise ValueError("Cerca muito longa. Divida a spline em partes.")
-    for n in range(high,max(0,high-30),-1):
-        if n<1:
-            break
-        arc=total/n
-        if arc>panel*max_scale+1e-5:
-            break
-        samples=[_sample(points,acc,total*i/n) for i in range(n+1)]
-        distances=[_length(a,b) for a,b in zip(samples,samples[1:])]
-        if distances and (min(distances)>=panel-1e-6 and
-                          max(distances)<=panel*max_scale+1e-5):
-            edges=list(zip(samples,samples[1:]))
-            return edges,dict(count=n,min_chord=min(distances),
-                              max_chord=max(distances),
-                              panel=panel,maxScale=max_scale,total=total)
+    if total<panel-1e-6:
+        raise ValueError(
+            f"Trecho de {total:.2f} m é menor que o painel de {panel:g} m: "
+            "não vou gerar postes sem fios.")
+    step=min(.35,max(.18,panel/18.))
+    nodes=math.ceil(total/step)
+    if nodes>18000:
+        raise ValueError("Trecho muito longo para cálculo adaptativo. "
+                         "Divida a spline em partes.")
+    stations=[total*i/nodes for i in range(nodes+1)]
+    positions=[_sample(points,acc,d) for d in stations]
+    target=panel*1.08
+    max_arc=panel*max_scale*1.55
+
+    # Primeiro encaixe estrito; permite um pouco mais de ajuste lateral
+    # somente quando necessário, ainda sem cortar curvas acentuadas.
+    for lateral_limit in (min(.85,panel*.14),min(1.35,panel*.22)):
+        cost=[float("inf")]*(nodes+1)
+        previous=[-1]*(nodes+1)
+        cost[0]=0.
+        for i,a in enumerate(positions[:-1]):
+            if not math.isfinite(cost[i]):
+                continue
+            first=bisect_left(stations,stations[i]+panel-1e-7,lo=i+1)
+            final=bisect_right(stations,stations[i]+max_arc,lo=max(i+1,first))
+            for j in range(first,final):
+                b=positions[j]
+                chord=_length(a,b)
+                if chord<panel-1e-5 or chord>panel*max_scale+1e-5:
+                    continue
+                arc=stations[j]-stations[i]
+                lateral=0.
+                for fraction in (.25,.5,.75):
+                    sample=_sample(points,acc,stations[i]+fraction*arc)
+                    lateral=max(lateral,_distance_to_line(a,b,sample))
+                    if lateral>lateral_limit:
+                        break
+                if lateral>lateral_limit:
+                    continue
+                # Distribui o resto em vários vãos, preferindo painel próximo
+                # ao tamanho nativo e sem atravessar curvas ou cortar terreno.
+                new_cost=(cost[i]
+                          +.16*((chord-target)/panel)**2
+                          +2.8*(lateral/max(1.,panel))**2
+                          +.07*((arc-chord)/panel)**2
+                          +.00004)
+                if new_cost<cost[j]:
+                    cost[j]=new_cost
+                    previous[j]=i
+        if previous[nodes]>=0:
+            segments=[]
+            k=nodes
+            while k>0:
+                prev=previous[k]
+                if prev<0:
+                    raise ValueError("Não consegui reconstruir os painéis da cerca.")
+                segments.append((positions[prev],positions[k]))
+                k=prev
+            segments.reverse()
+            widths=[_length(a,b) for a,b in segments]
+            return segments,dict(
+                count=len(segments),
+                min_chord=min(widths),max_chord=max(widths),
+                panel=panel,maxScale=max_scale,total=total,
+                adaptive=True,curve_tolerance=lateral_limit)
+
     raise ValueError(
-        f"A curva/trecho de {total:.2f} m não permite painéis de {panel:g} m "
-        f"(escala máxima {max_scale:g}). Ajuste a spline ou a posição da "
-        "porteira no GE, em vez de gerar postes sem fios.")
+        f"Trecho de {total:.2f} m tem curvas fechadas demais para os "
+        f"painéis de {panel:g} m (maxScale {max_scale:g}). "
+        "Tente selecionar outro modelo de cerca ou suavizar apenas a "
+        "curva mais apertada no GE; nenhuma alteração foi gravada.")
 
 
 def gate_on_spline(points,gate_pct,physical_width,panel):
