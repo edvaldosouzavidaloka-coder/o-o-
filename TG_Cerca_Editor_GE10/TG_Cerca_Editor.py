@@ -1,4 +1,4 @@
-"""TOP GAMERS - Protótipo v0.1: spline do GIANTS Editor -> newFence do FS25.
+"""TOP GAMERS - Protótipo v0.2: spline do GIANTS Editor -> newFence do FS25.
 Python 3.10+; só biblioteca padrão. Execute no Windows: py TG_Cerca_Editor.py.
 """
 from __future__ import annotations
@@ -86,6 +86,83 @@ def between(pts, acc, lo, hi):
     return result
 
 
+def reduce_polyline(points, tolerance_xy=0.35, tolerance_y=0.18, max_segment=18.0):
+    """Reduz pontos intermediários mantendo curvas/relevo e tamanho máximo.
+
+    tolerance_xy: desvio horizontal admitido, em metros.
+    tolerance_y: desvio de altitude admitido, em metros.
+    max_segment: comprimento máximo do trecho no XML; NÃO é a distância
+    entre os postes, definida pelo XML/modelo de cerca no FS25.
+    """
+    if not 1.0 <= max_segment <= 100.0:
+        raise ValueError('Trecho máximo: informe de 1 a 100 metros')
+    if not 0.01 <= tolerance_xy <= 3 or not 0.01 <= tolerance_y <= 3:
+        raise ValueError('Tolerâncias: informe de 0,01 a 3 metros')
+    if len(points) < 3:
+        return list(points)
+
+    keep = {0, len(points)-1}
+    pending = [(0, len(points)-1)]
+    # Ramer-Douglas-Peucker com erro horizontal e vertical independentes.
+    while pending:
+        start, end = pending.pop()
+        a, b = points[start], points[end]
+        vx, vz = b[0]-a[0], b[2]-a[2]
+        norm = vx*vx+vz*vz
+        worst, index = 0, None
+        for i in range(start+1, end):
+            p = points[i]
+            t = max(0.0, min(1.0, ((p[0]-a[0])*vx + (p[2]-a[2])*vz) / norm)) if norm > 1e-10 else 0.0
+            x = a[0]+t*vx
+            z = a[2]+t*vz
+            y = a[1]+t*(b[1]-a[1])
+            error = max(math.hypot(p[0]-x, p[2]-z)/tolerance_xy,
+                        abs(p[1]-y)/tolerance_y)
+            if error > worst:
+                worst, index = error, i
+        if worst > 1.0 and index is not None:
+            keep.add(index)
+            pending.extend(((start, index), (index, end)))
+
+    result = []
+    selected = sorted(keep)
+    dist = cumulative(points)
+    for k, index in enumerate(selected[:-1]):
+        nxt = selected[k+1]
+        if not result:
+            result.append(points[index])
+        # Divide trechos longos, sem aproximar por uma reta enorme.
+        length = dist[nxt]-dist[index]
+        divisions = max(1, math.ceil(length / max_segment))
+        for j in range(1, divisions):
+            result.append(at_distance(points, dist, dist[index] + length*j/divisions))
+        result.append(points[nxt])
+    return [p for i,p in enumerate(result) if i == 0 or math.dist(p, result[i-1]) >= 0.05]
+
+
+def fence_diagnostics(root):
+    """Diagnóstico informativo; o modelo I3D e suas colisões exigem teste no jogo."""
+    fence = root.find('fence')
+    if fence is None:
+        return ['XML sem <fence>; pode não ser uma cerca nativa.']
+    panels = fence.find('panels')
+    poles = fence.find('poles')
+    msgs = []
+    if poles is None or not poles.get('node'):
+        msgs.append('AVISO: <poles node> não encontrado; confira o modelo de postes.')
+    if panels is None or not panels.get('node'):
+        msgs.append('AVISO: <panels node> não encontrado. Isto pode explicar a falta de fios/paineis.')
+    else:
+        try:
+            length = float(panels.get('length', '1'))
+            fixed = panels.get('fixedLength', 'false')
+            msgs.append(f'Painéis do MOD: {length:g} m; fixedLength={fixed}. A distância dos postes depende do MOD, não da spline.')
+        except ValueError:
+            msgs.append('AVISO: comprimento dos painéis no XML não é numérico.')
+    msgs.append('DEMOLIÇÃO: a cerca deve usar newFence e ter painéis clicáveis/colisões; teste em terreno possuído pela sua fazenda.')
+    return msgs
+
+
 def pos(v):
     return ' '.join(f'{n:.3f}' for n in v)
 
@@ -128,9 +205,12 @@ def backup_and_write(path: Path, tree: ET.ElementTree):
 
 
 def create_fence(pts, fence_mod, fence_inside, target, gate_mod=None, gate_inside='',
-                 gate_pct=50.0, gate_width=4.0):
+                 gate_pct=50.0, gate_width=4.0, max_span=18.0,
+                 tolerance_xy=0.35, tolerance_y=0.18, gate_farm_id=1):
     """Gera entradas para CERCA NATIVA e, opcionalmente, porteira separada."""
     check_mod_xml(fence_mod, fence_inside, 'fence')
+    if not 0 <= gate_farm_id <= 255:
+        raise ValueError('ID da fazenda da porteira deve estar entre 0 e 255')
     if gate_mod and gate_inside:
         gate_root = check_mod_xml(gate_mod, gate_inside, 'gate')
         if gate_root.find('fence') is not None:
@@ -154,6 +234,10 @@ def create_fence(pts, fence_mod, fence_inside, target, gate_mod=None, gate_insid
         pieces = [between(pts, acc, 0, start), between(pts, acc, end, total)]
     else:
         pieces = [pts]
+    # Cada <segment> é um trecho de percurso, não cada poste individual.
+    # O jogo gera postes/painéis pelo modelo e por <fence><panels length>.
+    pieces = [reduce_polyline(piece, tolerance_xy, tolerance_y, max_span)
+              for piece in pieces if len(piece) >= 2]
     fence = ET.SubElement(root, 'placeable', {
         'filename': as_network_filename(fence_mod, fence_inside),
         'modName': modname(fence_mod), 'uniqueId': 'placeable' + uuid.uuid4().hex,
@@ -176,16 +260,16 @@ def create_fence(pts, fence_mod, fence_inside, target, gate_mod=None, gate_insid
             'filename': as_network_filename(gate_mod, gate_inside),
             'modName': modname(gate_mod), 'uniqueId': 'placeable' + uuid.uuid4().hex,
             'position': pos(center), 'rotation': f'0.000 {yaw:.3f} 0.000',
-            'age': '0.000000', 'price': '100.000000', 'farmId': '0'})
+            'age': '0.000000', 'price': '100.000000', 'farmId': str(gate_farm_id)})
     return tree, count, total
 
 
 class App(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.title('TOP GAMERS - Cerca por Spline FS25 (teste v0.1)')
-        self.geometry('790x610')
-        self.minsize(720, 560)
+        self.title('TOP GAMERS - Cerca por Spline FS25 (teste v0.2)')
+        self.geometry('860x750')
+        self.minsize(750, 680)
         self.mods_dir = tk.StringVar(value=str(mods_default()))
         self.spline = tk.StringVar(value=str(Path(tempfile.gettempdir()) / 'TG_Cerca_Spline.csv'))
         self.placeables = tk.StringVar()
@@ -197,6 +281,10 @@ class App(tk.Tk):
         self.animxml = tk.StringVar()
         self.gate_pct = tk.DoubleVar(value=50)
         self.gate_width = tk.DoubleVar(value=4)
+        self.max_span = tk.DoubleVar(value=18)
+        self.tolerance_xy = tk.DoubleVar(value=0.35)
+        self.tolerance_y = tk.DoubleVar(value=0.18)
+        self.gate_farm_id = tk.IntVar(value=1)
         self.dryrun = tk.BooleanVar(value=True)
         self.mods = {}
         frm = ttk.Frame(self, padding=12)
@@ -229,11 +317,19 @@ class App(tk.Tk):
         ttk.Spinbox(frm, from_=1, to=99, textvariable=self.gate_pct, width=10).grid(row=10, column=1, sticky='w')
         ttk.Label(frm, text='Largura porteira (m)').grid(row=11, column=0, sticky='w')
         ttk.Spinbox(frm, from_=1, to=20, increment=0.5, textvariable=self.gate_width, width=10).grid(row=11, column=1, sticky='w')
-        ttk.Checkbutton(frm, text='Só conferir / prévia (não altera arquivos)', variable=self.dryrun).grid(row=12, column=0, columnspan=3, sticky='w', pady=10)
-        ttk.Button(frm, text='Conferir / Gerar XML', command=self.generate).grid(row=13, column=0, columnspan=3, sticky='ew')
+        ttk.Label(frm, text='Trecho máximo no XML (m)').grid(row=12, column=0, sticky='w')
+        ttk.Spinbox(frm, from_=2, to=80, increment=1, textvariable=self.max_span, width=10).grid(row=12, column=1, sticky='w')
+        ttk.Label(frm, text='Tolerância da curva (m)').grid(row=13, column=0, sticky='w')
+        ttk.Spinbox(frm, from_=0.05, to=2, increment=0.05, textvariable=self.tolerance_xy, width=10).grid(row=13, column=1, sticky='w')
+        ttk.Label(frm, text='Tolerância do relevo (m)').grid(row=14, column=0, sticky='w')
+        ttk.Spinbox(frm, from_=0.05, to=1, increment=0.05, textvariable=self.tolerance_y, width=10).grid(row=14, column=1, sticky='w')
+        ttk.Label(frm, text='Farm ID da porteira (0-255)').grid(row=15, column=0, sticky='w')
+        ttk.Spinbox(frm, from_=0, to=255, textvariable=self.gate_farm_id, width=10).grid(row=15, column=1, sticky='w')
+        ttk.Checkbutton(frm, text='Só conferir / prévia (não altera arquivos)', variable=self.dryrun).grid(row=16, column=0, columnspan=3, sticky='w', pady=10)
+        ttk.Button(frm, text='Conferir / Gerar XML', command=self.generate).grid(row=17, column=0, columnspan=3, sticky='ew')
         self.log = tk.Text(frm, height=8, wrap='word')
-        self.log.grid(row=14, column=0, columnspan=3, sticky='nsew', pady=8)
-        frm.rowconfigure(14, weight=1)
+        self.log.grid(row=18, column=0, columnspan=3, sticky='nsew', pady=8)
+        frm.rowconfigure(18, weight=1)
         self.scan()
 
     def scan(self):
@@ -286,8 +382,14 @@ class App(tk.Tk):
             if gate_mod and self.animxml.get() not in ('', '(no próprio XML)'):
                 ET.fromstring(read_mod_file(gate_mod, self.animxml.get()))
             tree, count, distance = create_fence(pts, fence_mod, fxml, placeable_file,
-                gate_mod, gate_xml, self.gate_pct.get(), self.gate_width.get())
-            self.log_message(f'Prévia OK: {count} segmentos, {distance:.1f} metros.')
+                gate_mod, gate_xml, self.gate_pct.get(), self.gate_width.get(),
+                self.max_span.get(), self.tolerance_xy.get(), self.tolerance_y.get(),
+                self.gate_farm_id.get())
+            self.log_message(f'Prévia OK: {count} segmentos no XML, {distance:.1f} metros (entrada: {len(pts)-1} trechos).')
+            for diagnostic in fence_diagnostics(check_mod_xml(fence_mod, fxml, 'fence')):
+                self.log_message(diagnostic)
+            if count > 1000:
+                self.log_message('AVISO: muitos segmentos. Experimente 20 m de trecho máximo e tolerância da curva de 0,5 m.')
             if not registered_in_mod(fence_mod, fxml):
                 self.log_message('AVISO: XML da cerca não encontrado em <storeItems> do modDesc. A loja pode não registrar.')
             if gate_mod and not registered_in_mod(gate_mod, gate_xml):
