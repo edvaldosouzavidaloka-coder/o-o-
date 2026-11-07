@@ -1,9 +1,9 @@
-name: TOP GAMERS - EXE Windows Cercas FS25 v0.3
+name: TOP GAMERS - EXE Windows Cercas FS25 v0.4 inspection
 
 on:
   push:
     branches:
-      - tg-cerca-editor-fs25-v0-2
+      - tg-cerca-editor-fs25-v0-4-i3d
     paths:
       - 'TG_Cerca_Editor_GE10/**'
       - '.github/workflows/top-gamers-cercas-windows-exe.yml'
@@ -23,6 +23,16 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - name: Show existing I3D reader for integration
+        shell: pwsh
+        run: |
+          Expand-Archive -LiteralPath 'TG_Cerca_Editor_GE10_v0.2/TG_Cerca_Editor_GE10_v0.2_I3D_TESTE.zip' -DestinationPath './inspect' -Force
+          Write-Host '===I3D_READER_BEGIN==='
+          Get-Content './inspect/TG_Cerca_Editor_GE10_v0.2/tg_i3d.py' -Raw
+          Write-Host '===I3D_READER_END==='
+          Write-Host '===I3D_GUI_BEGIN==='
+          Get-Content './inspect/TG_Cerca_Editor_GE10_v0.2/TG_Cerca_Editor.py' -Raw
+          Write-Host '===I3D_GUI_END==='
       - name: Verificar sintaxe Python
         shell: pwsh
         run: |
@@ -52,21 +62,3 @@ jobs:
           name: TOP_GAMERS_Cercas_FS25_v03_EXE
           path: TOP_GAMERS_Cercas_FS25_v03_Windows.zip
           retention-days: 90
-      - name: Publicar EXE no GitHub Releases (BETA)
-        uses: softprops/action-gh-release@v3
-        with:
-          tag_name: tg-cercas-fs25-v0.3-beta
-          target_commitish: ${{ github.sha }}
-          name: TOP GAMERS Criador de Cercas FS25 v0.3 Beta
-          prerelease: true
-          make_latest: false
-          body: |
-            Versão beta de teste para Windows. Mod Brazilian Fences não incluído.
-            Leitura dos comprimentos reais dos painéis (3.8, 4 e 6.7 m);
-            seleção de porteiras nativas. Requer arquivo de spline CSV.
-            Ainda não validado no FS25 quanto aos fios e à demolição.
-            Faça backup do savegame e teste em terreno comprado.
-          files: |
-            publicar/TOP_GAMERS_Cercas_FS25_v03.exe
-            TOP_GAMERS_Cercas_FS25_v03_Windows.zip
-          fail_on_unmatched_files: true
