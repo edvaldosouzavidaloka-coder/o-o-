@@ -42,21 +42,30 @@ class PCObjectsWindow(tk.Toplevel):
         self.protocol("WM_DELETE_WINDOW",self.destroy)
 
     def _pick(self,var,folder=False):
-        if folder:
-            value=filedialog.askdirectory(title="Selecione a pasta raiz do mapa")
-        elif var is self.storeitems:
-            value=filedialog.asksaveasfilename(title="Escolher/criar storeItems.xml",
-                defaultextension=".xml",filetypes=[("XML","*.xml")])
-        else:
-            kinds=[("Arquivo I3D","*.i3d")] if var in (self.map_i3d,self.object_i3d) else [
-                ("Arquivos XML","*.xml")]
-            value=filedialog.askopenfilename(filetypes=kinds)
-        if value:
-            var.set(value)
-            if var is self.maproot:
-                self.auto_destinations()
-            elif var is self.object_xml:
-                self.load_direct_xml()
+        # O seletor de arquivos deve pertencer à janela PC Objects, nunca à raiz
+        # minimizada. Isso evita que o Windows traga a tela principal à frente.
+        try:
+            if folder:
+                value=filedialog.askdirectory(
+                    parent=self,title="Selecione a pasta raiz do mapa")
+            elif var is self.storeitems:
+                value=filedialog.asksaveasfilename(
+                    parent=self,title="Escolher/criar storeItems.xml",
+                    defaultextension=".xml",filetypes=[("XML","*.xml")])
+            else:
+                kinds=[("Arquivo I3D","*.i3d")] if var in (self.map_i3d,self.object_i3d) else [
+                    ("Arquivos XML","*.xml")]
+                value=filedialog.askopenfilename(parent=self,filetypes=kinds)
+            if value:
+                var.set(value)
+                if var is self.maproot:
+                    self.auto_destinations()
+                elif var is self.object_xml:
+                    self.load_direct_xml()
+        finally:
+            if self.winfo_exists():
+                self.lift()
+                self.focus_set()
 
     def auto_destinations(self):
         try:
