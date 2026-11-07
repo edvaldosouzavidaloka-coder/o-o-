@@ -79,9 +79,7 @@ def scan_map_i3d(path):
         local=parts3(element.get("translation"))
         rot=parts3(element.get("rotation"))
         scl=parts3(element.get("scale"),(1.,1.,1.))
-        if abs(rot[0])>.01 or abs(rot[2])>.01:
-            raise ValueError("Nó '"+name+"' possui inclinação X/Z; para segurança, "
-                             "exporte o I3D com grupos-pai sem inclinação.")
+        tilted=(abs(rot[0])>.01 or abs(rot[2])>.01)
         pos,yaw=yaw_world(parent_pos,parent_yaw,local,rot[1],parent_scale)
         new_scale=tuple(parent_scale[i]*scl[i] for i in range(3))
         label=norm(name)
@@ -93,7 +91,7 @@ def scan_map_i3d(path):
         # Se um grupo representa somente a embalagem de uma Reference,
         # registre a Reference verdadeira, não as duas.
         nested_ref=any(n.tag=="Reference" for n in element.iter() if n is not element)
-        if is_ref or (is_group and not nested_ref):
+        if (is_ref or (is_group and not nested_ref)) and not tilted:
             key="/".join(str(j) for j in route)
             if key not in used:
                 used.add(key)
@@ -187,7 +185,7 @@ def _same_placement(a,b,tolerance=0.15):
 def make_map_updates(selected, assignments, inventory, placeables, storeitems):
     """Valida TODOS os itens antes de alterar qualquer arquivo."""
     a=ET.parse(placeables)
-    b=ET.parse(storeitems)
+    b=ET.parse(storeitems) if Path(storeitems).is_file() else ET.ElementTree(ET.Element("storeItems"))
     if a.getroot().tag!="placeables":
         raise ValueError("Destino dos objetos deve ser placeables.xml com raiz <placeables>.")
     if b.getroot().tag!="storeItems":
@@ -303,4 +301,118 @@ def write_two_with_backups(placeables,storeitems,tree_a,tree_b):
         for t in temps:
             if t.exists():
                 t.unlink()
+    return backups
+
+
+def guess_map_xml_paths(maproot):
+    """Sugere arquivos do mapa sem sobrescrever escolhas feitas pelo usuário."""
+    root=Path(maproot)
+    main=map_config_file(root)
+    place=""
+    store=""
+    if (root/"modDesc.xml").is_file():
+        desc=ET.parse(root/"modDesc.xml").getroot()
+        for elem in desc.findall(".//maps/map"):
+            rel=elem.get("defaultPlaceablesXMLFilename","").replace("\\","/")
+            if rel and not rel.startswith(("$","/")) and ".." not in PurePosixPath(rel).parts:
+                target=root/rel
+                if target.is_file():
+                    place=str(target)
+                    break
+    if main:
+        doc=ET.parse(main).getroot()
+        elem=doc.find("storeItems")
+        rel=(elem.get("filename","") if elem is not None else "").replace("\\","/")
+        if rel.startswith("$mapdir$/"):
+            rel=rel[len("$mapdir$/"):]
+        if rel and not rel.startswith(("$","/")) and ".." not in PurePosixPath(rel).parts:
+            store=str(root/rel)
+    if not store:
+        if place:
+            store=str(Path(place).with_name("storeItems.xml"))
+        elif main:
+            store=str(main.with_name("storeItems.xml"))
+    if not place and main:
+        maybe=main.parent/"config"/"placeables.xml"
+        if maybe.is_file():
+            place=str(maybe)
+    return place,store,main
+
+
+def prepare_map_config(maproot,storeitems):
+    """Prepara registro automático do StoreItems no mapa principal."""
+    path=map_config_file(maproot)
+    if path is None:
+        raise ValueError("Não localizei o map.xml declarado no modDesc.xml. "
+                         "Sem ele não dá para garantir o registro da loja.")
+    main=ET.parse(path)
+    root=main.getroot()
+    if root.tag!="map":
+        raise ValueError("Arquivo principal do mapa não tem raiz <map>.")
+    store=Path(storeitems).resolve()
+    base=Path(maproot).resolve()
+    if not store.is_relative_to(base):
+        raise ValueError("StoreItems precisa ficar dentro da pasta raiz do mapa.")
+    rel=store.relative_to(base).as_posix()
+    tag=root.find("storeItems")
+    if tag is None:
+        tag=ET.SubElement(root,"storeItems")
+    original=(tag.get("filename") or "").replace("\\","/")
+    tag.set("filename",rel)
+    return path,main,original!=rel
+
+
+def write_map_bundle(entries):
+    """Transação com backup e rollback para 2 ou 3 arquivos XML.
+
+    entries = [(path, ElementTree), ...], incluindo map.xml se necessário.
+    """
+    if not entries:
+        raise ValueError("Nenhum arquivo para gravar.")
+    unique=set()
+    originals=[]
+    backups=[]
+    tmp_paths=[]
+    replaced=[]
+    pending=[]
+    for path,tree in entries:
+        path=Path(path)
+        if path.resolve() in unique:
+            raise ValueError("Arquivos XML de destino devem ser diferentes.")
+        unique.add(path.resolve())
+        if not path.parent.is_dir():
+            raise ValueError("Pasta de destino não encontrada: "+str(path.parent))
+        data=path.read_bytes() if path.is_file() else None
+        if data is None and path.suffix.lower()!=".xml":
+            raise ValueError("Só cria arquivos .xml.")
+        ET.indent(tree,space="    ")
+        blob=ET.tostring(tree.getroot(),encoding="utf-8",xml_declaration=True)
+        ET.fromstring(blob)
+        pending.append((path,blob))
+        originals.append(data)
+    try:
+        for (path,_),old in zip(pending,originals):
+            if old is not None:
+                back=path.with_name(path.name+".tg_pc_backup_"+uuid.uuid4().hex[:8])
+                back.write_bytes(old)
+                backups.append(back)
+        for path,blob in pending:
+            fd,tmp=tempfile.mkstemp(dir=path.parent,prefix="tg_pc_",suffix=".xml")
+            with os.fdopen(fd,"wb") as stream:
+                stream.write(blob)
+            tmp_paths.append(Path(tmp))
+        for i,(path,_) in enumerate(pending):
+            os.replace(tmp_paths[i],path)
+            replaced.append(i)
+    except Exception:
+        for i in reversed(replaced):
+            path=pending[i][0]
+            if originals[i] is None:
+                path.unlink(missing_ok=True)
+            else:
+                path.write_bytes(originals[i])
+        raise
+    finally:
+        for path in tmp_paths:
+            path.unlink(missing_ok=True)
     return backups
