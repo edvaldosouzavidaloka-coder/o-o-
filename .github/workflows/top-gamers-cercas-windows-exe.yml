@@ -1,8 +1,9 @@
-name: TOP GAMERS Cercas FS25 - Windows I3D v0.5
+name: TG + EDVALDO Criador Cercas FS25 v0.6 Windows
 
 on:
   push:
-    branches: [tg-cerca-editor-fs25-v0-5-segmentos]
+    branches:
+      - tg-cerca-editor-fs25-v0-6-brand-demolition
     paths:
       - 'TG_Cerca_Editor_GE10/**'
       - '.github/workflows/top-gamers-cercas-windows-exe.yml'
@@ -12,83 +13,89 @@ permissions:
   contents: write
 
 jobs:
-  exe-windows:
-    name: Compilar TOP GAMERS v0.5 I3D
+  windows:
     runs-on: windows-latest
     steps:
-      - name: Obter codigo
+      - name: Baixar repositorio
         uses: actions/checkout@v4
 
-      - name: Instalar Python
+      - name: Instalar Python 3.12
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
 
-      - name: Extrair leitor I3D v0.2 ja testado
+      - name: Instalar Pillow para o fundo e icone
+        shell: pwsh
+        run: python -m pip install --disable-pip-version-check pillow
+
+      - name: Instalar leitor I3D usado e testado no projeto
         shell: pwsh
         run: |
           Expand-Archive -LiteralPath 'TG_Cerca_Editor_GE10_v0.2/TG_Cerca_Editor_GE10_v0.2_I3D_TESTE.zip' -DestinationPath './leitor-i3d' -Force
-          Copy-Item 'leitor-i3d/TG_Cerca_Editor_GE10_v0.2/tg_i3d.py' 'TG_Cerca_Editor_GE10/tg_i3d.py'
-          Copy-Item 'leitor-i3d/TG_Cerca_Editor_GE10_v0.2/MIT_TERCEIROS.txt' 'TG_Cerca_Editor_GE10/MIT_TERCEIROS.txt'
+          Copy-Item './leitor-i3d/TG_Cerca_Editor_GE10_v0.2/tg_i3d.py' 'TG_Cerca_Editor_GE10/tg_i3d.py'
+          Copy-Item './leitor-i3d/TG_Cerca_Editor_GE10_v0.2/MIT_TERCEIROS.txt' 'TG_Cerca_Editor_GE10/MIT_TERCEIROS.txt'
 
-      - name: Conferir sintaxe e importacoes
+      - name: Sintaxe do codigo
         shell: pwsh
         run: |
-          python -m py_compile TG_Cerca_Editor_GE10/TG_Cerca_Editor.py TG_Cerca_Editor_GE10/TG_Cerca_Editor_v03.py TG_Cerca_Editor_GE10/TG_Cerca_Editor_v05.py TG_Cerca_Editor_GE10/tg_i3d.py
-          $env:PYTHONPATH = 'TG_Cerca_Editor_GE10'
-          python -c "import TG_Cerca_Editor_v05 as a; print('Janela:', a.App.__name__)"
+          python -m py_compile TG_Cerca_Editor_GE10/TG_Cerca_Editor.py TG_Cerca_Editor_GE10/TG_Cerca_Editor_v05.py TG_Cerca_Editor_GE10/TG_Cerca_Editor_v06.py TG_Cerca_Editor_GE10/tg_brand_photo_v06.py TG_Cerca_Editor_GE10/tg_i3d.py
 
-      - name: Testar I3D real e shapes vinculado
+      - name: Teste real do formato da spline I3D e shapes
         shell: pwsh
         run: |
-          $env:PYTHONPATH = 'TG_Cerca_Editor_GE10'
-          python -c "from pathlib import Path; from TG_Cerca_Editor_v05 import load_i3d_points; p=Path('leitor-i3d/TG_Cerca_Editor_GE10_v0.2/EXEMPLO/sa.i3d'); pts,nome,kind=load_i3d_points(p); assert len(pts)>26, len(pts); print('OK I3D:',nome,kind,len(pts),'amostras')"
+          $env:PYTHONPATH='TG_Cerca_Editor_GE10'
+          python -c "from pathlib import Path; from TG_Cerca_Editor_v06 import core; pts,n,k=core.load_i3d_points(Path('leitor-i3d/TG_Cerca_Editor_GE10_v0.2/EXEMPLO/sa.i3d')); assert len(pts)>26; print('I3D OK',len(pts),'pontos',n)"
 
-      - name: Testar compactacao de segmentos
+      - name: Testar modelos newFence, foto e segmentos
+        working-directory: TG_Cerca_Editor_GE10
         shell: pwsh
-        run: |
-          $env:PYTHONPATH = 'TG_Cerca_Editor_GE10'
-          python -c "from TG_Cerca_Editor_v05 import run_compaction_tests; print('Segmentos (reta de 500m, curva, reta 2 pontos):', run_compaction_tests())"
+        run: python TESTAR_v06.py
+
+      - name: Criar icone da marca TG + EDVALDO
+        working-directory: TG_Cerca_Editor_GE10
+        shell: pwsh
+        run: python GERAR_ICONE_v06.py
 
       - name: Instalar PyInstaller
         shell: pwsh
         run: python -m pip install --disable-pip-version-check pyinstaller
 
-      - name: Gerar EXE standalone
+      - name: Compilar EXE independente do Python
         shell: pwsh
         run: |
-          python -m PyInstaller --noconfirm --clean --onefile --windowed --name TOP_GAMERS_Cercas_FS25_v05_I3D TG_Cerca_Editor_GE10/TG_Cerca_Editor_v05.py
+          python -m PyInstaller --noconfirm --clean --onefile --windowed --icon TG_Cerca_Editor_GE10/tg_edvaldo.ico --name TG_EDVALDO_Cercas_FS25_v06_I3D TG_Cerca_Editor_GE10/TG_Cerca_Editor_v06.py
 
-      - name: Empacotar aplicativo e instrucoes
+      - name: Preparar arquivos para download
         shell: pwsh
         run: |
-          New-Item -ItemType Directory -Force -Path publicar | Out-Null
-          Copy-Item dist/TOP_GAMERS_Cercas_FS25_v05_I3D.exe publicar/
-          Copy-Item TG_Cerca_Editor_GE10/README-v05.md publicar/
+          New-Item -ItemType Directory -Force -Path 'publicar' | Out-Null
+          Copy-Item dist/TG_EDVALDO_Cercas_FS25_v06_I3D.exe publicar/
+          Copy-Item TG_Cerca_Editor_GE10/README-v06.md publicar/
           Copy-Item TG_Cerca_Editor_GE10/MIT_TERCEIROS.txt publicar/
-          Compress-Archive -Path publicar/* -DestinationPath TOP_GAMERS_Cercas_FS25_v05_I3D_Windows.zip -Force
+          Compress-Archive -Path publicar/* -DestinationPath TG_EDVALDO_Cercas_FS25_v06_I3D_Windows.zip -Force
 
-      - name: Disponibilizar EXE pelo Actions
+      - name: Enviar EXE ao GitHub Actions
         uses: actions/upload-artifact@v4
         with:
-          name: TOP_GAMERS_Cercas_FS25_v05_I3D
-          path: TOP_GAMERS_Cercas_FS25_v05_I3D_Windows.zip
+          name: TG_EDVALDO_Cercas_FS25_v06_I3D
+          path: TG_EDVALDO_Cercas_FS25_v06_I3D_Windows.zip
           retention-days: 90
 
-      - name: Publicar EXE no Releases BETA
+      - name: Publicar Release beta no GitHub
         uses: softprops/action-gh-release@v3
         with:
-          tag_name: tg-cercas-fs25-v0.5-i3d-beta
+          tag_name: tg-cercas-fs25-v0.6-i3d-beta
           target_commitish: ${{ github.sha }}
-          name: TOP GAMERS Criador de Cercas FS25 v0.5 I3D Compacto Beta
+          name: TG + EDVALDO — Criador de Cercas FS25 v0.6 (I3D Beta)
           prerelease: true
           make_latest: false
           body: |
-            Esta versao recebe arquivos .i3d e .i3d.shapes, sem CSV.
-            Modelo Brazilian Fences nao incluso. Use copia de um save.
-            Reduz linhas segment em retas usando trechos de 25m. Curvas e relevo preservados por tolerancias.
-            Curvas cubicas aproximadas; fios e demolicao ainda exigem teste no FS25.
+            Imagem do trator enviada pelo usuario aplicada ao fundo escurecido.
+            Marca TG + EDVALDO no titulo e icone. Leitura somente I3D + i3d.shapes.
+            Diagnostico especifico de modelos nativos newFence, farmId opcional, XML compacto.
+            Ainda requer teste real no FS25: fios e demolicao por trecho nao sao garantidos.
+            Faca backup de savegame e confira o log.txt.
           files: |
-            publicar/TOP_GAMERS_Cercas_FS25_v05_I3D.exe
-            TOP_GAMERS_Cercas_FS25_v05_I3D_Windows.zip
+            publicar/TG_EDVALDO_Cercas_FS25_v06_I3D.exe
+            TG_EDVALDO_Cercas_FS25_v06_I3D_Windows.zip
           fail_on_unmatched_files: true
