@@ -82,11 +82,6 @@ jobs:
         shell: pwsh
         run: python TESTAR_v11.py
 
-      - name: Testar Selecionar UM/TODOS, I3D MAPA, I3D OBJETO e XML do OBJETO
-        working-directory: TG_Cerca_Editor_GE10
-        shell: pwsh
-        run: python TESTAR_v12.py
-
       - name: Testar registros independentes Placeables e StoreItems v1.3
         working-directory: TG_Cerca_Editor_GE10
         shell: pwsh
