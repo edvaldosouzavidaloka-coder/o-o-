@@ -137,7 +137,7 @@ def test_gui(root):
         win=app.pc_window
         win.update()
         assert not win.to_placeables.get() and not win.to_store.get()
-        assert win.table.cget("selectmode")=="none"
+        assert str(win.table.cget("selectmode")).lower() not in ("extended","browse")
         buttons=[]
         actions=win.log.master.grid_slaves(row=11)[0]
         for widget in actions.winfo_children():
