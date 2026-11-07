@@ -84,7 +84,7 @@ def test_native_lengths(folder):
 def test_gate_width(folder):
     mod,xml=mod_fixture(folder)
     assert math.isclose(gate_span(mod,xml,"GATE_10m")[0],10.310624,abs_tol=.001)
-    assert math.isclose(gate_span(mod,xml,"GATE_8m")[0],5.4,abs_tol=.01)  # 1 poste explícito
+    assert math.isclose(gate_span(mod,xml,"GATE_8m")[0],8.33728,abs_tol=.001)  # outro poste na origem
     assert math.isclose(gate_span(mod,xml,"GATE_6m")[0],5.32538,abs_tol=.001)
     assert gate_span(mod,xml,"GATE_5m")==(5.4,"XML")
     pts=[(i*1.,65.,0.) for i in range(101)]
