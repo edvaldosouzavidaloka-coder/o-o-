@@ -115,6 +115,65 @@ def test_missing_reference(maproot,model,i3d):
         app.destroy()
 
 
+
+
+def test_separate_map_and_object_and_xml(root):
+    maproot,i3d,placeables,stores,mod=fixture(root)
+    model=build_scene(maproot,i3d)
+    directxml=model.with_suffix(".xml")
+    directxml.write_text(
+        '<placeable type="sellingStation"><base><filename>'
+        'placeables/abatedouro1/abatedouro.i3d</filename></base>'
+        '<storeData><showInStore>true</showInStore></storeData></placeable>',
+        encoding="utf-8")
+    # O grupo pode ter nome "abatedouro", mesmo sem ser uma das categorias
+    # clássicas do leitor inicial.
+    tree=ET.parse(i3d)
+    scene=tree.find("Scene")
+    root_group=scene.find("TransformGroup")
+    ET.SubElement(root_group,"TransformGroup",{
+        "name":"abatedouro","translation":"30 0 20","rotation":"0 0 0"})
+    tree.write(i3d,encoding="utf-8")
+    from TG_PCObjects_Localizador_v12 import find_model_in_scene
+    found=find_model_in_scene(i3d,model)
+    assert len(found)==3,found
+    item=__import__("TG_PCObjects_Core_v11").placeable_item_from_xml(
+        directxml,maproot,{})
+    assert item["type"]=="sellingStation"
+    assert item["filename"].endswith("/placeables/abatedouro1/abatedouro.xml")
+    assert item["origin"]=="map"
+
+    app=App()
+    try:
+        app.update()
+        app.open_pcobjects()
+        win=app.pc_window
+        win.maproot.set(str(maproot))
+        win.map_i3d.set(str(i3d))
+        win.object_i3d.set(str(model))
+        win.object_xml.set(str(directxml))
+        assert win.load_objects()==3
+        assert len(win.assignment)==3
+        assert len(win.inventory)==1
+        win.select_one()
+        assert len(win._selected_objects())==1
+        win.select_all()
+        assert len(win._selected_objects())==3
+        win.placeables.set(str(placeables))
+        win.storeitems.set(str(stores))
+        a,b,changes=__import__("TG_PCObjects_Core_v11").make_map_updates(
+            win._selected_objects(),win.assignment,win.inventory,placeables,stores)
+        assert len(changes["inserted"])==3,changes
+        assert len(changes["stores"])==1,changes
+        assert a.getroot().findall("placeable")[0].get("filename")=="$data/foo.xml"
+        assert all(x.get("filename").endswith("/placeables/abatedouro1/abatedouro.xml")
+                   for x in a.getroot().findall("placeable")[1:])
+        assert not stores.exists(), "Prévia não pode escrever arquivos"
+        print("OK três campos MAPA/I3D ITEM/XML ITEM, grupo abatedouro, UM/TODOS e registros.")
+        win.destroy()
+    finally:
+        app.destroy()
+
 if __name__=="__main__":
     with TemporaryDirectory() as t:
         root=Path(t)
@@ -123,4 +182,6 @@ if __name__=="__main__":
         test_locator(maproot,i3d,model)
         test_gui(maproot,i3d,model)
         test_missing_reference(maproot,model,i3d)
+    with TemporaryDirectory() as t:
+        test_separate_map_and_object_and_xml(Path(t))
     print("TESTES v1.2: PASSOU. Fazer prova no mapa real.")
