@@ -1,0 +1,72 @@
+name: TOP GAMERS - EXE Windows Cercas FS25 v0.3
+
+on:
+  push:
+    branches:
+      - tg-cerca-editor-fs25-v0-2
+    paths:
+      - 'TG_Cerca_Editor_GE10/**'
+      - '.github/workflows/top-gamers-cercas-windows-exe.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  exe-windows:
+    name: Compilar e verificar EXE no Windows
+    runs-on: windows-latest
+    steps:
+      - name: Baixar código
+        uses: actions/checkout@v4
+      - name: Instalar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verificar sintaxe Python
+        shell: pwsh
+        run: |
+          python -m py_compile TG_Cerca_Editor_GE10/TG_Cerca_Editor.py TG_Cerca_Editor_GE10/TG_Cerca_Editor_v03.py
+      - name: Verificar importações da interface
+        shell: pwsh
+        run: |
+          $env:PYTHONPATH = "TG_Cerca_Editor_GE10"
+          python -c "import TG_Cerca_Editor_v03 as m; print('App:', m.App.__name__)"
+      - name: Instalar PyInstaller
+        shell: pwsh
+        run: python -m pip install --disable-pip-version-check pyinstaller
+      - name: Compilar executável
+        shell: pwsh
+        run: |
+          python -m PyInstaller --noconfirm --clean --onefile --windowed --name TOP_GAMERS_Cercas_FS25_v03 TG_Cerca_Editor_GE10/TG_Cerca_Editor_v03.py
+      - name: Criar pacote para download
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path publicar | Out-Null
+          Copy-Item dist/TOP_GAMERS_Cercas_FS25_v03.exe publicar/
+          Copy-Item TG_Cerca_Editor_GE10/README-v03.md publicar/
+          Compress-Archive -Path publicar/* -DestinationPath TOP_GAMERS_Cercas_FS25_v03_Windows.zip -Force
+      - name: Enviar EXE para o GitHub Actions
+        uses: actions/upload-artifact@v4
+        with:
+          name: TOP_GAMERS_Cercas_FS25_v03_EXE
+          path: TOP_GAMERS_Cercas_FS25_v03_Windows.zip
+          retention-days: 90
+      - name: Publicar EXE no GitHub Releases (BETA)
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: tg-cercas-fs25-v0.3-beta
+          target_commitish: ${{ github.sha }}
+          name: TOP GAMERS Criador de Cercas FS25 v0.3 Beta
+          prerelease: true
+          make_latest: false
+          body: |
+            Versão beta de teste para Windows. Mod Brazilian Fences não incluído.
+            Leitura dos comprimentos reais dos painéis (3.8, 4 e 6.7 m);
+            seleção de porteiras nativas. Requer arquivo de spline CSV.
+            Ainda não validado no FS25 quanto aos fios e à demolição.
+            Faça backup do savegame e teste em terreno comprado.
+          files: |
+            publicar/TOP_GAMERS_Cercas_FS25_v03.exe
+            TOP_GAMERS_Cercas_FS25_v03_Windows.zip
+          fail_on_unmatched_files: true
