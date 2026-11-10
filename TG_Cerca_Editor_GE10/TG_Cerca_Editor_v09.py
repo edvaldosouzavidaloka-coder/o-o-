@@ -53,6 +53,16 @@ class App(PreviousApp):
                 float(self.max_span.get()),float(self.tolerance_xy.get()),
                 float(self.tolerance_y.get()),int(self.farm_id.get()))
             candidate=tree.getroot()[-1]
+            # v1.5: orientacao 180 graus real para newFence. Como o sistema
+            # nativo nao fornece yaw independente por porteira, inverter a
+            # ordem e os endpoints de TODOS os segmentos mantem a continuidade
+            # da cerca e troca a direcao da porteira no jogo.
+            option=getattr(self,"invert_gate_180",None)
+            if gate and option is not None and option.get():
+                from TG_Cerca_Preview3D_v15 import invert_fence_direction
+                invert_fence_direction(candidate)
+                self.log_message("Porteira invertida 180°: newFence gravado "
+                                 "no sentido oposto, sem criar intervalo solto.")
             duplicates, conflicts=scan_overlapping_fences(tree,candidate)
             self.log_message(
                 f'I3D {name}: {distance:.1f} metros, {len(records)} segmentos; '
